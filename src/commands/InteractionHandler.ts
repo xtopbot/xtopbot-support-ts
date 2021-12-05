@@ -6,6 +6,7 @@ import {
   AutocompleteInteraction,
   Interaction,
 } from "discord.js";
+import Commands from "./Commands";
 
 export default class InteractionHandler {
   public static onInteraction(d: Interaction) {
