@@ -5,11 +5,14 @@ import { DefaultCommand } from "./DefaultCommand";
 export default class Commands {
   private static commands: Array<DefaultCommand> = [new Eval()];
 
-  public static registerCommands() {}
+  public static getCommands(): Array<DefaultCommand> {
+    return this.commands.filter((command) => !command.applicationCommandOnly);
+  }
+
   public static getCommand(
     input: string,
     useAliases: boolean = false
-  ): DefaultCommand {
+  ): DefaultCommand | null {
     return (
       this.commands.find(
         (command) =>
@@ -22,7 +25,7 @@ export default class Commands {
   private static getApplicationCommand(
     input: string,
     type: ApplicationCommandTypes
-  ): DefaultCommand {
+  ): DefaultCommand | null {
     return (
       this.commands.find((command) =>
         command.applicationCommandData.find((apd) => {
@@ -31,18 +34,18 @@ export default class Commands {
       ) ?? null
     );
   }
-  public static getSlashCommand(input: string): DefaultCommand {
+  public static getSlashCommand(input: string): DefaultCommand | null {
     return this.getApplicationCommand(
       input,
       ApplicationCommandTypes.CHAT_INPUT
     );
   }
 
-  public static getContextMenuUserName(input: string): DefaultCommand {
+  public static getContextMenuUserName(input: string): DefaultCommand | null {
     return this.getApplicationCommand(input, ApplicationCommandTypes.USER);
   }
 
-  public static getContextMenuMessage(input: string): DefaultCommand {
+  public static getContextMenuMessage(input: string): DefaultCommand | null {
     return this.getApplicationCommand(input, ApplicationCommandTypes.MESSAGE);
   }
 }

@@ -1,9 +1,10 @@
 import Constants from "../utils/Constants";
 import type { PermissionString, ApplicationCommandData } from "discord.js";
+import { UserLevelPolicy } from "../structures/User";
 
 export class DefaultCommand implements DefaultCommandType {
   data: DefaultCommandDataType; // Command data
-  level: CommandLevels; // Command Level (who can used)
+  level: UserLevelPolicy; // User Level Policy (who can used)
   userPermissions: Array<PermissionString>; // Permissions requirements for a user to access the use of the command
   botPermissions: Array<PermissionString>; // The requirements for the bot permission to perform the command
   applicationCommandData: Array<ApplicationCommandData>;
@@ -54,7 +55,7 @@ export class DefaultCommand implements DefaultCommandType {
 interface DefaultCommandDataType {
   readonly name?: string | null;
   readonly aliases?: Array<string>;
-  readonly level: CommandLevels;
+  readonly level: UserLevelPolicy;
   readonly userPermissions: Array<PermissionString>;
   readonly botPermissions: Array<PermissionString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
@@ -63,7 +64,7 @@ interface DefaultCommandDataType {
 }
 
 interface DefaultCommandType extends DefaultCommandDataType {
-  applicationCommandOnly: boolean;
+  readonly applicationCommandOnly: boolean;
   setDisable(): void;
   setEnable(): void;
 }
@@ -71,12 +72,4 @@ interface DefaultCommandType extends DefaultCommandDataType {
 enum RunType {
   APPLICATION_COMMAND,
   COMMAND,
-}
-
-export enum CommandLevels {
-  DEVELOPER = 5,
-  ADMIN = 4,
-  STAFF = 3,
-  SUPPORT = 2,
-  EVERYONE = 1,
 }
