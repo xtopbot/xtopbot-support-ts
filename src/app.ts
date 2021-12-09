@@ -2,7 +2,7 @@ import { Client, Interaction, Message } from "discord.js";
 import * as dotenv from "dotenv";
 import CommandsManager from "./commands/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
-import mysql from "./providers/mysql";
+import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
 dotenv.config();
 
@@ -35,7 +35,7 @@ export default class {
   }
   public static async launch(): Promise<void> {
     this.initialize();
-    await mysql();
+    await mysql.connect();
     this.client.on("messageCreate", (message) => console.log(message));
     Logger.info("[Discord] <>Bot connecting...");
     this.client.login(process.env.DISCORD_BOT_TOKEN);
