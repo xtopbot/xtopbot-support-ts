@@ -2,11 +2,11 @@ import { Client, Interaction, Message } from "discord.js";
 import * as dotenv from "dotenv";
 import CommandsManager from "./commands/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
+import UserManager from "./managers/UserManager";
 import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
 dotenv.config();
 
-Reflect.defineProperty(Message.prototype, "app", { value: "test" });
 export default class {
   public static client: Client = new Client({
     intents: [
@@ -27,6 +27,7 @@ export default class {
     partials: ["CHANNEL"],
   });
   //public static commands<Commands> =
+  public static users = new UserManager();
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
@@ -34,9 +35,8 @@ export default class {
     ListenersHandler.handler(this.client);
   }
   public static async launch(): Promise<void> {
-    this.initialize();
     await mysql.connect();
-    this.client.on("messageCreate", (message) => console.log(message));
+    this.initialize();
     Logger.info("[Discord] <>Bot connecting...");
     this.client.login(process.env.DISCORD_BOT_TOKEN);
   }

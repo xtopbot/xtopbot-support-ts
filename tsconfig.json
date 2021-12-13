@@ -14,7 +14,7 @@
         "pretty": true
     },
     "include": [
-        "./**/*.ts",
-        "./**/*.json"
+        "./src/**/*.ts",
+        "./src/**/*.json"
     ]
 }
