@@ -1,5 +1,8 @@
-import mysql2, { Connection } from "mysql2/promise";
+import mysql2, { Connection, QueryError } from "mysql2/promise";
+import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 export default class MysqlDatabase {
   private static configConnection: mysql2.ConnectionOptions = {
@@ -29,6 +32,19 @@ export default class MysqlDatabase {
       throw Error("Cannot use db while not connected.");
     return this.connection;
   }
+
+  public static async query(
+    query: string,
+    values: Array<any>
+  ): Promise<any | Exception> {
+    Logger.info(`[Mysql] ${query} Query...`);
+    try {
+      const [raw] = await this.db.query(query, values);
+      return raw;
+    } catch (error) {
+      throw new Exception((error as QueryError).message, Severity.FAULT);
+    }
+  }
 }
 
 enum MysqlConnectionState {
@@ -37,4 +53,4 @@ enum MysqlConnectionState {
   CONNECTED,
 }
 
-export const db: Connection = MysqlDatabase.db;
+//export const db: Connection = MysqlDatabase.db;
