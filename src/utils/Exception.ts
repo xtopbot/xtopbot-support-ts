@@ -3,9 +3,9 @@ import { FinalResponseCode } from "./FinalResponse";
 import { Util } from "discord.js";
 import Logger from "./Logger";
 export default class Exception extends FinalResponse {
-  public message: string;
+  public message: string | null;
   public severity: Severity;
-  public cause?: Error;
+  public cause?: Error | null = null;
   constructor(message: string, severity: Severity, cause?: Error) {
     super(FinalResponseCode.EXCEPTION, {
       content: `Error: \`${Util.escapeMarkdown(message)}\``,

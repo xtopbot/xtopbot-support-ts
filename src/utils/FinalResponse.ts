@@ -16,6 +16,7 @@ export default class FinalResponse {
   }
 }
 
-enum FinalResponseCode {
+export enum FinalResponseCode {
   SUCCESS = 200,
+  EXCEPTION = 5000,
 }
