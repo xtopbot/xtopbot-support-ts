@@ -37,7 +37,6 @@ export default class UserManager extends CacheManager {
       const cached = this.cache.get(user.id);
       if (cached instanceof User) return cached;
     }
-    console.log(this.cache);
 
     const raw = await db.query("select * from profile where id_discord = ?", [
       user.id,
