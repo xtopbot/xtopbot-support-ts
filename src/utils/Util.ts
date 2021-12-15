@@ -13,4 +13,8 @@ export default class Util {
         .join(" ")
     );
   }
+
+  public static escapeRegex(input: string): string {
+    return input.replace(/[\\^$*+?.()|[\]{}]/g, "\\$&");
+  }
 }
