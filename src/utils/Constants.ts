@@ -9,7 +9,10 @@ export default class Constants {
   public static readonly CHANNEL_PERMISSIONS: Array<PermissionString> = [
     "MANAGE_CHANNELS",
     "VIEW_CHANNEL",
+    "CREATE_INSTANT_INVITE",
+    "MANAGE_ROLES",
     //Text Channel Only
+    "MANAGE_WEBHOOKS",
     "ADD_REACTIONS",
     "SEND_MESSAGES",
     "SEND_TTS_MESSAGES",
@@ -27,14 +30,17 @@ export default class Constants {
     "CREATE_PRIVATE_THREADS",
     "USE_EXTERNAL_STICKERS",
     "SEND_MESSAGES_IN_THREADS",
-    "START_EMBEDDED_ACTIVITIES",
     //Voice Channel Only
+    "START_EMBEDDED_ACTIVITIES",
     "STREAM",
     "CONNECT",
     "SPEAK",
     "MUTE_MEMBERS",
+    "DEAFEN_MEMBERS",
+    "USE_VAD",
     "MOVE_MEMBERS",
     "REQUEST_TO_SPEAK",
+    "PRIORITY_SPEAKER",
   ];
 
   //Support Server
