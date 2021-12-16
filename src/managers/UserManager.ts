@@ -38,9 +38,10 @@ export default class UserManager extends CacheManager {
       if (cached instanceof User) return cached;
     }
 
-    const raw = await db.query("select * from profile where id_discord = ?", [
-      user.id,
-    ]);
+    const raw: Array<UserData> = await db.query(
+      "select * from profile where id_discord = ?",
+      [user.id]
+    );
     if (!raw.length) this.create(user);
     const u: User = new User(raw[0]);
     return this._add(u);
@@ -56,9 +57,18 @@ export default class UserManager extends CacheManager {
   }
 }
 
-//Only field will be usable in this project.
-interface ProfileDB {
+//Only fields will be usable in this project.
+export interface UserData {
   id: number;
   id_discord: string;
+  xtopteam: number;
   createdAt: Date;
+}
+
+export enum XtopTeam {
+  SUPPORT = 1,
+  MODERATOR = 2,
+  STAFF = 3,
+  ADMIN = 4,
+  DEVELOPER = 5,
 }

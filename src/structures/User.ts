@@ -1,22 +1,32 @@
-import { User as DiscorUser } from "discord.js";
+import { UserData, XtopTeam } from "../managers/UserManager";
 import db from "../providers/Mysql";
+import Constants from "../utils/Constants";
 import Exception, { Severity } from "../utils/Exception";
 export default class User {
-  public id: string;
-  public createdAt: Date;
+  private data: UserData;
   public lastVotedAt: Date = new Date("1970-1-1");
   public features: Array<UserFeatures> = [];
-  //public fetched: boolean = false;
-  constructor(raw: any) {
-    this.id = raw.id_discord;
-    this.createdAt = new Date();
-    this._patch(raw);
+  constructor(data: UserData) {
+    this.data = data;
   }
 
-  private _patch(raw: any) {
-    if ("createdAt" in raw) {
-      this.createdAt = new Date(raw?.createdAt);
-    }
+  public get id(): string {
+    if (!Constants.REGEX_SNOWFLAKE.test(this.data.id_discord))
+      throw new Exception(
+        `[${this.constructor.name}] Something was wrong with user id ${this.data.id_discord}`,
+        Severity.FAULT
+      );
+    return this.data.id_discord;
+  }
+
+  public get createdAt(): Date {
+    return new Date(this.data?.createdAt ?? "1970-1-1");
+  }
+
+  public get levelPolicy(): UserLevelPolicy {
+    return this.data.xtopteam === XtopTeam.DEVELOPER
+      ? UserLevelPolicy.DEVELOPER
+      : UserLevelPolicy.USER;
   }
 
   public get lastVotedTimestampAt(): number {
@@ -24,7 +34,7 @@ export default class User {
   }
 
   async isVoted(): Promise<boolean> {
-    if (Math.round(Date.now() / 1000) - 43200000 < this.lastVotedTimestampAt)
+    if (Math.round(Date.now() / 1000) - 43200 < this.lastVotedTimestampAt)
       return true;
     const raw = await db.query(
       "select * from usersVote where userId = ? AND unix_timestamp(createdAt) between unix_timestamp() - 43200 and unix_timestamp()",
