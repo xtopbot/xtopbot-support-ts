@@ -13,11 +13,6 @@ export default class UserManager extends CacheManager {
     return this._cache;
   }
 
-  /*public async get(user: DiscordUser, force: boolean = true): Promise<User> {
-    this.cache.get(user.id);
-    return;
-  }*/
-
   private async _fetch(userId: string): Promise<DiscordUser> {
     try {
       const user = app.client.users.fetch(userId);

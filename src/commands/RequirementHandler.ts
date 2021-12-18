@@ -61,7 +61,7 @@ export default class CommandRequirementsHandler {
 
     if (!this.checkMemberChannelPermissions())
       return new FinalResponse(
-        FinalResponseCode.BOT_CHANNEL_PERMISSIONS_MISSING,
+        FinalResponseCode.MEMBER_CHANNEL_PERMISSIONS_MISSING,
         {
           content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
             this.memberChannelPermissionsMissing

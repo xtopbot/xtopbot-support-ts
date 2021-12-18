@@ -10,6 +10,10 @@ export default class User {
     this.data = data;
   }
 
+  public _patch(data: UserData): void {
+    this.data = data;
+  }
+
   public get id(): string {
     if (!Constants.REGEX_SNOWFLAKE.test(this.data.id_discord))
       throw new Exception(
