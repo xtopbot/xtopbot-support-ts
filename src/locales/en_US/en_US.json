@@ -1,0 +1,12 @@
+{
+    "tags": [
+        "en",
+        "english",
+        "us-english"
+    ],
+    "exceptions": {
+        "unknownError": {
+            "content": "An error occurred while executing the request.\n```{{error}}```\n `Request Id:` `**{{request.id}}**`"
+        }
+    }
+}

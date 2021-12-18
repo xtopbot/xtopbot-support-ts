@@ -2,6 +2,7 @@ import { Client, Interaction, Message } from "discord.js";
 import * as dotenv from "dotenv";
 import CommandsManager from "./commands/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
+import LocaleManager from "./managers/LocaleManager";
 import UserManager from "./managers/UserManager";
 import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
@@ -28,6 +29,7 @@ export default class {
   });
   //public static commands<Commands> =
   public static users = new UserManager();
+  public static locale = new LocaleManager();
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
