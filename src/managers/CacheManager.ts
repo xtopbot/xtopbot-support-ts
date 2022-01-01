@@ -6,8 +6,8 @@ export default class {
     //setInterval(() => this._cache.clear(), 60 * 60 * 1000); // 1hour;
   }
 
-  protected _add(data: any) {
-    const cached = this._cache.get(data?.id);
+  protected _add(data: any): any {
+    const cached: any = this._cache.get(data?.id);
     if (cached) {
       cached._patch(data);
       return cached;
