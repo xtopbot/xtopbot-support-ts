@@ -1,4 +1,4 @@
-import { Client, Interaction, Message } from "discord.js";
+import { Client } from "discord.js";
 import * as dotenv from "dotenv";
 import CommandsManager from "./commands/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
