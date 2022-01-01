@@ -6,12 +6,13 @@ export default class GuildMemberAdd {
     try {
       this.memberJoined.bind(member);
     } catch (err) {
-      if (err instanceof Error) {
-        Logger.error(
-          `[App](Event: guildMemberAdd) Error while execute: ${err.message}`
-        );
-        console.error(err);
-      }
+      Logger.error(
+        `[App](Event: ${this.constructor.name}) Error while execute: ${
+          (err as Error).message
+        }`
+      );
+
+      console.error(err);
     }
   }
   private static memberJoined(member: GuildMember): void {
