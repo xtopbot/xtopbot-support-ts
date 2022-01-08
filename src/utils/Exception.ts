@@ -1,5 +1,5 @@
 import FinalResponse from "./FinalResponse";
-import { FinalResponseCode } from "./FinalResponse";
+import { ResponseCodes } from "./FinalResponse";
 import { Util } from "discord.js";
 import Logger from "./Logger";
 export default class Exception extends FinalResponse {
@@ -7,7 +7,7 @@ export default class Exception extends FinalResponse {
   public severity: Severity;
   public cause?: Error | null = null;
   constructor(message: string, severity: Severity, cause?: Error) {
-    super(FinalResponseCode.EXCEPTION, {
+    super(ResponseCodes.EXCEPTION, {
       content: `Error: \`${Util.escapeMarkdown(message)}\``,
     }); // this Reply message is temp while locale is finished
     this.message = message;
