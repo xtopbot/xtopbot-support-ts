@@ -8,8 +8,8 @@
 | ------- | ------------------- | -------------------------- |
 | type    | integer             | [Command Ratelimit Type]() |
 | ids     | array of snowflakes |                            |
+| period  | integer             | $1                         |
 | bucket  | integer             |                            |
-| period  | are neat            | $1                         |
 | warning | boolean             |                            |
 
 ###### Command Ratelimit Types
@@ -29,3 +29,24 @@
 ```
 
 ###### Command Ratelimit Types
+
+## Premium
+
+| FEATURE                   | USER | GUILD |
+| ------------------------- | :--: | :---: |
+| Unlimited playlist tracks |  ✓   |   ✕   |
+| Autoplay                  |  ✕   |   ✓   |
+| 24/7                      |  ✕   |   ✓   |
+| Edit default buttons      |  ✕   |   ✓   |
+| Unlimited queue tracks    |  ✕   |   ✓   |
+| Audio effects             |  ✓   |   ✓   |
+| Bypass vote locked        |  ✓   |   ✓   |
+| Release command ratelimit |  ✓   |   ✓   |
+
+### Vote Locked
+
+| Command |
+| ------- |
+| Lyrics  |
+| Volume  |
+| Volume  |

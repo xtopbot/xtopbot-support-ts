@@ -1,50 +1,176 @@
-import { ClientUser, Message } from "discord.js";
+import {
+  ButtonInteraction,
+  ClientUser,
+  CommandInteraction,
+  ContextMenuInteraction,
+  GuildMember,
+  Message,
+  SelectMenuInteraction,
+} from "discord.js";
 import Constants from "../utils/Constants";
-import RegexpTools from "../utils/RegexpTools";
+import Util from "../utils/Util";
 import app from "../app";
-import { DefaultCommand } from "./DefaultCommand";
-import Commands from "./Commands";
+import { DefaultCommand, Command } from "./DefaultCommand";
 import Logger from "../utils/Logger";
+import User from "../structures/User";
+import CommandRequirementsHandler from "./RequirementHandler";
+import FinalResponse, { ResponseCodes } from "../utils/FinalResponse";
+import Exception, { Severity } from "../utils/Exception";
+import CommandMethod from "./CommandMethod";
 export default class CommandHandler {
-  private MATCHES_PREFIXS: RegExp = new RegExp(
-    "^(${global.RegexpEscape(prefix)}|<@!?${this.client.user.id}>|${this.client.user.id}|@?${global.RegexpEscape(this.client.user.tag)})( )?",
-    "i"
-  );
-
-  public static onCommand(d: Message): void {
+  public static async onCommand(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
-    if (d.channel.type == "DM")
+    const command: Command | null = this.matchesCommand(d.content);
+    if (!(command instanceof DefaultCommand))
       return Logger.warn(
-        `[CommandHandler] was received DM message from ${d.author.tag}<${d.author.id}>;`
+        `[CommandHandler] Unable to find matches command from ${d.author.tag}<${d.author.id}>;`
       );
-    /*if (d instanceof Message) {
-      if (!d.channel.permissionsFor(d.member).has(this.userPermissions))
-        return;
-    } else if (d instanceof Interaction) {
-      if (!d.memberPermissions.has(this.userPermissions)) return;
-    }*/
+    Logger.info(`[CommandHandler] Found Command Macthes ${command.name}`);
+
+    this.executeHandler(d, command);
   }
 
-  private static matchesCommand(input: string): DefaultCommand | null {
-    input = input.trim().replace(/\s+/g, " ");
-    const commands = Commands.getCommands();
-    const matches = commands.find((command) =>
-      this.regexMatches(command).test(input)
+  private static async executeCommand(
+    d:
+      | Message
+      | CommandInteraction
+      | ButtonInteraction
+      | SelectMenuInteraction
+      | ContextMenuInteraction,
+    command: Command
+  ): Promise<FinalResponse> {
+    if (!d.inGuild())
+      return new FinalResponse(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
+        content: "This command is not allowed to be used in DM.",
+      });
+    // fetch user form our data;
+    const user: User = await app.users.fetch(
+      d instanceof Message ? d.author : d.user
     );
-    return matches ?? null;
+
+    const channel =
+      d.channel !== null ? d.channel : d.guild?.channels.cache.get(d.channelId);
+    if (!channel)
+      throw new Exception(
+        "Unable to find channel in cache.",
+        Severity.SUSPICIOUS
+      );
+    const member =
+      d.member instanceof GuildMember
+        ? d.member
+        : await d.guild?.members.fetch(user.id);
+    if (!member)
+      throw new Exception(
+        "Unable to find member in cache.",
+        Severity.SUSPICIOUS
+      );
+
+    //Check command Requirements to continue to execute command
+    const commandRequirements = new CommandRequirementsHandler(
+      command,
+      channel,
+      member,
+      user
+    );
+    const commandRequirementsCheck: FinalResponse | boolean =
+      commandRequirements.checkAll();
+    console.log(commandRequirements);
+
+    if (commandRequirementsCheck instanceof FinalResponse)
+      return commandRequirementsCheck;
+
+    if (!commandRequirementsCheck)
+      throw new Exception(
+        "Something went wrong while processing the command requirements",
+        Severity.FAULT
+      );
+    return command.execute(new CommandMethod(d, command));
   }
 
-  private static regexMatches(command: DefaultCommand): RegExp {
-    return new RegExp(
-      `^(${RegexpTools.escape(Constants.DEFAULT_PREFIX)}|<@!?${
-        (app.client.user as ClientUser).id
-      }>|${(app.client.user as ClientUser).id}|@?${RegexpTools.escape(
-        (app.client.user as ClientUser).tag
-      )})\s*${RegexpTools.escape(command.name as string)}|${command.aliases
-        .map((alias) => RegexpTools.escape(alias))
-        .join("|")}`,
+  public static async executeHandler(
+    d:
+      | Message
+      | CommandInteraction
+      | ButtonInteraction
+      | SelectMenuInteraction
+      | ContextMenuInteraction,
+    command: Command
+  ): Promise<void> {
+    try {
+      return this.response(d, command, await this.executeCommand(d, command));
+    } catch (err) {
+      console.log(err);
+      if (err instanceof Exception) {
+        // just reply to requster
+      } else {
+        // reply to requester and debugging error
+      }
+    }
+  }
+
+  private static async response(
+    d:
+      | Message
+      | CommandInteraction
+      | ButtonInteraction
+      | SelectMenuInteraction
+      | ContextMenuInteraction,
+    command: Command,
+    r: FinalResponse | null
+  ): Promise<void> {
+    if (d instanceof Message) {
+      if (!r) return;
+      d.channel.send(r.response);
+      return;
+    } else if (d instanceof CommandInteraction) {
+      if (!r) {
+        if (!(d instanceof (ButtonInteraction || SelectMenuInteraction)))
+          throw new Exception("e", Severity.FAULT);
+        return d.deferUpdate();
+      }
+      //return d.reply(r.response);
+      return d.reply({
+        content: "This just a test. (interaction)",
+        ephemeral: true,
+      });
+      // do stuff
+    }
+  }
+
+  private static matchesCommand(input: string): Command | null {
+    input = input.trim().replace(/\s+/g, " ");
+    return (
+      app.commands.values.find((command) => {
+        let res = this.regexMatches(command).test(input);
+        return res;
+      }) ?? null
+    );
+  }
+
+  private static get clientUser(): ClientUser {
+    if (!app.client.user)
+      throw new Exception(
+        `[${this.constructor.name}] (Client User) field is not object cannot handler this.`,
+        Severity.FAULT
+      );
+    return app.client.user;
+  }
+
+  public static regexMatches(command: Command): RegExp {
+    const aliases: Array<string> = command.aliases
+      .map((alias) => Util.escapeRegex(alias))
+      .filter((alias) => alias !== "");
+    const regex = new RegExp(
+      `^(${Util.escapeRegex(Constants.DEFAULT_PREFIX)}|<@!?${
+        this.clientUser.id
+      }>|${this.clientUser.id}|@?${Util.escapeRegex(
+        this.clientUser.tag
+      )})\\s*(${Util.escapeRegex(command.name as string)}${
+        !!aliases.length ? "|" + aliases.join("|") : ""
+      })`,
       "i"
     );
+    return regex;
   }
 }
 //!|<@!?664684495357607946>|664684495357607946|@?xtop support\s?

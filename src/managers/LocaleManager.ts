@@ -5,10 +5,11 @@ import CacheManager from "./CacheManager";
 import fs from "fs";
 import path from "path";
 import Logger from "../utils/Logger";
+import Constants from "../utils/Constants";
 
 export default class LocaleManager extends CacheManager {
   private readonly defaultLocale: string;
-  constructor(defaultLocale: string = "en_US") {
+  constructor(defaultLocale: string = Constants.DEFAULT_LOCALE) {
     super();
     this.defaultLocale = defaultLocale;
     this.initialize();

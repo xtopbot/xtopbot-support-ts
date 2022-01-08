@@ -1,6 +1,6 @@
 import { Client } from "discord.js";
 import * as dotenv from "dotenv";
-import CommandsManager from "./commands/CommandsManager";
+import CommandsManager from "./managers/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
 import LocaleManager from "./managers/LocaleManager";
 import UserManager from "./managers/UserManager";
@@ -27,9 +27,9 @@ export default class {
     ],
     partials: ["CHANNEL"],
   });
-  //public static commands<Commands> =
-  public static users = new UserManager();
-  public static locale = new LocaleManager();
+  public static commands: CommandsManager = new CommandsManager();
+  public static users: UserManager = new UserManager();
+  public static locale: LocaleManager = new LocaleManager();
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");

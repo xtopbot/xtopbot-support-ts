@@ -1,6 +1,7 @@
 import { PermissionString } from "discord.js";
 
 export default class Constants {
+  public static readonly DEFAULT_LOCALE: string = "en_US";
   public static readonly DEFAULT_COMMAND_DISABLEABLE_VALUE: boolean = true;
   public static readonly DEFAULT_COMMAND_DISABLED_VALUE: boolean = false;
   public static readonly REGEX_SNOWFLAKE = /^\d{17,18}$/;

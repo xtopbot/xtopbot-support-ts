@@ -1,4 +1,5 @@
 import { UserLevelPolicy } from "../../structures/User";
+import CommandMethod from "../CommandMethod";
 import { DefaultCommand } from "../DefaultCommand";
 
 export default class Eval extends DefaultCommand {
@@ -7,11 +8,13 @@ export default class Eval extends DefaultCommand {
       name: "eval",
       aliases: [],
       level: UserLevelPolicy.DEVELOPER,
-      userPermissions: [],
+      memberPermissions: [],
       botPermissions: ["SEND_MESSAGES", "EMBED_LINKS"],
       applicationCommandData: [],
     });
   }
 
-  execute() {}
+  execute(dcm: CommandMethod) {
+    return;
+  }
 }
