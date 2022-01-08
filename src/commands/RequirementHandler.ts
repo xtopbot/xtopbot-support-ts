@@ -1,4 +1,5 @@
 import {
+  GuildBasedChannel,
   GuildMember,
   NewsChannel,
   PermissionString,
@@ -8,18 +9,22 @@ import {
 import User from "../structures/User";
 import Constants from "../utils/Constants";
 import Exception, { Severity } from "../utils/Exception";
-import FinalResponse, { FinalResponseCode } from "../utils/FinalResponse";
+import FinalResponse, { ResponseCodes } from "../utils/FinalResponse";
 import Util from "../utils/Util";
-import { DefaultCommand } from "./DefaultCommand";
+import { Command } from "./DefaultCommand";
 
 export default class CommandRequirementsHandler {
-  private readonly command: DefaultCommand;
-  private readonly channel: TextChannel | NewsChannel | ThreadChannel;
+  private readonly command: Command;
+  private readonly channel:
+    | TextChannel
+    | NewsChannel
+    | ThreadChannel
+    | GuildBasedChannel;
   private readonly member: GuildMember;
   private readonly user: User;
   public constructor(
-    command: DefaultCommand,
-    channel: TextChannel | NewsChannel | ThreadChannel,
+    command: Command,
+    channel: TextChannel | NewsChannel | ThreadChannel | GuildBasedChannel,
 
     member: GuildMember,
     user: User
@@ -32,36 +37,27 @@ export default class CommandRequirementsHandler {
 
   public checkAll(): FinalResponse | boolean {
     if (!this.userLevelPolicy())
-      return new FinalResponse(
-        FinalResponseCode.UNAUTHORIZED_USER_LEVEL_POLICY,
-        {
-          content: "Unauthorized user level policy",
-        }
-      );
+      return new FinalResponse(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
+        content: "Unauthorized user level policy",
+      });
 
     if (!this.checkBotChannelPermissions())
-      return new FinalResponse(
-        FinalResponseCode.BOT_CHANNEL_PERMISSIONS_MISSING,
-        {
-          content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-            this.botChannelPermissionsMissing
-          ).join(", ")}\`.`,
-        }
-      );
+      return new FinalResponse(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
+        content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+          this.botChannelPermissionsMissing
+        ).join(", ")}\`.`,
+      });
 
     if (!this.checkBotGuildPermissions())
-      return new FinalResponse(
-        FinalResponseCode.BOT_GUILD_PERMISSIONS_MISSING,
-        {
-          content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-            this.botGuildPermissionsMissing
-          ).join(", ")}\`.`,
-        }
-      );
+      return new FinalResponse(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
+        content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+          this.botGuildPermissionsMissing
+        ).join(", ")}\`.`,
+      });
 
     if (!this.checkMemberChannelPermissions())
       return new FinalResponse(
-        FinalResponseCode.MEMBER_CHANNEL_PERMISSIONS_MISSING,
+        ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING,
         {
           content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
             this.memberChannelPermissionsMissing
@@ -70,14 +66,11 @@ export default class CommandRequirementsHandler {
       );
 
     if (!this.checkMemberGuildPermissions())
-      return new FinalResponse(
-        FinalResponseCode.MEMBER_GUILD_PERMISSIONS_MISSING,
-        {
-          content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-            this.memberGuildPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
-        }
-      );
+      return new FinalResponse(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
+        content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+          this.memberGuildPermissionsMissing
+        ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+      });
     return true;
   }
 
