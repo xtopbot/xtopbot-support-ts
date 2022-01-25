@@ -2,10 +2,16 @@ import { ReplyMessageOptions } from "discord.js";
 
 export default class FinalResponse {
   public code: ResponseCodes;
-  public response: ReplyMessageOptions;
-  public constructor(code: ResponseCodes, response: ReplyMessageOptions) {
+  public message: ReplyMessageOptions | null;
+  public options?: OptionsResponse;
+  public constructor(
+    code: ResponseCodes,
+    message: ReplyMessageOptions | null,
+    options?: OptionsResponse
+  ) {
     this.code = code;
-    this.response = response;
+    this.message = message;
+    this.options = options;
   }
 }
 
@@ -20,7 +26,9 @@ export enum ResponseCodes {
   COMMAND_ONLY_USABLE_ON_GUILD = 1006,
   EXCEPTION = 5000,
 }
-
+interface OptionsResponse {
+  update: boolean; // for Message Components
+}
 // export class ResponseCodes {
 //   public static readonly UNKNOWN: number = 0;
 //   public static readonly SUCCESS: number = 200;

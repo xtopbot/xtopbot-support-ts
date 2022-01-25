@@ -3,14 +3,14 @@ import { ResponseCodes } from "./FinalResponse";
 import { Util } from "discord.js";
 import Logger from "./Logger";
 export default class Exception extends FinalResponse {
-  public message: string | null;
+  public reason: string | null;
   public severity: Severity;
   public cause?: Error | null = null;
   constructor(message: string, severity: Severity, cause?: Error) {
     super(ResponseCodes.EXCEPTION, {
       content: `Error: \`${Util.escapeMarkdown(message)}\``,
     }); // this Reply message is temp while locale is finished
-    this.message = message;
+    this.reason = message;
     this.severity = severity;
     this.cause ??= cause;
     if (this.severity === Severity.FAULT)
