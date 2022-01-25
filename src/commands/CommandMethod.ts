@@ -5,8 +5,11 @@ import {
   ContextMenuInteraction,
   Message,
   SelectMenuInteraction,
+  User as DiscordUser,
 } from "discord.js";
+import User from "../structures/User";
 import ContextFormat from "../utils/ContextFormat";
+import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import { Command } from "./DefaultCommand";
 
@@ -20,7 +23,7 @@ export default class {
     | AutocompleteInteraction;
   private readonly command: Command;
   private readonly cf: ContextFormat = new ContextFormat();
-  private replied: boolean = false;
+  public readonly user: User;
   constructor(
     d:
       | Message
@@ -29,27 +32,24 @@ export default class {
       | SelectMenuInteraction
       | ContextMenuInteraction
       | AutocompleteInteraction,
-    command: Command
+    command: Command,
+    user: User
   ) {
     this.d = d;
     this.command = command;
+    this.user = user;
+  }
+
+  public get author(): DiscordUser {
+    if (this.d instanceof Message) return this.d.author;
+    return this.d.user;
   }
 
   public get context(): string {
-    if (!(this.d instanceof Message)) throw new Error("oppsss...");
-    return this.d.content.replace(
-      CommandHandler.regexMatches(this.command),
-      ""
-    );
+    if (!(this.d instanceof Message))
+      throw new Exception("oppsss...", Severity.FAULT);
+    return this.d.content
+      .replace(CommandHandler.regexMatches(this.command), "")
+      .trim();
   }
-
-  /*reply(context: any): void {
-    if (this.replied) return;
-    this.replied = true;
-    if (this.d instanceof Message) {
-        this.d.channel.send(context);
-    } else if (this.d instanceof CommandInteraction) {
-        this.d.reply(context);
-    }
-  }*/
 }

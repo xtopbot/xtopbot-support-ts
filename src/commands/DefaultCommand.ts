@@ -1,18 +1,20 @@
 import Constants from "../utils/Constants";
 import type { PermissionString, ApplicationCommandData } from "discord.js";
 import { UserLevelPolicy } from "../structures/User";
+import CommandMethod from "./CommandMethod";
+import FinalResponse from "../utils/FinalResponse";
 
 export class DefaultCommand implements DefaultCommandType {
-  data: DefaultCommandDataType; // Command data
-  level: UserLevelPolicy; // User Level Policy (who can used)
-  userPermissions: Array<PermissionString>; // Permissions requirements for a user to access the use of the command
-  botPermissions: Array<PermissionString>; // The requirements for the bot permission to perform the command
-  applicationCommandData: Array<ApplicationCommandData>;
+  private data: DefaultCommandDataType; // Command data
+  public level: UserLevelPolicy; // User Level Policy (who can used)
+  public memberPermissions: Array<PermissionString>; // Permissions requirements for a user to access the use of the command
+  public botPermissions: Array<PermissionString>; // The requirements for the bot permission to perform the command
+  public applicationCommandData: Array<ApplicationCommandData>;
 
   protected constructor(data: DefaultCommandDataType) {
     this.data = data;
     this.level = data.level;
-    this.userPermissions = data.userPermissions;
+    this.memberPermissions = data.memberPermissions;
     this.botPermissions = data.botPermissions;
     this.applicationCommandData = data.applicationCommandData;
   }
@@ -56,7 +58,7 @@ interface DefaultCommandDataType {
   readonly name?: string | null;
   readonly aliases?: Array<string>;
   readonly level: UserLevelPolicy;
-  readonly userPermissions: Array<PermissionString>;
+  readonly memberPermissions: Array<PermissionString>;
   readonly botPermissions: Array<PermissionString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
   disableable?: boolean;
@@ -69,7 +71,11 @@ interface DefaultCommandType extends DefaultCommandDataType {
   setEnable(): void;
 }
 
-enum RunType {
+export interface Command extends DefaultCommand {
+  execute(dcm: CommandMethod): Promise<FinalResponse>;
+}
+
+enum ExecuteType {
   APPLICATION_COMMAND,
   COMMAND,
 }

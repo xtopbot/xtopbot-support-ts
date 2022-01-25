@@ -31,34 +31,27 @@ export default class CommandHandler {
   }
 
   private static async executeCommand(
-    d:
-      | Message
-      | CommandInteraction
-      | ButtonInteraction
-      | SelectMenuInteraction
-      | ContextMenuInteraction,
+    dcm: CommandMethod,
     command: Command
   ): Promise<FinalResponse> {
-    if (!d.inGuild())
+    if (!dcm.d.inGuild())
       return new FinalResponse(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
         content: "This command is not allowed to be used in DM.",
       });
-    // fetch user form our data;
-    const user: User = await app.users.fetch(
-      d instanceof Message ? d.author : d.user
-    );
 
     const channel =
-      d.channel !== null ? d.channel : d.guild?.channels.cache.get(d.channelId);
+      dcm.d.channel !== null
+        ? dcm.d.channel
+        : dcm.d.guild?.channels.cache.get(dcm.d.channelId);
     if (!channel)
       throw new Exception(
         "Unable to find channel in cache.",
         Severity.SUSPICIOUS
       );
     const member =
-      d.member instanceof GuildMember
-        ? d.member
-        : await d.guild?.members.fetch(user.id);
+      dcm.d.member instanceof GuildMember
+        ? dcm.d.member
+        : await dcm.d.guild?.members.fetch(dcm.author.id);
     if (!member)
       throw new Exception(
         "Unable to find member in cache.",
@@ -70,7 +63,7 @@ export default class CommandHandler {
       command,
       channel,
       member,
-      user
+      dcm.user
     );
     const commandRequirementsCheck: FinalResponse | boolean =
       commandRequirements.checkAll();
@@ -84,7 +77,7 @@ export default class CommandHandler {
         "Something went wrong while processing the command requirements",
         Severity.FAULT
       );
-    return command.execute(new CommandMethod(d, command));
+    return command.execute(dcm);
   }
 
   public static async executeHandler(
@@ -96,8 +89,13 @@ export default class CommandHandler {
       | ContextMenuInteraction,
     command: Command
   ): Promise<void> {
+    // fetch user form our data;
+    const user: User = await app.users.fetch(
+      d instanceof Message ? d.author : d.user
+    );
+    const dcm: CommandMethod = new CommandMethod(d, command, user);
     try {
-      return this.response(d, command, await this.executeCommand(d, command));
+      return this.response(dcm, await this.executeCommand(dcm, command));
     } catch (err) {
       console.log(err);
       if (err instanceof Exception) {
@@ -109,32 +107,35 @@ export default class CommandHandler {
   }
 
   private static async response(
-    d:
-      | Message
-      | CommandInteraction
-      | ButtonInteraction
-      | SelectMenuInteraction
-      | ContextMenuInteraction,
-    command: Command,
-    r: FinalResponse | null
+    dcm: CommandMethod,
+    response: FinalResponse | null
   ): Promise<void> {
-    if (d instanceof Message) {
-      if (!r) return;
-      d.channel.send(r.response);
+    if (response?.message === null)
+      return Logger.info(
+        `[${this.constructor.name}] We decected no resoponse form $`
+      );
+    if (dcm.d instanceof Message) {
+      if (!response) return;
+      dcm.d.channel.send(response.message);
       return;
-    } else if (d instanceof CommandInteraction) {
-      if (!r) {
-        if (!(d instanceof (ButtonInteraction || SelectMenuInteraction)))
-          throw new Exception("e", Severity.FAULT);
-        return d.deferUpdate();
-      }
-      //return d.reply(r.response);
-      return d.reply({
-        content: "This just a test. (interaction)",
-        ephemeral: true,
-      });
-      // do stuff
-    }
+    } else if (
+      dcm.d instanceof (CommandInteraction || ContextMenuInteraction)
+    ) {
+      if (!response)
+        throw new Exception(
+          "Unable to detect response for this interaction",
+          Severity.FAULT
+        );
+
+      return dcm.d.reply(response.message);
+    } else if (dcm.d instanceof (ButtonInteraction || SelectMenuInteraction)) {
+      if (!response) return dcm.d.deferUpdate();
+
+      if (response.options?.update) return dcm.d.update(response.message);
+
+      return dcm.d.reply(response.message);
+    } else
+      throw new Exception("Unable to detect interaction type", Severity.FAULT);
   }
 
   private static matchesCommand(input: string): Command | null {
