@@ -14,7 +14,7 @@ import { DefaultCommand, Command } from "./DefaultCommand";
 import Logger from "../utils/Logger";
 import User from "../structures/User";
 import CommandRequirementsHandler from "./RequirementHandler";
-import FinalResponse, { ResponseCodes } from "../utils/FinalResponse";
+import Response, { ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod from "./CommandMethod";
 export default class CommandHandler {
@@ -33,9 +33,9 @@ export default class CommandHandler {
   private static async executeCommand(
     dcm: CommandMethod,
     command: Command
-  ): Promise<FinalResponse> {
+  ): Promise<Response> {
     if (!dcm.d.inGuild())
-      return new FinalResponse(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
+      return new Response(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
         content: "This command is not allowed to be used in DM.",
       });
 
@@ -65,11 +65,10 @@ export default class CommandHandler {
       member,
       dcm.user
     );
-    const commandRequirementsCheck: FinalResponse | boolean =
+    const commandRequirementsCheck: Response | boolean =
       commandRequirements.checkAll();
-    console.log(commandRequirements);
 
-    if (commandRequirementsCheck instanceof FinalResponse)
+    if (commandRequirementsCheck instanceof Response)
       return commandRequirementsCheck;
 
     if (!commandRequirementsCheck)
@@ -108,7 +107,7 @@ export default class CommandHandler {
 
   private static async response(
     dcm: CommandMethod,
-    response: FinalResponse | null
+    response: Response | null
   ): Promise<void> {
     if (response?.message === null)
       return Logger.info(

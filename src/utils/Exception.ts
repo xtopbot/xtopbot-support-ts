@@ -1,8 +1,7 @@
-import FinalResponse from "./FinalResponse";
-import { ResponseCodes } from "./FinalResponse";
+import Response, { ResponseCodes } from "./Response";
 import { Util } from "discord.js";
 import Logger from "./Logger";
-export default class Exception extends FinalResponse {
+export default class Exception extends Response {
   public reason: string | null;
   public severity: Severity;
   public cause?: Error | null = null;
@@ -23,4 +22,8 @@ export enum Severity {
   COMMON,
   SUSPICIOUS,
   FAULT,
+}
+
+export enum Reason {
+  COMMAND_NOT_DETECT_INTERACTION_TYPE = "This type of interaction could not be detected.",
 }

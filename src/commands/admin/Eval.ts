@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { UserLevelPolicy } from "../../structures/User";
-import Exception, { Severity } from "../../utils/Exception";
-import FinalResponse, { ResponseCodes } from "../../utils/FinalResponse";
+import Exception, { Reason, Severity } from "../../utils/Exception";
+import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod from "../CommandMethod";
 import { DefaultCommand } from "../DefaultCommand";
 import app from "../../app";
@@ -18,21 +18,17 @@ export default class Eval extends DefaultCommand {
     });
   }
 
-  public execute(dcm: CommandMethod): Promise<FinalResponse> {
-    if (dcm.d instanceof Message) return this._execute(dcm, dcm.context);
+  public execute(dcm: CommandMethod): Promise<Response> {
+    if (dcm.d instanceof Message) return this.message(dcm, dcm.context);
     throw new Exception(
-      "This type of interaction could not be detected.",
+      Reason.COMMAND_NOT_DETECT_INTERACTION_TYPE,
       Severity.FAULT
     );
   }
-  private async _execute(
-    dcm: CommandMethod,
-    input: string
-  ): Promise<FinalResponse> {
+  private async message(dcm: CommandMethod, input: string): Promise<Response> {
     if (dcm.author.id !== "247519134080958464")
       throw new Exception("This error should not occur!", Severity.FAULT); // to be safe :)
     const d = this.checkFlags(input.replace(/token/gi, ""));
-    console.log(d);
     try {
       const vm = new VM({
         timeout: 100,
@@ -42,7 +38,7 @@ export default class Eval extends DefaultCommand {
         },
       });
       var res: string = JSON.stringify(vm.run(d.input), null, 2);
-      return new FinalResponse(
+      return new Response(
         ResponseCodes.SUCCESS,
         !d.flags.includes(EvalFlags.OUTPUT)
           ? {
@@ -51,7 +47,7 @@ export default class Eval extends DefaultCommand {
           : null
       );
     } catch (error) {
-      return new FinalResponse(ResponseCodes.SUCCESS, {
+      return new Response(ResponseCodes.SUCCESS, {
         content: `Failed to compile script: \`\`\`${
           (error as Error).message
         }\`\`\``,

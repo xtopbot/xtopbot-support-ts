@@ -1,6 +1,6 @@
 import { ReplyMessageOptions } from "discord.js";
 
-export default class FinalResponse {
+export default class Response {
   public code: ResponseCodes;
   public message: ReplyMessageOptions | null;
   public options?: OptionsResponse;
