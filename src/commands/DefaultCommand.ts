@@ -2,7 +2,7 @@ import Constants from "../utils/Constants";
 import type { PermissionString, ApplicationCommandData } from "discord.js";
 import { UserLevelPolicy } from "../structures/User";
 import CommandMethod from "./CommandMethod";
-import FinalResponse from "../utils/FinalResponse";
+import FinalResponse from "../utils/Response";
 
 export class DefaultCommand implements DefaultCommandType {
   private data: DefaultCommandDataType; // Command data

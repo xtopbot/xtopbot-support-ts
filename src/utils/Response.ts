@@ -29,14 +29,3 @@ export enum ResponseCodes {
 interface OptionsResponse {
   update: boolean; // for Message Components
 }
-// export class ResponseCodes {
-//   public static readonly UNKNOWN: number = 0;
-//   public static readonly SUCCESS: number = 200;
-//   public static readonly UNAUTHORIZED_USER_LEVEL_POLICY: number = 1001;
-//   public static readonly BOT_CHANNEL_PERMISSIONS_MISSING: number = 1002;
-//   public static readonly MEMBER_CHANNEL_PERMISSIONS_MISSING: number = 1003;
-//   public static readonly BOT_GUILD_PERMISSIONS_MISSING: number = 1004;
-//   public static readonly MEMBER_GUILD_PERMISSIONS_MISSING: number = 1005;
-//   public static readonly COMMAND_ONLY_USABLE_ON_GUILD: number = 1006;
-//   public static readonly EXCEPTION: number = 5000;
-// }

@@ -9,7 +9,7 @@ import {
 import User from "../structures/User";
 import Constants from "../utils/Constants";
 import Exception, { Severity } from "../utils/Exception";
-import FinalResponse, { ResponseCodes } from "../utils/FinalResponse";
+import Response, { ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
 import { Command } from "./DefaultCommand";
 
@@ -35,38 +35,35 @@ export default class CommandRequirementsHandler {
     this.user = user;
   }
 
-  public checkAll(): FinalResponse | boolean {
+  public checkAll(): Response | boolean {
     if (!this.userLevelPolicy())
-      return new FinalResponse(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
+      return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
         content: "Unauthorized user level policy",
       });
 
     if (!this.checkBotChannelPermissions())
-      return new FinalResponse(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
+      return new Response(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
         content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
           this.botChannelPermissionsMissing
         ).join(", ")}\`.`,
       });
 
     if (!this.checkBotGuildPermissions())
-      return new FinalResponse(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
+      return new Response(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
         content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
           this.botGuildPermissionsMissing
         ).join(", ")}\`.`,
       });
 
     if (!this.checkMemberChannelPermissions())
-      return new FinalResponse(
-        ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING,
-        {
-          content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-            this.memberChannelPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
-        }
-      );
+      return new Response(ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING, {
+        content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+          this.memberChannelPermissionsMissing
+        ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+      });
 
     if (!this.checkMemberGuildPermissions())
-      return new FinalResponse(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
+      return new Response(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
         content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
           this.memberGuildPermissionsMissing
         ).join(", ")}\` **(requires only one of the permissions listed)**.`,
