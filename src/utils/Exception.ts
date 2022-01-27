@@ -8,6 +8,7 @@ export default class Exception extends Response {
   constructor(message: string, severity: Severity, cause?: Error) {
     super(ResponseCodes.EXCEPTION, {
       content: `Error: \`${Util.escapeMarkdown(message)}\``,
+      ephemeral: true,
     }); // this Reply message is temp while locale is finished
     this.reason = message;
     this.severity = severity;

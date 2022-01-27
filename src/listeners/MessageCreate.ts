@@ -6,7 +6,7 @@ export default class MessageCreate {
   public static async onMessageCreate(message: Message): Promise<void> {
     if (message.author.bot) return;
     try {
-      await CommandHandler.processMessage(message);
+      await CommandHandler.process(message);
     } catch (err) {
       Logger.error(
         `[App](Event: ${this.constructor.name}) Error while execute: ${

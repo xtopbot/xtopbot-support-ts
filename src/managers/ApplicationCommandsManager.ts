@@ -43,17 +43,27 @@ export default class ApplicationCommandsManager extends CommandsManager {
   ): Command | null {
     return (
       this.values.find((command) =>
-        command.applicationCommandData.find(
-          (acd) =>
+        command.applicationCommandData.find((acd) => {
+          console.log(
             (
               acd.name +
-                " " +
-                (this.getSubCommandGroup(acd) ?? "" ?? " ") +
-                this.getSubCommand(acd) ?? ""
+              " " +
+              (this.getSubCommandGroup(acd) ?? "" ?? " ") +
+              (this.getSubCommand(acd) ?? "")
+            ).trim()
+          );
+          console.log(acd.type == type);
+          return (
+            (
+              acd.name +
+              " " +
+              (this.getSubCommandGroup(acd) ?? "" ?? " ") +
+              (this.getSubCommand(acd) ?? "")
             )
               .trim()
-              .toLowerCase() === name.toLowerCase() && acd.type === type
-        )
+              .toLowerCase() === name.toLowerCase() && acd.type == type
+          );
+        })
       ) ?? null
     );
   }

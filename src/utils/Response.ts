@@ -1,4 +1,4 @@
-import { ReplyMessageOptions } from "discord.js";
+import { InteractionReplyOptions, ReplyMessageOptions } from "discord.js";
 
 export default class Response {
   public code: ResponseCodes;
@@ -6,7 +6,7 @@ export default class Response {
   public options?: OptionsResponse;
   public constructor(
     code: ResponseCodes,
-    message: ReplyMessageOptions | null,
+    message: ReplyMessageOptions | InteractionReplyOptions | null,
     options?: OptionsResponse
   ) {
     this.code = code;

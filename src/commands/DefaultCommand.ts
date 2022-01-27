@@ -1,5 +1,5 @@
 import Constants from "../utils/Constants";
-import type { PermissionString, ApplicationCommandData } from "discord.js";
+import { PermissionString, ApplicationCommandData } from "discord.js";
 import { UserLevelPolicy } from "../structures/User";
 import CommandMethod from "./CommandMethod";
 import FinalResponse from "../utils/Response";
@@ -61,6 +61,7 @@ interface DefaultCommandDataType {
   readonly memberPermissions: Array<PermissionString>;
   readonly botPermissions: Array<PermissionString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
+  readonly messageComponent?: () => boolean;
   disableable?: boolean;
   disabled?: boolean;
 }

@@ -1,4 +1,5 @@
 import {
+  AutocompleteInteraction,
   ButtonInteraction,
   ClientUser,
   CommandInteraction,
@@ -18,7 +19,7 @@ import Response, { ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod from "./CommandMethod";
 export default class CommandHandler {
-  public static async onCommand(d: Message): Promise<void> {
+  public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
     const command: Command | null = this.matchesCommand(d.content);
     if (!(command instanceof DefaultCommand))
@@ -30,7 +31,7 @@ export default class CommandHandler {
     this.executeHandler(d, command);
   }
 
-  private static async executeCommand(
+  protected static async executeCommand(
     dcm: CommandMethod,
     command: Command
   ): Promise<Response> {
@@ -85,7 +86,8 @@ export default class CommandHandler {
       | CommandInteraction
       | ButtonInteraction
       | SelectMenuInteraction
-      | ContextMenuInteraction,
+      | ContextMenuInteraction
+      | AutocompleteInteraction,
     command: Command
   ): Promise<void> {
     // fetch user form our data;
@@ -94,7 +96,12 @@ export default class CommandHandler {
     );
     const dcm: CommandMethod = new CommandMethod(d, command, user);
     try {
-      return this.response(dcm, await this.executeCommand(dcm, command));
+      return this.response(
+        dcm,
+        AutocompleteInteraction
+          ? await command.execute(dcm)
+          : await this.executeCommand(dcm, command)
+      );
     } catch (err) {
       console.log(err);
       if (err instanceof Exception) {

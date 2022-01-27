@@ -21,7 +21,7 @@ export default class Eval extends DefaultCommand {
   public execute(dcm: CommandMethod): Promise<Response> {
     if (dcm.d instanceof Message) return this.message(dcm, dcm.context);
     throw new Exception(
-      Reason.COMMAND_NOT_DETECT_INTERACTION_TYPE,
+      `[${this.constructor.name}] ${Reason.INTERACTION_TYPE_NOT_DETECT}`,
       Severity.FAULT
     );
   }
