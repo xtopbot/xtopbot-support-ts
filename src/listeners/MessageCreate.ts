@@ -3,9 +3,10 @@ import CommandHandler from "../commands/CommandHandler";
 import Logger from "../utils/Logger";
 
 export default class MessageCreate {
-  public static async onMessageCreate(message: Message) {
+  public static async onMessageCreate(message: Message): Promise<void> {
+    if (message.author.bot) return;
     try {
-      await CommandHandler.onCommand(message);
+      await CommandHandler.processMessage(message);
     } catch (err) {
       Logger.error(
         `[App](Event: ${this.constructor.name}) Error while execute: ${
