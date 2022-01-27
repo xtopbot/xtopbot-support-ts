@@ -1,12 +1,12 @@
 import { Client } from "discord.js";
 import * as dotenv from "dotenv";
-import CommandsManager from "./managers/CommandsManager";
 import ListenersHandler from "./listeners/ListenersHandler";
 import LocaleManager from "./managers/LocaleManager";
 import UserManager from "./managers/UserManager";
 import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
 import { version } from "../package.json";
+import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
 dotenv.config();
 
 export default class {
@@ -29,7 +29,8 @@ export default class {
     ],
     partials: ["CHANNEL"],
   });
-  public static commands: CommandsManager = new CommandsManager();
+  public static commands: ApplicationCommandsManager =
+    new ApplicationCommandsManager();
   public static users: UserManager = new UserManager();
   public static locale: LocaleManager = new LocaleManager();
   private static _initialize = false;

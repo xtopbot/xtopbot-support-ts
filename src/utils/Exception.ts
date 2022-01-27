@@ -25,5 +25,6 @@ export enum Severity {
 }
 
 export enum Reason {
-  COMMAND_NOT_DETECT_INTERACTION_TYPE = "This type of interaction could not be detected.",
+  INTERACTION_TYPE_NOT_DETECT = "This type of interaction could not be detected.",
+  UNABLE_TO_FIND_INTERACTION_COMMAND = "Unable to find interaction path.",
 }
