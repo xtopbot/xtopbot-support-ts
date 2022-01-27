@@ -6,9 +6,11 @@ import LocaleManager from "./managers/LocaleManager";
 import UserManager from "./managers/UserManager";
 import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
+import { version } from "../package.json";
 dotenv.config();
 
 export default class {
+  public static version: string = version;
   public static client: Client = new Client({
     intents: [
       "GUILDS",
