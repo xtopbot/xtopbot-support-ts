@@ -1,9 +1,13 @@
-import { InteractionReplyOptions, ReplyMessageOptions } from "discord.js";
+import {
+  ApplicationCommandOptionChoice,
+  InteractionReplyOptions,
+  ReplyMessageOptions,
+} from "discord.js";
 
 export default class Response {
   public code: ResponseCodes;
-  public message: ReplyMessageOptions | null;
-  public options?: OptionsResponse;
+  public message: ReplyMessageOptions | InteractionReplyOptions | null;
+  public options?: OptionsResponse | null = null;
   public constructor(
     code: ResponseCodes,
     message: ReplyMessageOptions | InteractionReplyOptions | null,
@@ -11,7 +15,7 @@ export default class Response {
   ) {
     this.code = code;
     this.message = message;
-    this.options = options;
+    this.options ??= options ?? null;
   }
 }
 
@@ -24,8 +28,10 @@ export enum ResponseCodes {
   BOT_GUILD_PERMISSIONS_MISSING = 1004,
   MEMBER_GUILD_PERMISSIONS_MISSING = 1005,
   COMMAND_ONLY_USABLE_ON_GUILD = 1006,
+  INVALID_CHANNEL_TYPE = 2001,
   EXCEPTION = 5000,
 }
 interface OptionsResponse {
-  update: boolean; // for Message Components
+  update?: boolean; // for Message Components
+  response?: ApplicationCommandOptionChoice[]; // For Autocomplete Interaction
 }

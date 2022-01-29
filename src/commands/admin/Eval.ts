@@ -2,7 +2,7 @@ import { Message } from "discord.js";
 import { UserLevelPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
-import CommandMethod from "../CommandMethod";
+import CommandMethod, { MessageCommandMethod } from "../CommandMethod";
 import { DefaultCommand } from "../DefaultCommand";
 import app from "../../app";
 import { VM } from "vm2";
@@ -19,16 +19,20 @@ export default class Eval extends DefaultCommand {
   }
 
   public execute(dcm: CommandMethod): Promise<Response> {
-    if (dcm.d instanceof Message) return this.message(dcm, dcm.context);
+    if (dcm.d instanceof Message)
+      return this.message(dcm as MessageCommandMethod, dcm.context);
     throw new Exception(
       `[${this.constructor.name}] ${Reason.INTERACTION_TYPE_NOT_DETECT}`,
       Severity.FAULT
     );
   }
-  private async message(dcm: CommandMethod, input: string): Promise<Response> {
+  private async message(
+    dcm: MessageCommandMethod,
+    input: string
+  ): Promise<Response> {
     if (dcm.author.id !== "247519134080958464")
       throw new Exception("This error should not occur!", Severity.FAULT); // to be safe :)
-    const d = this.checkFlags(input.replace(/token/gi, ""));
+    const rd = this.checkFlags(input.replace(/token/gi, ""));
     try {
       const vm = new VM({
         timeout: 100,
@@ -37,10 +41,10 @@ export default class Eval extends DefaultCommand {
           dcm: dcm,
         },
       });
-      var res: string = JSON.stringify(vm.run(d.input), null, 2);
+      var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
       return new Response(
         ResponseCodes.SUCCESS,
-        !d.flags.includes(EvalFlags.OUTPUT)
+        !rd.flags.includes(EvalFlags.OUTPUT)
           ? {
               content: `output: \`\`\`${res}\`\`\``,
             }

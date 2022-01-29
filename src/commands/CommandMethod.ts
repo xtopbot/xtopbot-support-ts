@@ -13,7 +13,7 @@ import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import { Command } from "./DefaultCommand";
 
-export default class {
+export default class CommandMethod {
   public readonly d:
     | Message
     | CommandInteraction
@@ -21,7 +21,7 @@ export default class {
     | SelectMenuInteraction
     | ContextMenuInteraction
     | AutocompleteInteraction;
-  private readonly command: Command;
+  public readonly command: Command;
   private readonly cf: ContextFormat = new ContextFormat();
   public readonly user: User;
   constructor(
@@ -52,4 +52,23 @@ export default class {
       .replace(CommandHandler.regexMatches(this.command), "")
       .trim();
   }
+}
+
+export interface MessageCommandMethod extends CommandMethod {
+  d: Message;
+}
+export interface CommandInteractionMethod extends CommandMethod {
+  d: CommandInteraction;
+}
+export interface ButtonInteractionMethod extends CommandMethod {
+  d: ButtonInteraction;
+}
+export interface SelectMenuInteractionMethod extends CommandMethod {
+  d: SelectMenuInteraction;
+}
+export interface ContextMenuInteractionMethod extends CommandMethod {
+  d: ContextMenuInteraction;
+}
+export interface AutocompleteInteractionMethod extends CommandMethod {
+  d: AutocompleteInteraction;
 }

@@ -116,32 +116,48 @@ export default class CommandHandler {
     dcm: CommandMethod,
     response: Response | null
   ): Promise<void> {
-    if (response?.message === null)
-      return Logger.info(
-        `[${this.constructor.name}] We decected no resoponse form $`
-      );
-    if (dcm.d instanceof Message) {
-      if (!response) return;
-      dcm.d.channel.send(response.message);
-      return;
-    } else if (
-      dcm.d instanceof (CommandInteraction || ContextMenuInteraction)
-    ) {
-      if (!response)
+    //Auto Complete Response
+    if (dcm.d instanceof AutocompleteInteraction) {
+      if (!response?.options?.response)
+        return Logger.info(
+          `[Response<Autocomplete>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
+        );
+      dcm.d.respond(response.options.response);
+    } else {
+      if (response?.message === null)
+        return Logger.info(
+          `[Response] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
+        );
+      if (dcm.d instanceof Message) {
+        if (!response) return;
+        dcm.d.channel.send(response.message);
+        return;
+      } else if (
+        dcm.d instanceof CommandInteraction ||
+        dcm.d instanceof ContextMenuInteraction
+      ) {
+        if (!response)
+          throw new Exception(
+            "Unable to detect response for this interaction",
+            Severity.FAULT
+          );
+
+        return dcm.d.reply(response.message);
+      } else if (
+        dcm.d instanceof ButtonInteraction ||
+        dcm.d instanceof SelectMenuInteraction
+      ) {
+        if (!response) return dcm.d.deferUpdate();
+
+        if (response.options?.update) return dcm.d.update(response.message);
+
+        return dcm.d.reply(response.message);
+      } else
         throw new Exception(
-          "Unable to detect response for this interaction",
+          "Unable to detect interaction type",
           Severity.FAULT
         );
-
-      return dcm.d.reply(response.message);
-    } else if (dcm.d instanceof (ButtonInteraction || SelectMenuInteraction)) {
-      if (!response) return dcm.d.deferUpdate();
-
-      if (response.options?.update) return dcm.d.update(response.message);
-
-      return dcm.d.reply(response.message);
-    } else
-      throw new Exception("Unable to detect interaction type", Severity.FAULT);
+    }
   }
 
   private static matchesCommand(input: string): Command | null {
