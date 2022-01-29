@@ -24,18 +24,17 @@ export default class InteractionCreate {
     } catch (err) {
       Logger.error(
         `[App](Event: ${this.constructor.name}) Error while execute: ${
-          (err as Error | Exception).message
+          (err as Exception).reason || (err as Error).message
         }`
       );
       console.error(err);
       if (
         err instanceof Exception &&
         err.message &&
-        interaction instanceof
-          (CommandInteraction ||
-            ButtonInteraction ||
-            SelectMenuInteraction ||
-            ContextMenuInteraction)
+        (interaction instanceof CommandInteraction ||
+          interaction instanceof ButtonInteraction ||
+          interaction instanceof SelectMenuInteraction ||
+          interaction instanceof ContextMenuInteraction)
       )
         interaction.reply(err.message);
     }

@@ -5,6 +5,8 @@ import {
   ContextMenuInteraction,
   AutocompleteInteraction,
   Interaction,
+  UserContextMenuInteraction,
+  MessageContextMenuInteraction,
 } from "discord.js";
 import { Command } from "./DefaultCommand";
 import app from "../app";
@@ -21,12 +23,11 @@ export default class InteractionHandler {
       );
     if (
       !(
-        d instanceof
-        (CommandInteraction ||
-          ContextMenuInteraction ||
-          ButtonInteraction ||
-          SelectMenuInteraction ||
-          AutocompleteInteraction)
+        d instanceof CommandInteraction ||
+        d instanceof ContextMenuInteraction ||
+        d instanceof ButtonInteraction ||
+        d instanceof SelectMenuInteraction ||
+        d instanceof AutocompleteInteraction
       )
     )
       throw new Exception(
@@ -38,19 +39,28 @@ export default class InteractionHandler {
 
   private static getCommand(d: Interaction): Command | null {
     if (
-      d instanceof
-      (CommandInteraction || ContextMenuInteraction || AutocompleteInteraction)
+      d instanceof CommandInteraction ||
+      d instanceof ContextMenuInteraction ||
+      d instanceof AutocompleteInteraction
     ) {
       return app.commands.getApplicationCommand(
-        (
-          d.commandName +
-          " " +
-          (d.options.getSubcommandGroup(false) ?? "" ?? " ") +
-          (d.options.getSubcommand(false) ?? "")
-        ).trim(),
-        ApplicationCommandTypes.CHAT_INPUT
+        d.commandName +
+          (d instanceof ContextMenuInteraction
+            ? ""
+            : " " +
+              (d.options.getSubcommandGroup(false) ?? "" ?? " ") +
+              (d.options.getSubcommand(false) ?? "")
+          ).trim(),
+        d instanceof UserContextMenuInteraction
+          ? ApplicationCommandTypes.USER
+          : d instanceof MessageContextMenuInteraction
+          ? ApplicationCommandTypes.MESSAGE
+          : ApplicationCommandTypes.CHAT_INPUT
       );
-    } else if (d instanceof (ButtonInteraction || SelectMenuInteraction)) {
+    } else if (
+      d instanceof ButtonInteraction ||
+      d instanceof SelectMenuInteraction
+    ) {
       return app.commands.getMessageComponentCommand(d.customId);
     }
     throw new Exception(Reason.INTERACTION_TYPE_NOT_DETECT, Severity.FAULT);
