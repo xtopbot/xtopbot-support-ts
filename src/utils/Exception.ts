@@ -12,7 +12,7 @@ export default class Exception extends Response {
     }); // this Reply message is temp while locale is finished
     this.reason = message;
     this.severity = severity;
-    this.cause ??= cause;
+    this.cause ??= cause ?? null;
     if (this.severity === Severity.FAULT)
       Logger.error(`[${this.severity}] ${message}`);
     else Logger.debug(`[${this.severity}] ${message}`);
