@@ -39,6 +39,7 @@ export default class CommandRequirementsHandler {
     if (!this.userLevelPolicy())
       return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
         content: "Unauthorized user level policy",
+        ephemeral: true,
       });
 
     if (!this.checkBotChannelPermissions())
@@ -46,6 +47,7 @@ export default class CommandRequirementsHandler {
         content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
           this.botChannelPermissionsMissing
         ).join(", ")}\`.`,
+        ephemeral: true,
       });
 
     if (!this.checkBotGuildPermissions())
@@ -53,6 +55,7 @@ export default class CommandRequirementsHandler {
         content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
           this.botGuildPermissionsMissing
         ).join(", ")}\`.`,
+        ephemeral: true,
       });
 
     if (!this.checkMemberChannelPermissions())
@@ -60,6 +63,7 @@ export default class CommandRequirementsHandler {
         content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
           this.memberChannelPermissionsMissing
         ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+        ephemeral: true,
       });
 
     if (!this.checkMemberGuildPermissions())
@@ -67,6 +71,7 @@ export default class CommandRequirementsHandler {
         content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
           this.memberGuildPermissionsMissing
         ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+        ephemeral: true,
       });
     return true;
   }
@@ -105,7 +110,7 @@ export default class CommandRequirementsHandler {
 
   public checkBotChannelPermissions(): boolean {
     return this.botChannelPermissions.length
-      ? this.channel.permissionsFor(this.me).has([])
+      ? this.channel.permissionsFor(this.me).has(this.botChannelPermissions)
       : true;
   }
 
