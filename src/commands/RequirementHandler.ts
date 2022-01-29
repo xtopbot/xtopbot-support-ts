@@ -72,8 +72,10 @@ export default class CommandRequirementsHandler {
   }
 
   public userLevelPolicy(): boolean {
-    if (this.command.level > this.user.levelPolicy) return false;
-    return true;
+    console.log("Command Level: ", this.command.level);
+    console.log("User Level: ", this.user.levelPolicy);
+    if (this.command.level <= this.user.levelPolicy) return true;
+    return false;
   }
 
   private get me(): GuildMember {
@@ -102,7 +104,9 @@ export default class CommandRequirementsHandler {
   }
 
   public checkBotChannelPermissions(): boolean {
-    return this.channel.permissionsFor(this.me).has(this.botChannelPermissions);
+    return this.botChannelPermissions.length
+      ? this.channel.permissionsFor(this.me).has([])
+      : true;
   }
 
   /**
@@ -120,7 +124,9 @@ export default class CommandRequirementsHandler {
   }
 
   public checkBotGuildPermissions(): boolean {
-    return this.me.permissions.has(this.botGuildPermissions);
+    return this.botGuildPermissions.length
+      ? this.me.permissions.has(this.botGuildPermissions)
+      : true;
   }
 
   /**
@@ -140,9 +146,11 @@ export default class CommandRequirementsHandler {
   }
 
   public checkMemberChannelPermissions(): boolean {
-    return this.channel
-      .permissionsFor(this.member)
-      .any(this.memberChannelPermissions);
+    return this.memberChannelPermissions.length
+      ? this.channel
+          .permissionsFor(this.member)
+          .any(this.memberChannelPermissions)
+      : true;
   }
 
   /**
@@ -160,6 +168,8 @@ export default class CommandRequirementsHandler {
   }
 
   public checkMemberGuildPermissions(): boolean {
-    return this.member.permissions.any(this.memberGuildPermissions);
+    return this.memberGuildPermissions.length
+      ? this.member.permissions.any(this.memberGuildPermissions)
+      : true;
   }
 }

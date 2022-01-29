@@ -98,7 +98,7 @@ export default class CommandHandler {
     try {
       return this.response(
         dcm,
-        AutocompleteInteraction
+        dcm instanceof AutocompleteInteraction
           ? await command.execute(dcm)
           : await this.executeCommand(dcm, command)
       );
