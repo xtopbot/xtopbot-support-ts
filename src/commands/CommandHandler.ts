@@ -163,10 +163,11 @@ export default class CommandHandler {
   private static matchesCommand(input: string): Command | null {
     input = input.trim().replace(/\s+/g, " ");
     return (
-      app.commands.values.find((command) => {
-        let res = this.regexMatches(command).test(input);
-        return res;
-      }) ?? null
+      app.commands.values.find(
+        (command) =>
+          !command.applicationCommandOnly &&
+          this.regexMatches(command).test(input)
+      ) ?? null
     );
   }
 
