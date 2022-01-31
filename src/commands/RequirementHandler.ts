@@ -1,95 +1,70 @@
-import {
-  GuildBasedChannel,
-  GuildMember,
-  NewsChannel,
-  PermissionString,
-  TextChannel,
-  ThreadChannel,
-} from "discord.js";
-import User from "../structures/User";
+import { GuildMember, PermissionString } from "discord.js";
 import Constants from "../utils/Constants";
-import Exception, { Severity } from "../utils/Exception";
+import Exception, { Reason, Severity } from "../utils/Exception";
 import Response, { ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
-import { Command } from "./DefaultCommand";
+import CommandMethod from "./CommandMethod";
 
 export default class CommandRequirementsHandler {
-  private readonly command: Command;
-  private readonly channel:
-    | TextChannel
-    | NewsChannel
-    | ThreadChannel
-    | GuildBasedChannel;
-  private readonly member: GuildMember;
-  private readonly user: User;
-  public constructor(
-    command: Command,
-    channel: TextChannel | NewsChannel | ThreadChannel | GuildBasedChannel,
-
-    member: GuildMember,
-    user: User
-  ) {
-    this.command = command;
-    this.channel = channel;
-    this.member = member;
-    this.user = user;
+  private readonly dcm: CommandMethod;
+  public constructor(dcm: CommandMethod) {
+    this.dcm = dcm;
   }
 
-  public checkAll(): Response | boolean {
+  public async checkAll(): Promise<boolean | Response> {
     if (!this.userLevelPolicy())
       return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
         content: "Unauthorized user level policy",
         ephemeral: true,
       });
+    if (this.dcm.d.inGuild()) {
+      if (!this.checkBotChannelPermissions())
+        return new Response(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
+          content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+            this.botChannelPermissionsMissing
+          ).join(", ")}\`.`,
+          ephemeral: true,
+        });
 
-    if (!this.checkBotChannelPermissions())
-      return new Response(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
-        content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-          this.botChannelPermissionsMissing
-        ).join(", ")}\`.`,
-        ephemeral: true,
-      });
+      if (!this.checkBotGuildPermissions())
+        return new Response(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
+          content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+            this.botGuildPermissionsMissing
+          ).join(", ")}\`.`,
+          ephemeral: true,
+        });
 
-    if (!this.checkBotGuildPermissions())
-      return new Response(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
-        content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-          this.botGuildPermissionsMissing
-        ).join(", ")}\`.`,
-        ephemeral: true,
-      });
+      if (!this.checkMemberChannelPermissions())
+        return new Response(ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING, {
+          content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+            this.memberChannelPermissionsMissing
+          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+          ephemeral: true,
+        });
 
-    if (!this.checkMemberChannelPermissions())
-      return new Response(ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING, {
-        content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-          this.memberChannelPermissionsMissing
-        ).join(", ")}\` **(requires only one of the permissions listed)**.`,
-        ephemeral: true,
-      });
-
-    if (!this.checkMemberGuildPermissions())
-      return new Response(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
-        content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-          this.memberGuildPermissionsMissing
-        ).join(", ")}\` **(requires only one of the permissions listed)**.`,
-        ephemeral: true,
-      });
+      if (!this.checkMemberGuildPermissions())
+        return new Response(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
+          content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+            this.memberGuildPermissionsMissing
+          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+          ephemeral: true,
+        });
+    }
     return true;
   }
 
   public userLevelPolicy(): boolean {
-    console.log("Command Level: ", this.command.level);
-    console.log("User Level: ", this.user.levelPolicy);
-    if (this.command.level <= this.user.levelPolicy) return true;
+    if (this.dcm.command.level <= this.dcm.user.levelPolicy) return true;
     return false;
   }
 
   private get me(): GuildMember {
-    if (!this.channel.guild.me)
+    if (!this.dcm.d.guild?.me)
       throw new Exception(
-        `[${this.constructor.name}] (me) field is not object cannot handler this.`,
+        Reason.SOMETHING_WAS_WRONG_WHILE_CHECKING_REQUIREMENTS_COMMAND,
         Severity.FAULT
       );
-    return this.channel.guild.me;
+    return this.dcm.d.guild.me;
   }
 
   /**
@@ -97,20 +72,20 @@ export default class CommandRequirementsHandler {
    */
 
   private get botChannelPermissions(): Array<PermissionString> {
-    return this.command.botPermissions.filter((permission) =>
+    return this.dcm.command.botPermissions.filter((permission) =>
       Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
   private get botChannelPermissionsMissing(): Array<PermissionString> {
-    return this.channel
+    return this.dcm.channel
       .permissionsFor(this.me)
       .missing(this.botChannelPermissions);
   }
 
   public checkBotChannelPermissions(): boolean {
     return this.botChannelPermissions.length
-      ? this.channel.permissionsFor(this.me).has(this.botChannelPermissions)
+      ? this.dcm.channel.permissionsFor(this.me).has(this.botChannelPermissions)
       : true;
   }
 
@@ -119,7 +94,7 @@ export default class CommandRequirementsHandler {
    */
 
   private get botGuildPermissions(): Array<PermissionString> {
-    return this.command.botPermissions.filter(
+    return this.dcm.command.botPermissions.filter(
       (permission) => !Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
@@ -139,21 +114,21 @@ export default class CommandRequirementsHandler {
    */
 
   private get memberChannelPermissions(): Array<PermissionString> {
-    return this.command.memberPermissions.filter((permission) =>
+    return this.dcm.command.memberPermissions.filter((permission) =>
       Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
   private get memberChannelPermissionsMissing(): Array<PermissionString> {
-    return this.channel
-      .permissionsFor(this.member)
+    return this.dcm.channel
+      .permissionsFor(this.dcm.member)
       .missing(this.memberChannelPermissions);
   }
 
   public checkMemberChannelPermissions(): boolean {
     return this.memberChannelPermissions.length
-      ? this.channel
-          .permissionsFor(this.member)
+      ? this.dcm.channel
+          .permissionsFor(this.dcm.member)
           .any(this.memberChannelPermissions)
       : true;
   }
@@ -163,18 +138,18 @@ export default class CommandRequirementsHandler {
    */
 
   private get memberGuildPermissions(): Array<PermissionString> {
-    return this.command.memberPermissions.filter(
+    return this.dcm.command.memberPermissions.filter(
       (permission) => !Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
   private get memberGuildPermissionsMissing(): Array<PermissionString> {
-    return this.member.permissions.missing(this.memberGuildPermissions);
+    return this.dcm.member.permissions.missing(this.memberGuildPermissions);
   }
 
   public checkMemberGuildPermissions(): boolean {
     return this.memberGuildPermissions.length
-      ? this.member.permissions.any(this.memberGuildPermissions)
+      ? this.dcm.member.permissions.any(this.memberGuildPermissions)
       : true;
   }
 }
