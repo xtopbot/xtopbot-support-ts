@@ -33,51 +33,29 @@ export default class CommandHandler {
 
   protected static async executeCommand(
     dcm: CommandMethod,
-    command: Command
+    checkRequirements: boolean = true
   ): Promise<Response> {
     if (!dcm.d.inGuild())
       return new Response(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
         content: "This command is not allowed to be used in DM.",
       });
+    await dcm.fetch();
+    if (checkRequirements) {
+      //Check command Requirements to continue to execute command
+      const commandRequirements = new CommandRequirementsHandler(dcm);
+      const commandRequirementsCheck: Response | boolean =
+        await commandRequirements.checkAll();
 
-    const channel =
-      dcm.d.channel !== null
-        ? dcm.d.channel
-        : dcm.d.guild?.channels.cache.get(dcm.d.channelId);
-    if (!channel)
-      throw new Exception(
-        "Unable to find channel in cache.",
-        Severity.SUSPICIOUS
-      );
-    const member =
-      dcm.d.member instanceof GuildMember
-        ? dcm.d.member
-        : await dcm.d.guild?.members.fetch(dcm.author.id);
-    if (!member)
-      throw new Exception(
-        "Unable to find member in cache.",
-        Severity.SUSPICIOUS
-      );
+      if (commandRequirementsCheck instanceof Response)
+        return commandRequirementsCheck;
 
-    //Check command Requirements to continue to execute command
-    const commandRequirements = new CommandRequirementsHandler(
-      command,
-      channel,
-      member,
-      dcm.user
-    );
-    const commandRequirementsCheck: Response | boolean =
-      commandRequirements.checkAll();
-
-    if (commandRequirementsCheck instanceof Response)
-      return commandRequirementsCheck;
-
-    if (!commandRequirementsCheck)
-      throw new Exception(
-        "Something went wrong while processing the command requirements",
-        Severity.FAULT
-      );
-    return command.execute(dcm);
+      if (!commandRequirementsCheck)
+        throw new Exception(
+          "Something went wrong while processing the command requirements",
+          Severity.FAULT
+        );
+    }
+    return dcm.command.execute(dcm);
   }
 
   public static async executeHandler(
@@ -90,17 +68,14 @@ export default class CommandHandler {
       | AutocompleteInteraction,
     command: Command
   ): Promise<void> {
-    // fetch user form our data;
-    const user: User = await app.users.fetch(
-      d instanceof Message ? d.author : d.user
-    );
-    const dcm: CommandMethod = new CommandMethod(d, command, user);
+    const dcm: CommandMethod = new CommandMethod(d, command);
     try {
       return this.response(
         dcm,
-        dcm instanceof AutocompleteInteraction
-          ? await command.execute(dcm)
-          : await this.executeCommand(dcm, command)
+        await this.executeCommand(
+          dcm,
+          !(dcm instanceof AutocompleteInteraction)
+        )
       );
     } catch (err) {
       console.log(err);

@@ -3,10 +3,17 @@ import {
   ButtonInteraction,
   CommandInteraction,
   ContextMenuInteraction,
+  DMChannel,
+  GuildMember,
   Message,
+  NewsChannel,
+  NonThreadGuildBasedChannel,
   SelectMenuInteraction,
+  TextChannel,
+  ThreadChannel,
   User as DiscordUser,
 } from "discord.js";
+import app from "../app";
 import User from "../structures/User";
 import ContextFormat from "../utils/ContextFormat";
 import Exception, { Severity } from "../utils/Exception";
@@ -23,7 +30,9 @@ export default class CommandMethod {
     | AutocompleteInteraction;
   public readonly command: Command;
   private readonly cf: ContextFormat = new ContextFormat();
-  public readonly user: User;
+  public _user: User | null = null;
+  private _member: GuildMember | null = null;
+  private _channel: TextChannel | NewsChannel | ThreadChannel | null = null;
   constructor(
     d:
       | Message
@@ -32,12 +41,65 @@ export default class CommandMethod {
       | SelectMenuInteraction
       | ContextMenuInteraction
       | AutocompleteInteraction,
-    command: Command,
-    user: User
+    command: Command
   ) {
     this.d = d;
     this.command = command;
-    this.user = user;
+    this._member = this.d.member instanceof GuildMember ? this.d.member : null;
+    this._channel =
+      this.d.channel instanceof TextChannel ||
+      this.d.channel instanceof NewsChannel ||
+      this.d.channel instanceof ThreadChannel
+        ? this.d.channel
+        : null;
+  }
+
+  public async fetch(): Promise<void> {
+    if (!this._channel) {
+      const channel = await this.d.guild?.channels.fetch(this.d.channelId);
+      if (
+        !channel ||
+        !(
+          channel instanceof TextChannel ||
+          channel instanceof NewsChannel ||
+          channel instanceof ThreadChannel
+        )
+      )
+        throw new Exception(
+          "Unable to find channel on guild or channel type is not acceptable.",
+          Severity.FAULT
+        );
+      this._channel = channel;
+    }
+    if (!this._member) {
+      const member = await this.d.guild?.members.fetch(this.d.channelId);
+      if (!member)
+        throw new Exception(
+          "Unable to find member on guild.",
+          Severity.SUSPICIOUS
+        );
+      this._member = member;
+    }
+    if (!this._user)
+      // fetch user form our data;
+      this._user = await app.users.fetch(this.author);
+  }
+
+  get user(): User {
+    if (!this._user) throw new Exception("User not fetched.", Severity.FAULT);
+    return this._user;
+  }
+
+  public get channel(): TextChannel | NewsChannel | ThreadChannel {
+    if (!this._channel)
+      throw new Exception("Channel not fetched.", Severity.FAULT);
+    return this._channel;
+  }
+
+  public get member(): GuildMember {
+    if (!this._member)
+      throw new Exception("Member not fetched.", Severity.FAULT);
+    return this._member;
   }
 
   public get author(): DiscordUser {
