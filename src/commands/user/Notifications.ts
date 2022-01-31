@@ -57,11 +57,11 @@ export default class Notifications extends DefaultCommand {
       !notificationRoles.status
     )
       return new Response(ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES, {
-        content: "Uanble to find notification roles in this server.",
+        content: "Uanble to find notification roles in this server.", // related to locale system
         ephemeral: true,
       });
     return new Response(ResponseCodes.SUCCESS, {
-      content: `select notifications`,
+      content: `select notifications`, // related to locale system
       ephemeral: true,
       components: [
         {
@@ -75,28 +75,28 @@ export default class Notifications extends DefaultCommand {
                 Number(!!notificationRoles.updates) +
                 Number(!!notificationRoles.status),
               minValues: 0,
-              placeholder: "Select your own notifications",
+              placeholder: "Select your own notifications", // related to locale system
               options: [
                 notificationRoles.news
                   ? {
-                      label: "NEWS",
-                      description: "All the important news regarding the bot!",
+                      label: "NEWS", // related to locale system
+                      description: "All the important news regarding the bot!", // related to locale system
                       value: DefaultNotificationRoles.NEWS,
                     }
                   : null,
                 notificationRoles.updates
                   ? {
-                      label: "UPDATES",
+                      label: "UPDATES", // related to locale system
                       description:
-                        "Be the first to know about new commands and new changes in the bot!",
+                        "Be the first to know about new commands and new changes in the bot!", // related to locale system
                       value: DefaultNotificationRoles.UPDATES,
                     }
                   : null,
                 notificationRoles.status
                   ? {
-                      label: "STATUS",
+                      label: "STATUS", // related to locale system
                       description:
-                        "Status updates about xToP. Issues, downtime and maintenances.",
+                        "Status updates about xToP. Issues, downtime and maintenances.", // related to locale system
                       value: DefaultNotificationRoles.STATUS,
                     }
                   : null,
@@ -130,7 +130,7 @@ export default class Notifications extends DefaultCommand {
       !notificationRoles.status
     )
       return new Response(ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES, {
-        content: "Uanble to find notification roles in this server.",
+        content: "Uanble to find notification roles in this server.", // related to locale system
         ephemeral: true,
       });
     if (notificationRoles.news) {

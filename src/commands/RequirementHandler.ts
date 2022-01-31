@@ -14,7 +14,7 @@ export default class CommandRequirementsHandler {
   public async checkAll(): Promise<boolean | Response> {
     if (!this.userLevelPolicy())
       return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
-        content: "Unauthorized user level policy",
+        content: "Unauthorized user level policy", // related to locale system
         ephemeral: true,
       });
     if (this.dcm.d.inGuild()) {
@@ -22,7 +22,7 @@ export default class CommandRequirementsHandler {
         return new Response(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
           content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
             this.botChannelPermissionsMissing
-          ).join(", ")}\`.`,
+          ).join(", ")}\`.`, // related to locale system
           ephemeral: true,
         });
 
@@ -30,7 +30,7 @@ export default class CommandRequirementsHandler {
         return new Response(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
           content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
             this.botGuildPermissionsMissing
-          ).join(", ")}\`.`,
+          ).join(", ")}\`.`, // related to locale system
           ephemeral: true,
         });
 
@@ -38,7 +38,7 @@ export default class CommandRequirementsHandler {
         return new Response(ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING, {
           content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
             this.memberChannelPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+          ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
           ephemeral: true,
         });
 
@@ -46,7 +46,7 @@ export default class CommandRequirementsHandler {
         return new Response(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
           content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
             this.memberGuildPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`,
+          ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
           ephemeral: true,
         });
     }

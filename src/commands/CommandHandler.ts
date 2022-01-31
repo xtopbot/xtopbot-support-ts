@@ -37,7 +37,7 @@ export default class CommandHandler {
   ): Promise<Response> {
     if (!dcm.d.inGuild())
       return new Response(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
-        content: "This command is not allowed to be used in DM.",
+        content: "This command is not allowed to be used in DM.", // related to locale system
       });
     await dcm.fetch();
     if (checkRequirements) {
