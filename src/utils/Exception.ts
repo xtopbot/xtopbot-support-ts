@@ -28,4 +28,5 @@ export enum Severity {
 export enum Reason {
   INTERACTION_TYPE_NOT_DETECT = "This type of interaction could not be detected.",
   UNABLE_TO_FIND_INTERACTION_COMMAND = "Unable to find interaction path.",
+  SOMETHING_WAS_WRONG_WHILE_CHECKING_REQUIREMENTS_COMMAND = "Something was wrong while checking requirements command.",
 }
