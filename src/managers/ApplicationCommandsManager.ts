@@ -1,4 +1,8 @@
-import { ApplicationCommandData } from "discord.js";
+import {
+  ApplicationCommandData,
+  MessageComponent,
+  MessageComponentInteraction,
+} from "discord.js";
 import { ApplicationCommandTypes } from "discord.js/typings/enums";
 import app from "../app";
 import { Command } from "../commands/DefaultCommand";
@@ -58,8 +62,10 @@ export default class ApplicationCommandsManager extends CommandsManager {
     );
   }
 
-  public getMessageComponentCommand(customId: string): Command | null {
-    return null;
+  public getMessageComponentCommand(
+    d: MessageComponentInteraction
+  ): Command | null {
+    return this.values.find((command) => command.messageComponent(d)) ?? null;
   }
 
   public deploy(): any {

@@ -1,5 +1,9 @@
 import Constants from "../utils/Constants";
-import { PermissionString, ApplicationCommandData } from "discord.js";
+import {
+  PermissionString,
+  ApplicationCommandData,
+  MessageComponentInteraction,
+} from "discord.js";
 import { UserLevelPolicy } from "../structures/User";
 import CommandMethod from "./CommandMethod";
 import FinalResponse from "../utils/Response";
@@ -10,6 +14,7 @@ export class DefaultCommand implements DefaultCommandType {
   public memberPermissions: Array<PermissionString>; // Permissions requirements for a user to access the use of the command
   public botPermissions: Array<PermissionString>; // The requirements for the bot permission to perform the command
   public applicationCommandData: Array<ApplicationCommandData>;
+  public messageComponent: (d: MessageComponentInteraction) => boolean;
 
   protected constructor(data: DefaultCommandDataType) {
     this.data = data;
@@ -17,6 +22,8 @@ export class DefaultCommand implements DefaultCommandType {
     this.memberPermissions = data.memberPermissions;
     this.botPermissions = data.botPermissions;
     this.applicationCommandData = data.applicationCommandData;
+    this.messageComponent =
+      data.messageComponent?.bind(this) ?? this._messageComponent.bind(this);
   }
 
   public get name(): string | null {
@@ -43,6 +50,10 @@ export class DefaultCommand implements DefaultCommandType {
       : Constants.DEFAULT_COMMAND_DISABLED_VALUE;
   }
 
+  private _messageComponent(): boolean {
+    return false;
+  }
+
   public setDisable(): void {
     if (!this.disableable) throw new Error("This command cannot be disabled");
     this.data.disabled = true;
@@ -61,13 +72,14 @@ interface DefaultCommandDataType {
   readonly memberPermissions: Array<PermissionString>;
   readonly botPermissions: Array<PermissionString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
-  readonly messageComponent?: () => boolean;
+  messageComponent?: (d: MessageComponentInteraction) => boolean;
   disableable?: boolean;
   disabled?: boolean;
 }
 
 interface DefaultCommandType extends DefaultCommandDataType {
   readonly applicationCommandOnly: boolean;
+  messageComponent: (d: MessageComponentInteraction) => boolean;
   setDisable(): void;
   setEnable(): void;
 }
