@@ -85,6 +85,15 @@ export default class CommandMethod {
       this._user = await app.users.fetch(this.author);
   }
 
+  public get me(): GuildMember {
+    if (!this.d.guild?.me)
+      throw new Exception(
+        "Unable to find data about bot on guild",
+        Severity.FAULT
+      );
+    return this.d.guild.me;
+  }
+
   get user(): User {
     if (!this._user) throw new Exception("User not fetched.", Severity.FAULT);
     return this._user;

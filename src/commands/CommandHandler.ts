@@ -116,8 +116,9 @@ export default class CommandHandler {
             "Unable to detect response for this interaction",
             Severity.FAULT
           );
-
-        return dcm.d.reply(response.message);
+        if (!dcm.d.deferred) return dcm.d.reply(response.message);
+        dcm.d.editReply(response.message);
+        return;
       } else if (
         dcm.d instanceof ButtonInteraction ||
         dcm.d instanceof SelectMenuInteraction
@@ -126,7 +127,9 @@ export default class CommandHandler {
 
         if (response.options?.update) return dcm.d.update(response.message);
 
-        return dcm.d.reply(response.message);
+        if (!dcm.d.deferred) return dcm.d.reply(response.message);
+        dcm.d.editReply(response.message);
+        return;
       } else
         throw new Exception(
           "Unable to detect interaction type",

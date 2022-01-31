@@ -58,15 +58,6 @@ export default class CommandRequirementsHandler {
     return false;
   }
 
-  private get me(): GuildMember {
-    if (!this.dcm.d.guild?.me)
-      throw new Exception(
-        Reason.SOMETHING_WAS_WRONG_WHILE_CHECKING_REQUIREMENTS_COMMAND,
-        Severity.FAULT
-      );
-    return this.dcm.d.guild.me;
-  }
-
   /**
    * Bot Channel Permissions (Requires All permissions)
    */
@@ -79,13 +70,15 @@ export default class CommandRequirementsHandler {
 
   private get botChannelPermissionsMissing(): Array<PermissionString> {
     return this.dcm.channel
-      .permissionsFor(this.me)
+      .permissionsFor(this.dcm.me)
       .missing(this.botChannelPermissions);
   }
 
   public checkBotChannelPermissions(): boolean {
     return this.botChannelPermissions.length
-      ? this.dcm.channel.permissionsFor(this.me).has(this.botChannelPermissions)
+      ? this.dcm.channel
+          .permissionsFor(this.dcm.me)
+          .has(this.botChannelPermissions)
       : true;
   }
 
@@ -100,12 +93,12 @@ export default class CommandRequirementsHandler {
   }
 
   private get botGuildPermissionsMissing(): Array<PermissionString> {
-    return this.me.permissions.missing(this.botGuildPermissions);
+    return this.dcm.me.permissions.missing(this.botGuildPermissions);
   }
 
   public checkBotGuildPermissions(): boolean {
     return this.botGuildPermissions.length
-      ? this.me.permissions.has(this.botGuildPermissions)
+      ? this.dcm.me.permissions.has(this.botGuildPermissions)
       : true;
   }
 
