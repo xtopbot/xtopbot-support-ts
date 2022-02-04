@@ -4,8 +4,8 @@ import Logger from "./Logger";
 export default class Exception extends Response {
   public reason: string | null;
   public severity: Severity;
-  public cause?: Error | null = null;
-  constructor(message: string, severity: Severity, cause?: Error) {
+  public cause?: Error | unknown | null = null;
+  constructor(message: string, severity: Severity, cause?: Error | unknown) {
     super(ResponseCodes.EXCEPTION, {
       content: `Error: \`${Util.escapeMarkdown(message)}\``, // related to locale system
       ephemeral: true,
