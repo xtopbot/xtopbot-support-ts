@@ -2,7 +2,7 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   CommandInteraction,
-  ContextMenuInteraction,
+  ContextMenuCommandInteraction,
   DMChannel,
   GuildMember,
   Message,
@@ -26,7 +26,7 @@ export default class CommandMethod {
     | CommandInteraction
     | ButtonInteraction
     | SelectMenuInteraction
-    | ContextMenuInteraction
+    | ContextMenuCommandInteraction
     | AutocompleteInteraction;
   public readonly command: Command;
   private readonly cf: ContextFormat = new ContextFormat();
@@ -39,7 +39,7 @@ export default class CommandMethod {
       | CommandInteraction
       | ButtonInteraction
       | SelectMenuInteraction
-      | ContextMenuInteraction
+      | ContextMenuCommandInteraction
       | AutocompleteInteraction,
     command: Command
   ) {
@@ -137,8 +137,8 @@ export interface ButtonInteractionMethod extends CommandMethod {
 export interface SelectMenuInteractionMethod extends CommandMethod {
   d: SelectMenuInteraction;
 }
-export interface ContextMenuInteractionMethod extends CommandMethod {
-  d: ContextMenuInteraction;
+export interface ContextMenuCommandInteractionMethod extends CommandMethod {
+  d: ContextMenuCommandInteraction;
 }
 export interface AutocompleteInteractionMethod extends CommandMethod {
   d: AutocompleteInteraction;

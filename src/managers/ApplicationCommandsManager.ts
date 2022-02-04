@@ -2,8 +2,9 @@ import {
   ApplicationCommandData,
   MessageComponent,
   MessageComponentInteraction,
+  ApplicationCommandType,
+  ApplicationCommandOptionType,
 } from "discord.js";
-import { ApplicationCommandTypes } from "discord.js/typings/enums";
 import app from "../app";
 import { Command } from "../commands/DefaultCommand";
 import CommandsManager from "./CommandsManager";
@@ -14,7 +15,8 @@ export default class ApplicationCommandsManager extends CommandsManager {
       const options = data.options;
       for (let i = 0; i < options.length; i++) {
         let option = options[i];
-        if (option?.type == "SUB_COMMAND_GROUP") return option.name;
+        if (option?.type == ApplicationCommandOptionType.Subcommand)
+          return option.name;
       }
     }
     return null;
@@ -25,14 +27,16 @@ export default class ApplicationCommandsManager extends CommandsManager {
       const options = data.options;
       for (let i = 0; i < options.length; i++) {
         let option = options[i];
-        if (option?.type == "SUB_COMMAND") {
+        if (option.type == ApplicationCommandOptionType.Subcommand) {
           return option.name;
         } else if (
-          option?.type == "SUB_COMMAND_GROUP" &&
+          option.type == ApplicationCommandOptionType.SubcommandGroup &&
           Array.isArray(option.options)
         ) {
           for (let a = 0; a < option.options.length; a++) {
-            if (option.options[a]?.type == "SUB_COMMAND")
+            if (
+              option.options[a].type == ApplicationCommandOptionType.Subcommand
+            )
               return option.options[a].name;
           }
         }
@@ -43,7 +47,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
 
   public getApplicationCommand(
     name: string,
-    type: ApplicationCommandTypes
+    type: ApplicationCommandType
   ): Command | null {
     return (
       this.values.find((command) =>

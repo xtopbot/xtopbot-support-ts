@@ -13,7 +13,7 @@ export default class Eval extends DefaultCommand {
       aliases: [],
       level: UserLevelPolicy.DEVELOPER,
       memberPermissions: [],
-      botPermissions: ["SEND_MESSAGES", "EMBED_LINKS"],
+      botPermissions: ["SendMessages"],
       applicationCommandData: [],
     });
   }

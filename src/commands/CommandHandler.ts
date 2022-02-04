@@ -3,9 +3,12 @@ import {
   ButtonInteraction,
   ClientUser,
   CommandInteraction,
-  ContextMenuInteraction,
+  ContextMenuCommandInteraction,
   GuildMember,
+  InteractionReplyOptions,
+  InteractionUpdateOptions,
   Message,
+  MessageOptions,
   SelectMenuInteraction,
 } from "discord.js";
 import Constants from "../utils/Constants";
@@ -64,7 +67,7 @@ export default class CommandHandler {
       | CommandInteraction
       | ButtonInteraction
       | SelectMenuInteraction
-      | ContextMenuInteraction
+      | ContextMenuCommandInteraction
       | AutocompleteInteraction,
     command: Command
   ): Promise<void> {
@@ -105,19 +108,20 @@ export default class CommandHandler {
         );
       if (dcm.d instanceof Message) {
         if (!response) return;
-        dcm.d.channel.send(response.message);
+        dcm.d.channel.send(response.message as MessageOptions);
         return;
       } else if (
         dcm.d instanceof CommandInteraction ||
-        dcm.d instanceof ContextMenuInteraction
+        dcm.d instanceof ContextMenuCommandInteraction
       ) {
         if (!response)
           throw new Exception(
             "Unable to detect response for this interaction",
             Severity.FAULT
           );
-        if (!dcm.d.deferred) return dcm.d.reply(response.message);
-        dcm.d.editReply(response.message);
+        if (!dcm.d.deferred)
+          return dcm.d.reply(response.message as InteractionReplyOptions);
+        dcm.d.editReply(response.message as InteractionReplyOptions);
         return;
       } else if (
         dcm.d instanceof ButtonInteraction ||
@@ -125,10 +129,12 @@ export default class CommandHandler {
       ) {
         if (!response) return dcm.d.deferUpdate();
 
-        if (response.options?.update) return dcm.d.update(response.message);
+        if (response.options?.update)
+          return dcm.d.update(response.message as InteractionUpdateOptions);
 
-        if (!dcm.d.deferred) return dcm.d.reply(response.message);
-        dcm.d.editReply(response.message);
+        if (!dcm.d.deferred)
+          return dcm.d.reply(response.message as InteractionReplyOptions);
+        dcm.d.editReply(response.message as InteractionReplyOptions);
         return;
       } else
         throw new Exception(

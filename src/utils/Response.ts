@@ -1,16 +1,24 @@
 import {
   ApplicationCommandOptionChoice,
   InteractionReplyOptions,
-  ReplyMessageOptions,
+  MessageOptions,
 } from "discord.js";
 
 export default class Response {
   public code: ResponseCodes;
-  public message: ReplyMessageOptions | InteractionReplyOptions | null;
+  public message:
+    | MessageOptions
+    | InteractionReplyOptions
+    | InteractionUpdateOptions
+    | null;
   public options?: OptionsResponse | null = null;
   public constructor(
     code: ResponseCodes,
-    message: ReplyMessageOptions | InteractionReplyOptions | null,
+    message:
+      | MessageOptions
+      | InteractionReplyOptions
+      | InteractionUpdateOptions
+      | null,
     options?: OptionsResponse
   ) {
     this.code = code;
@@ -29,8 +37,13 @@ export enum ResponseCodes {
   MEMBER_GUILD_PERMISSIONS_MISSING = 1005,
   COMMAND_ONLY_USABLE_ON_GUILD = 1006,
   EMPTY_INPUT = 2001,
-  INVALID_CHANNEL_TYPE = 2002,
-  UNABLE_TO_FIND_NOTIFICATION_ROLES = 2003,
+  UNABLE_TO_FIND_NOTIFICATION_ROLES = 2002,
+  INVALID_CHANNEL_TYPE = 2003,
+  UNABLE_TO_FIND_WEBHOOKS = 2004,
+  UNABLE_TO_FIND_WEBHOOK = 2005,
+  WEBHOOK_OWNER_NOT_ME = 2006,
+  INVALID_JSON_DATA = 2007,
+  DISCORD_API_ERROR = 2008,
   EXCEPTION = 5000,
 }
 interface OptionsResponse {
