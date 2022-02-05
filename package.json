@@ -12,6 +12,7 @@
     "build": "tsc -p ."
   },
   "dependencies": {
+    "@sapphire/snowflake": "^3.1.0",
     "@types/mysql": "^2.15.19",
     "dayjs": "^1.10.7",
     "discord.js": "^14.0.0-dev.1644006540.cd5c7fa",
