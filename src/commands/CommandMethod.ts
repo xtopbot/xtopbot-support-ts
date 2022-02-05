@@ -2,6 +2,7 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   CommandInteraction,
+  ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
   DMChannel,
   GuildMember,
@@ -23,7 +24,7 @@ import { Command } from "./DefaultCommand";
 export default class CommandMethod {
   public readonly d:
     | Message
-    | CommandInteraction
+    | ChatInputCommandInteraction
     | ButtonInteraction
     | SelectMenuInteraction
     | ContextMenuCommandInteraction
@@ -36,7 +37,7 @@ export default class CommandMethod {
   constructor(
     d:
       | Message
-      | CommandInteraction
+      | ChatInputCommandInteraction
       | ButtonInteraction
       | SelectMenuInteraction
       | ContextMenuCommandInteraction
@@ -128,8 +129,8 @@ export default class CommandMethod {
 export interface MessageCommandMethod extends CommandMethod {
   d: Message;
 }
-export interface CommandInteractionMethod extends CommandMethod {
-  d: CommandInteraction;
+export interface ChatInputCommandInteractionMethod extends CommandMethod {
+  d: ChatInputCommandInteraction;
 }
 export interface ButtonInteractionMethod extends CommandMethod {
   d: ButtonInteraction;

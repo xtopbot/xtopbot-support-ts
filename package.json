@@ -14,7 +14,7 @@
   "dependencies": {
     "@types/mysql": "^2.15.19",
     "dayjs": "^1.10.7",
-    "discord.js": "^14.0.0-dev.1643889786.04502ce",
+    "discord.js": "^14.0.0-dev.1644006540.cd5c7fa",
     "dotenv": "^10.0.0",
     "mysql2": "^2.3.3",
     "pino": "^7.5.1",

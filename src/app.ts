@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import { Client, Partials } from "discord.js";
 import * as dotenv from "dotenv";
 import ListenersHandler from "./listeners/ListenersHandler";
 import LocaleManager from "./managers/LocaleManager";
@@ -13,21 +13,20 @@ export default class {
   public static version: string = version;
   public static client: Client = new Client({
     intents: [
-      "GUILDS",
-      "GUILD_MEMBERS",
-      "GUILD_BANS",
-      "GUILD_EMOJIS_AND_STICKERS",
-      "GUILD_INTEGRATIONS",
-      "GUILD_WEBHOOKS",
-      "GUILD_INVITES",
-      "GUILD_VOICE_STATES",
-      "GUILD_PRESENCES",
-      "GUILD_MESSAGES",
-      "GUILD_MESSAGE_REACTIONS",
-      "GUILD_MESSAGE_TYPING",
-      "DIRECT_MESSAGES",
+      "Guilds",
+      "GuildBans",
+      "GuildEmojisAndStickers",
+      "GuildIntegrations",
+      "GuildWebhooks",
+      "GuildInvites",
+      "GuildVoiceStates",
+      "GuildPresences",
+      "GuildMessages",
+      "GuildMessageReactions",
+      "GuildMessageTyping",
+      "DirectMessages",
     ],
-    partials: ["CHANNEL"],
+    partials: [Partials.Channel],
   });
   public static commands: ApplicationCommandsManager =
     new ApplicationCommandsManager();

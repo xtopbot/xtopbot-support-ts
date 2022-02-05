@@ -1,12 +1,17 @@
 import {
+  ActionRow,
+  ActionRowComponent,
+  createComponent,
+} from "@discordjs/builders";
+import {
   ButtonInteraction,
-  CommandInteraction,
-  MessageSelectOptionData,
+  ChatInputCommandInteraction,
   MessageComponentInteraction,
   SelectMenuInteraction,
   Role,
   ApplicationCommandType,
   SelectMenuOption,
+  ComponentType,
 } from "discord.js";
 import { UserLevelPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
@@ -35,7 +40,7 @@ export default class Notifications extends DefaultCommand {
   }
 
   public execute(dcm: CommandMethod): Promise<Response> {
-    if (dcm.d instanceof CommandInteraction)
+    if (dcm.d instanceof ChatInputCommandInteraction)
       return this.displayNotificationRoles(dcm);
     if (dcm.d instanceof ButtonInteraction)
       return this.displayNotificationRoles(dcm);
@@ -66,47 +71,52 @@ export default class Notifications extends DefaultCommand {
       ephemeral: true,
       components: [
         {
-          type: 3,
-          custom_id: "notifications",
-          max_values: 1,
-          min_values: 0,
-          placeholder: "Select your own notifications", // related to locale system
-          options: [
-            notificationRoles.news
-              ? {
-                  label: "NEWS", // related to locale system
-                  description: "All the important news regarding the bot!", // related to locale system
-                  value: DefaultNotificationRoles.NEWS,
-                  default: !!dcm.member.roles.cache.has(
-                    notificationRoles.news.id
-                  ),
-                }
-              : null,
-            notificationRoles.updates
-              ? {
-                  label: "UPDATES", // related to locale system
-                  description:
-                    "Be the first to know about new commands and new changes in the bot!", // related to locale system
-                  value: DefaultNotificationRoles.UPDATES,
-                  default: !!dcm.member.roles.cache.has(
-                    notificationRoles.updates.id
-                  ),
-                }
-              : null,
-            notificationRoles.status
-              ? {
-                  label: "STATUS", // related to locale system
-                  description:
-                    "Status updates about xToP. Issues, downtime and maintenances.", // related to locale system
-                  value: DefaultNotificationRoles.STATUS,
-                  default: !!dcm.member.roles.cache.has(
-                    notificationRoles.status.id
-                  ),
-                }
-              : null,
-          ].filter((option) => option !== null) as SelectMenuOption[],
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.SelectMenu,
+              custom_id: "notifications",
+              max_values: 1,
+              min_values: 0,
+              placeholder: "Select your own notifications", // related to locale system
+              options: [
+                notificationRoles.news
+                  ? {
+                      label: "NEWS", // related to locale system
+                      description: "All the important news regarding the bot!", // related to locale system
+                      value: DefaultNotificationRoles.NEWS,
+                      default: !!dcm.member.roles.cache.has(
+                        notificationRoles.news.id
+                      ),
+                    }
+                  : null,
+                notificationRoles.updates
+                  ? {
+                      label: "UPDATES", // related to locale system
+                      description:
+                        "Be the first to know about new commands and new changes in the bot!", // related to locale system
+                      value: DefaultNotificationRoles.UPDATES,
+                      default: !!dcm.member.roles.cache.has(
+                        notificationRoles.updates.id
+                      ),
+                    }
+                  : null,
+                notificationRoles.status
+                  ? {
+                      label: "STATUS", // related to locale system
+                      description:
+                        "Status updates about xToP. Issues, downtime and maintenances.", // related to locale system
+                      value: DefaultNotificationRoles.STATUS,
+                      default: !!dcm.member.roles.cache.has(
+                        notificationRoles.status.id
+                      ),
+                    }
+                  : null,
+              ].filter((option) => option !== null) as SelectMenuOption[],
+            },
+          ],
         },
-      ],
+      ] as ActionRow<ActionRowComponent>[],
     });
   }
 
