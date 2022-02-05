@@ -1,6 +1,6 @@
 import Constants from "../utils/Constants";
 import {
-  PermissionString,
+  PermissionsString,
   ApplicationCommandData,
   MessageComponentInteraction,
 } from "discord.js";
@@ -11,8 +11,8 @@ import FinalResponse from "../utils/Response";
 export class DefaultCommand implements DefaultCommandType {
   private data: DefaultCommandDataType; // Command data
   public level: UserLevelPolicy; // User Level Policy (who can used)
-  public memberPermissions: Array<PermissionString>; // Permissions requirements for a user to access the use of the command
-  public botPermissions: Array<PermissionString>; // The requirements for the bot permission to perform the command
+  public memberPermissions: Array<PermissionsString>; // Permissions requirements for a user to access the use of the command
+  public botPermissions: Array<PermissionsString>; // The requirements for the bot permission to perform the command
   public applicationCommandData: Array<ApplicationCommandData>;
   public messageComponent: (d: MessageComponentInteraction) => boolean;
 
@@ -69,8 +69,8 @@ interface DefaultCommandDataType {
   readonly name?: string | null;
   readonly aliases?: Array<string>;
   readonly level: UserLevelPolicy;
-  readonly memberPermissions: Array<PermissionString>;
-  readonly botPermissions: Array<PermissionString>;
+  readonly memberPermissions: Array<PermissionsString>;
+  readonly botPermissions: Array<PermissionsString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
   messageComponent?: (d: MessageComponentInteraction) => boolean;
   disableable?: boolean;

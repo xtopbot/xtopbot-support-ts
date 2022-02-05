@@ -1,14 +1,13 @@
-import { PermissionString } from "discord.js";
+import { PermissionsString } from "discord.js";
 
 export default class Util {
   public static permissionsToStringArray(
-    permissions: Array<PermissionString>
+    permissions: Array<PermissionsString>
   ): Array<string> {
     return permissions.map((permission) =>
       permission
-        .replace(/guild/gi, "server")
-        .replace("_", " ")
-        .split(" ")
+        .replace(/guild/gi, "Server")
+        .split(/(?=[A-Z])/)
         .map((_p) => _p.charAt(0).toUpperCase() + _p.toLowerCase().slice(1))
         .join(" ")
     );

@@ -1,4 +1,4 @@
-import { GuildMember, PermissionString } from "discord.js";
+import { GuildMember, PermissionsString } from "discord.js";
 import Constants from "../utils/Constants";
 import Exception, { Reason, Severity } from "../utils/Exception";
 import Response, { ResponseCodes } from "../utils/Response";
@@ -62,13 +62,13 @@ export default class CommandRequirementsHandler {
    * Bot Channel Permissions (Requires All permissions)
    */
 
-  private get botChannelPermissions(): Array<PermissionString> {
+  private get botChannelPermissions(): Array<PermissionsString> {
     return this.dcm.command.botPermissions.filter((permission) =>
       Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
-  private get botChannelPermissionsMissing(): Array<PermissionString> {
+  private get botChannelPermissionsMissing(): Array<PermissionsString> {
     return this.dcm.channel
       .permissionsFor(this.dcm.me)
       .missing(this.botChannelPermissions);
@@ -86,13 +86,13 @@ export default class CommandRequirementsHandler {
    * Bot Guild Permissions (Requires All permissions)
    */
 
-  private get botGuildPermissions(): Array<PermissionString> {
+  private get botGuildPermissions(): Array<PermissionsString> {
     return this.dcm.command.botPermissions.filter(
       (permission) => !Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
-  private get botGuildPermissionsMissing(): Array<PermissionString> {
+  private get botGuildPermissionsMissing(): Array<PermissionsString> {
     return this.dcm.me.permissions.missing(this.botGuildPermissions);
   }
 
@@ -106,13 +106,13 @@ export default class CommandRequirementsHandler {
    * Member Channel Permissions (Requires one of permissions)
    */
 
-  private get memberChannelPermissions(): Array<PermissionString> {
+  private get memberChannelPermissions(): Array<PermissionsString> {
     return this.dcm.command.memberPermissions.filter((permission) =>
       Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
-  private get memberChannelPermissionsMissing(): Array<PermissionString> {
+  private get memberChannelPermissionsMissing(): Array<PermissionsString> {
     return this.dcm.channel
       .permissionsFor(this.dcm.member)
       .missing(this.memberChannelPermissions);
@@ -130,13 +130,13 @@ export default class CommandRequirementsHandler {
    * Member Guild Permissions (Requires one of permissions)
    */
 
-  private get memberGuildPermissions(): Array<PermissionString> {
+  private get memberGuildPermissions(): Array<PermissionsString> {
     return this.dcm.command.memberPermissions.filter(
       (permission) => !Constants.CHANNEL_PERMISSIONS.includes(permission)
     );
   }
 
-  private get memberGuildPermissionsMissing(): Array<PermissionString> {
+  private get memberGuildPermissionsMissing(): Array<PermissionsString> {
     return this.dcm.member.permissions.missing(this.memberGuildPermissions);
   }
 

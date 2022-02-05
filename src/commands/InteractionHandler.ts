@@ -1,17 +1,17 @@
 import {
   ButtonInteraction,
   SelectMenuInteraction,
-  CommandInteraction,
-  ContextMenuInteraction,
+  ContextMenuCommandInteraction,
   AutocompleteInteraction,
   Interaction,
-  UserContextMenuInteraction,
-  MessageContextMenuInteraction,
+  UserContextMenuCommandInteraction,
+  MessageContextMenuCommandInteraction,
   MessageComponentInteraction,
+  ChatInputCommandInteraction,
+  ApplicationCommandType,
 } from "discord.js";
 import { Command } from "./DefaultCommand";
 import app from "../app";
-import { ApplicationCommandTypes } from "discord.js/typings/enums";
 import Exception, { Reason, Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 export default class InteractionHandler {
@@ -24,8 +24,8 @@ export default class InteractionHandler {
       );
     if (
       !(
-        d instanceof CommandInteraction ||
-        d instanceof ContextMenuInteraction ||
+        d instanceof ChatInputCommandInteraction ||
+        d instanceof ContextMenuCommandInteraction ||
         d instanceof ButtonInteraction ||
         d instanceof SelectMenuInteraction ||
         d instanceof AutocompleteInteraction
@@ -40,23 +40,23 @@ export default class InteractionHandler {
 
   private static getCommand(d: Interaction): Command | null {
     if (
-      d instanceof CommandInteraction ||
-      d instanceof ContextMenuInteraction ||
+      d instanceof ChatInputCommandInteraction ||
+      d instanceof ContextMenuCommandInteraction ||
       d instanceof AutocompleteInteraction
     ) {
       return app.commands.getApplicationCommand(
         d.commandName +
-          (d instanceof ContextMenuInteraction
+          (d instanceof ContextMenuCommandInteraction
             ? ""
             : " " +
               (d.options.getSubcommandGroup(false) ?? "" ?? " ") +
               (d.options.getSubcommand(false) ?? "")
           ).trim(),
-        d instanceof UserContextMenuInteraction
-          ? ApplicationCommandTypes.USER
-          : d instanceof MessageContextMenuInteraction
-          ? ApplicationCommandTypes.MESSAGE
-          : ApplicationCommandTypes.CHAT_INPUT
+        d instanceof UserContextMenuCommandInteraction
+          ? ApplicationCommandType.User
+          : d instanceof MessageContextMenuCommandInteraction
+          ? ApplicationCommandType.Message
+          : ApplicationCommandType.ChatInput
       );
     } else if (d instanceof MessageComponentInteraction) {
       return app.commands.getMessageComponentCommand(d);

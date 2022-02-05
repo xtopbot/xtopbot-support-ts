@@ -1,4 +1,4 @@
-import { PermissionString } from "discord.js";
+import { PermissionsString } from "discord.js";
 
 export default class Constants {
   public static readonly DEFAULT_LOCALE: string = "en_US";
@@ -7,41 +7,39 @@ export default class Constants {
   public static readonly REGEX_SNOWFLAKE = /^\d{17,18}$/;
 
   public static readonly DEFAULT_PREFIX: string = "!";
-  public static readonly CHANNEL_PERMISSIONS: Array<PermissionString> = [
-    "MANAGE_CHANNELS",
-    "VIEW_CHANNEL",
-    "CREATE_INSTANT_INVITE",
-    "MANAGE_ROLES",
+  public static readonly CHANNEL_PERMISSIONS: Array<PermissionsString> = [
+    "ManageChannels",
+    "ViewChannel",
+    "CreateInstantInvite",
+    "ManageRoles",
     //Text Channel Only
-    "MANAGE_WEBHOOKS",
-    "ADD_REACTIONS",
-    "SEND_MESSAGES",
-    "SEND_TTS_MESSAGES",
-    "MANAGE_MESSAGES",
-    "EMBED_LINKS",
-    "ATTACH_FILES",
-    "READ_MESSAGE_HISTORY",
-    "MENTION_EVERYONE",
-    "USE_EXTERNAL_EMOJIS",
-    "USE_APPLICATION_COMMANDS",
-    "MANAGE_THREADS",
-    "USE_PUBLIC_THREADS",
-    "CREATE_PUBLIC_THREADS",
-    "USE_PRIVATE_THREADS",
-    "CREATE_PRIVATE_THREADS",
-    "USE_EXTERNAL_STICKERS",
-    "SEND_MESSAGES_IN_THREADS",
+    "ManageWebhooks",
+    "AddReactions",
+    "SendMessages",
+    "SendTTSMessages",
+    "ManageMessages",
+    "EmbedLinks",
+    "AttachFiles",
+    "ReadMessageHistory",
+    "MentionEveryone",
+    "UseExternalEmojis",
+    "UseApplicationCommands",
+    "ManageThreads",
+    "SendMessagesInThreads",
+    "CreatePublicThreads",
+    "CreatePrivateThreads",
+    "UseExternalStickers",
     //Voice Channel Only
-    "START_EMBEDDED_ACTIVITIES",
-    "STREAM",
-    "CONNECT",
-    "SPEAK",
-    "MUTE_MEMBERS",
-    "DEAFEN_MEMBERS",
-    "USE_VAD",
-    "MOVE_MEMBERS",
-    "REQUEST_TO_SPEAK",
-    "PRIORITY_SPEAKER",
+    "StartEmbeddedActivities",
+    "Stream",
+    "Connect",
+    "Speak",
+    "MuteMembers",
+    "DeafenMembers",
+    "UseVAD",
+    "MoveMembers",
+    "RequestToSpeak",
+    "PrioritySpeaker",
   ];
 
   //Support Server

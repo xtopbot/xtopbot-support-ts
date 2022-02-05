@@ -1,8 +1,9 @@
 import {
   ButtonInteraction,
-  CommandInteraction,
-  ContextMenuInteraction,
+  ChatInputCommandInteraction,
+  ContextMenuCommandInteraction,
   Interaction,
+  InteractionReplyOptions,
   SelectMenuInteraction,
 } from "discord.js";
 import InteractionHandler from "../commands/InteractionHandler";
@@ -27,12 +28,12 @@ export default class InteractionCreate {
       if (
         err instanceof Exception &&
         err.message &&
-        (interaction instanceof CommandInteraction ||
+        (interaction instanceof ChatInputCommandInteraction ||
           interaction instanceof ButtonInteraction ||
           interaction instanceof SelectMenuInteraction ||
-          interaction instanceof ContextMenuInteraction)
+          interaction instanceof ContextMenuCommandInteraction)
       )
-        interaction.reply(err.message);
+        interaction.reply(err.message as InteractionReplyOptions);
     }
   }
 }

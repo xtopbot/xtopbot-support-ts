@@ -1,7 +1,6 @@
 import {
   AutocompleteInteraction,
   ButtonInteraction,
-  CommandInteraction,
   ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
   DMChannel,

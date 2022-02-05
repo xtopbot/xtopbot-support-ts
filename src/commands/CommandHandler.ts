@@ -2,7 +2,7 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   ClientUser,
-  CommandInteraction,
+  ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
   GuildMember,
   InteractionReplyOptions,
@@ -64,7 +64,7 @@ export default class CommandHandler {
   public static async executeHandler(
     d:
       | Message
-      | CommandInteraction
+      | ChatInputCommandInteraction
       | ButtonInteraction
       | SelectMenuInteraction
       | ContextMenuCommandInteraction
@@ -111,7 +111,7 @@ export default class CommandHandler {
         dcm.d.channel.send(response.message as MessageOptions);
         return;
       } else if (
-        dcm.d instanceof CommandInteraction ||
+        dcm.d instanceof ChatInputCommandInteraction ||
         dcm.d instanceof ContextMenuCommandInteraction
       ) {
         if (!response)
