@@ -17,6 +17,7 @@ import CommandHandler from "./CommandHandler";
 export default class InteractionHandler {
   public static process(d: Interaction) {
     const command: Command | null = this.getCommand(d);
+    console.log(command);
     if (!command)
       throw new Exception(
         Reason.UNABLE_TO_FIND_INTERACTION_COMMAND,
@@ -45,13 +46,14 @@ export default class InteractionHandler {
       d instanceof AutocompleteInteraction
     ) {
       return app.commands.getApplicationCommand(
-        d.commandName +
+        (
+          d.commandName +
           (d instanceof ContextMenuCommandInteraction
             ? ""
             : " " +
               (d.options.getSubcommandGroup(false) ?? "" ?? " ") +
-              (d.options.getSubcommand(false) ?? "")
-          ).trim(),
+              (d.options.getSubcommand(false) ?? ""))
+        ).trim(),
         d instanceof UserContextMenuCommandInteraction
           ? ApplicationCommandType.User
           : d instanceof MessageContextMenuCommandInteraction

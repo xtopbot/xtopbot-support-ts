@@ -76,7 +76,10 @@ export default class Notifications extends DefaultCommand {
             {
               type: ComponentType.SelectMenu,
               custom_id: "notifications",
-              max_values: 1,
+              max_values:
+                Number(!!notificationRoles.news) +
+                Number(!!notificationRoles.updates) +
+                Number(!!notificationRoles.status),
               min_values: 0,
               placeholder: "Select your own notifications", // related to locale system
               options: [

@@ -46,10 +46,11 @@ export default class Eval extends DefaultCommand {
         },
       });
       var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
+
       return new Response(
         ResponseCodes.SUCCESS,
         !rd.flags.includes(EvalFlags.OUTPUT)
-          ? res.length >= 1900 || EvalFlags.FILE
+          ? res.length >= 1900 || rd.flags.includes(EvalFlags.FILE)
             ? {
                 content:
                   res.length >= 1900

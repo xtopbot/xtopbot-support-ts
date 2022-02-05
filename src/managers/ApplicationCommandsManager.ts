@@ -15,7 +15,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
       const options = data.options;
       for (let i = 0; i < options.length; i++) {
         let option = options[i];
-        if (option?.type == ApplicationCommandOptionType.Subcommand)
+        if (option?.type == ApplicationCommandOptionType.SubcommandGroup)
           return option.name;
       }
     }
@@ -76,7 +76,6 @@ export default class ApplicationCommandsManager extends CommandsManager {
     const applicationCommandsData: Array<ApplicationCommandData> = this.values
       .map((command) => command.applicationCommandData)
       .flat();
-
     return app.client.guilds.cache
       .get("884642692980690975")
       ?.commands.set(applicationCommandsData); // This is temporary
