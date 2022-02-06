@@ -4,13 +4,13 @@ import {
   ApplicationCommandData,
   MessageComponentInteraction,
 } from "discord.js";
-import { UserLevelPolicy } from "../structures/User";
+import { UserFlagPolicy } from "../structures/User";
 import CommandMethod from "./CommandMethod";
 import Response from "../utils/Response";
 
 export abstract class BaseCommand implements BaseCommandType {
   private data: BaseCommandDataType; // Command data
-  public level: UserLevelPolicy; // User Level Policy (who can used)
+  public level: UserFlagPolicy; // User Level Policy (who can used)
   public memberPermissions: Array<PermissionsString>; // Permissions requirements for a user to access the use of the command
   public botPermissions: Array<PermissionsString>; // The requirements for the bot permission to perform the command
   public applicationCommandData: Array<ApplicationCommandData>;
@@ -70,7 +70,7 @@ export abstract class BaseCommand implements BaseCommandType {
 interface BaseCommandDataType {
   readonly name?: string | null;
   readonly aliases?: Array<string>;
-  readonly level: UserLevelPolicy;
+  readonly level: UserFlagPolicy;
   readonly memberPermissions: Array<PermissionsString>;
   readonly botPermissions: Array<PermissionsString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;

@@ -27,10 +27,10 @@ export default class User {
     return new Date(this.data?.createdAt ?? "1970-1-1");
   }
 
-  public get levelPolicy(): UserLevelPolicy {
+  public get levelPolicy(): UserFlagPolicy {
     return this.data.xtopteam === XtopTeam.DEVELOPER
-      ? UserLevelPolicy.DEVELOPER
-      : UserLevelPolicy.USER;
+      ? UserFlagPolicy.DEVELOPER
+      : UserFlagPolicy.USER;
   }
 
   public get lastVotedTimestampAt(): number {
@@ -55,7 +55,7 @@ export enum UserFeatures {
   GUILD_PREMIUM,
 }
 
-export enum UserLevelPolicy {
+export enum UserFlagPolicy {
   BLOCKED,
   USER,
   PREMIUM,
