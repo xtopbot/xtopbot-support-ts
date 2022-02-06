@@ -10,11 +10,12 @@ import {
   Message,
   MessageOptions,
   SelectMenuInteraction,
+  ApplicationCommandOptionChoice,
 } from "discord.js";
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
 import app from "../app";
-import { DefaultCommand, Command } from "./DefaultCommand";
+import { BaseCommand } from "./DefaultCommand";
 import Logger from "../utils/Logger";
 import User from "../structures/User";
 import CommandRequirementsHandler from "./RequirementHandler";
@@ -24,8 +25,8 @@ import CommandMethod from "./CommandMethod";
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
-    const command: Command | null = this.matchesCommand(d.content);
-    if (!(command instanceof DefaultCommand))
+    const command: BaseCommand | null = this.matchesCommand(d.content);
+    if (!(command instanceof BaseCommand))
       return Logger.warn(
         `[CommandHandler] Unable to find matches command from ${d.author.tag}<${d.author.id}>;`
       );
@@ -69,7 +70,7 @@ export default class CommandHandler {
       | SelectMenuInteraction
       | ContextMenuCommandInteraction
       | AutocompleteInteraction,
-    command: Command
+    command: BaseCommand
   ): Promise<void> {
     const dcm: CommandMethod = new CommandMethod(d, command);
     try {
@@ -96,11 +97,11 @@ export default class CommandHandler {
   ): Promise<void> {
     //Auto Complete Response
     if (dcm.d instanceof AutocompleteInteraction) {
-      if (!response?.options?.response)
+      if (!response?.message)
         return Logger.info(
           `[Response<Autocomplete>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
         );
-      dcm.d.respond(response.options.response);
+      dcm.d.respond(response.message as ApplicationCommandOptionChoice[]);
     } else {
       if (response?.message === null)
         return Logger.info(
@@ -144,7 +145,7 @@ export default class CommandHandler {
     }
   }
 
-  private static matchesCommand(input: string): Command | null {
+  private static matchesCommand(input: string): BaseCommand | null {
     input = input.trim().replace(/\s+/g, " ");
     return (
       app.commands.values.find(
@@ -164,7 +165,7 @@ export default class CommandHandler {
     return app.client.user;
   }
 
-  public static regexMatches(command: Command): RegExp {
+  public static regexMatches(command: BaseCommand): RegExp {
     const aliases: Array<string> = command.aliases
       .map((alias) => Util.escapeRegex(alias))
       .filter((alias) => alias !== "");

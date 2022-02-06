@@ -1,6 +1,7 @@
 import {
   ApplicationCommandOptionChoice,
   InteractionReplyOptions,
+  InteractionUpdateOptions,
   MessageOptions,
 } from "discord.js";
 
@@ -10,6 +11,7 @@ export default class Response {
     | MessageOptions
     | InteractionReplyOptions
     | InteractionUpdateOptions
+    | ApplicationCommandOptionChoice[] // For Autocomplete Interaction
     | null;
   public options?: OptionsResponse | null = null;
   public constructor(
@@ -18,6 +20,7 @@ export default class Response {
       | MessageOptions
       | InteractionReplyOptions
       | InteractionUpdateOptions
+      | ApplicationCommandOptionChoice[]
       | null,
     options?: OptionsResponse
   ) {
@@ -30,6 +33,7 @@ export default class Response {
 export enum ResponseCodes {
   UNKNOWN = 0,
   SUCCESS = 200,
+  AUTOCOMPLETE_EMPTY_RESPONSE = 201,
   UNAUTHORIZED_USER_LEVEL_POLICY = 1001,
   BOT_CHANNEL_PERMISSIONS_MISSING = 1002,
   MEMBER_CHANNEL_PERMISSIONS_MISSING = 1003,
@@ -42,11 +46,11 @@ export enum ResponseCodes {
   UNABLE_TO_FIND_WEBHOOKS = 2004,
   UNABLE_TO_FIND_WEBHOOK = 2005,
   WEBHOOK_OWNER_NOT_ME = 2006,
-  INVALID_JSON_DATA = 2007,
-  DISCORD_API_ERROR = 2008,
+  WEBHOOK_UNABLE_TO_FIND_MESSAGE = 2007,
+  INVALID_JSON_DATA = 3001,
+  DISCORD_API_ERROR = 3002,
   EXCEPTION = 5000,
 }
 interface OptionsResponse {
   update?: boolean; // for Message Components
-  response?: ApplicationCommandOptionChoice[]; // For Autocomplete Interaction
 }
