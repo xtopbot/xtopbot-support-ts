@@ -10,14 +10,13 @@ import {
   ChatInputCommandInteraction,
   ApplicationCommandType,
 } from "discord.js";
-import { Command } from "./DefaultCommand";
+import { BaseCommand } from "./DefaultCommand";
 import app from "../app";
 import Exception, { Reason, Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 export default class InteractionHandler {
   public static process(d: Interaction) {
-    const command: Command | null = this.getCommand(d);
-    console.log(command);
+    const command: BaseCommand | null = this.getCommand(d);
     if (!command)
       throw new Exception(
         Reason.UNABLE_TO_FIND_INTERACTION_COMMAND,
@@ -39,7 +38,7 @@ export default class InteractionHandler {
     return CommandHandler.executeHandler(d, command);
   }
 
-  private static getCommand(d: Interaction): Command | null {
+  private static getCommand(d: Interaction): BaseCommand | null {
     if (
       d instanceof ChatInputCommandInteraction ||
       d instanceof ContextMenuCommandInteraction ||

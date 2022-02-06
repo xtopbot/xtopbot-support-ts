@@ -17,14 +17,14 @@ import { UserLevelPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { SelectMenuInteractionMethod } from "../CommandMethod";
-import { DefaultCommand } from "../DefaultCommand";
+import { BaseCommand } from "../DefaultCommand";
 
-export default class Notifications extends DefaultCommand {
+export default class Notifications extends BaseCommand {
   constructor() {
     super({
       level: UserLevelPolicy.USER,
       memberPermissions: [],
-      botPermissions: ["SendMessages", "EmbedLinks"],
+      botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [
         {
           name: "notifications",

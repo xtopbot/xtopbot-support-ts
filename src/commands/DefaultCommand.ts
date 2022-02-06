@@ -6,17 +6,17 @@ import {
 } from "discord.js";
 import { UserLevelPolicy } from "../structures/User";
 import CommandMethod from "./CommandMethod";
-import FinalResponse from "../utils/Response";
+import Response from "../utils/Response";
 
-export class DefaultCommand implements DefaultCommandType {
-  private data: DefaultCommandDataType; // Command data
+export abstract class BaseCommand implements BaseCommandType {
+  private data: BaseCommandDataType; // Command data
   public level: UserLevelPolicy; // User Level Policy (who can used)
   public memberPermissions: Array<PermissionsString>; // Permissions requirements for a user to access the use of the command
   public botPermissions: Array<PermissionsString>; // The requirements for the bot permission to perform the command
   public applicationCommandData: Array<ApplicationCommandData>;
   public messageComponent: (d: MessageComponentInteraction) => boolean;
 
-  protected constructor(data: DefaultCommandDataType) {
+  protected constructor(data: BaseCommandDataType) {
     this.data = data;
     this.level = data.level;
     this.memberPermissions = data.memberPermissions;
@@ -25,6 +25,8 @@ export class DefaultCommand implements DefaultCommandType {
     this.messageComponent =
       data.messageComponent?.bind(this) ?? this._messageComponent.bind(this);
   }
+
+  public abstract execute(dcm: CommandMethod): Promise<Response>;
 
   public get name(): string | null {
     return this.data.name ?? null;
@@ -65,7 +67,7 @@ export class DefaultCommand implements DefaultCommandType {
   }
 }
 
-interface DefaultCommandDataType {
+interface BaseCommandDataType {
   readonly name?: string | null;
   readonly aliases?: Array<string>;
   readonly level: UserLevelPolicy;
@@ -77,18 +79,9 @@ interface DefaultCommandDataType {
   disabled?: boolean;
 }
 
-interface DefaultCommandType extends DefaultCommandDataType {
+interface BaseCommandType extends BaseCommandDataType {
   readonly applicationCommandOnly: boolean;
   messageComponent: (d: MessageComponentInteraction) => boolean;
   setDisable(): void;
   setEnable(): void;
-}
-
-export interface Command extends DefaultCommand {
-  execute(dcm: CommandMethod): Promise<FinalResponse>;
-}
-
-enum ExecuteType {
-  APPLICATION_COMMAND,
-  COMMAND,
 }

@@ -3,11 +3,9 @@ import {
   ButtonInteraction,
   ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
-  DMChannel,
   GuildMember,
   Message,
   NewsChannel,
-  NonThreadGuildBasedChannel,
   SelectMenuInteraction,
   TextChannel,
   ThreadChannel,
@@ -18,7 +16,7 @@ import User from "../structures/User";
 import ContextFormat from "../utils/ContextFormat";
 import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
-import { Command } from "./DefaultCommand";
+import { BaseCommand } from "./DefaultCommand";
 
 export default class CommandMethod {
   public readonly d:
@@ -28,7 +26,7 @@ export default class CommandMethod {
     | SelectMenuInteraction
     | ContextMenuCommandInteraction
     | AutocompleteInteraction;
-  public readonly command: Command;
+  public readonly command: BaseCommand;
   private readonly cf: ContextFormat = new ContextFormat();
   public _user: User | null = null;
   private _member: GuildMember | null = null;
@@ -41,7 +39,7 @@ export default class CommandMethod {
       | SelectMenuInteraction
       | ContextMenuCommandInteraction
       | AutocompleteInteraction,
-    command: Command
+    command: BaseCommand
   ) {
     this.d = d;
     this.command = command;

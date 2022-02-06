@@ -3,10 +3,10 @@ import { UserLevelPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { MessageCommandMethod } from "../CommandMethod";
-import { DefaultCommand } from "../DefaultCommand";
+import { BaseCommand } from "../DefaultCommand";
 import app from "../../app";
 import { VM } from "vm2";
-export default class Eval extends DefaultCommand {
+export default class Eval extends BaseCommand {
   constructor() {
     super({
       name: "eval",

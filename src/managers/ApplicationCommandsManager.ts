@@ -6,7 +6,7 @@ import {
   ApplicationCommandOptionType,
 } from "discord.js";
 import app from "../app";
-import { Command } from "../commands/DefaultCommand";
+import { BaseCommand } from "../commands/DefaultCommand";
 import CommandsManager from "./CommandsManager";
 
 export default class ApplicationCommandsManager extends CommandsManager {
@@ -48,7 +48,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
   public getApplicationCommand(
     name: string,
     type: ApplicationCommandType
-  ): Command | null {
+  ): BaseCommand | null {
     return (
       this.values.find((command) =>
         command.applicationCommandData.find(
@@ -68,7 +68,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
 
   public getMessageComponentCommand(
     d: MessageComponentInteraction
-  ): Command | null {
+  ): BaseCommand | null {
     return this.values.find((command) => command.messageComponent(d)) ?? null;
   }
 
