@@ -1,4 +1,4 @@
-import { BaseCommand } from "../commands/DefaultCommand";
+import { BaseCommand } from "../commands/BaseCommand";
 import Eval from "../commands/admin/Eval";
 import Notifications from "../commands/user/Notifications";
 import WebhookMessage from "../commands/admin/WebhookMessage";

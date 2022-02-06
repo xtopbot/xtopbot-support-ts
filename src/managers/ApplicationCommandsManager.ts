@@ -6,7 +6,7 @@ import {
   ApplicationCommandOptionType,
 } from "discord.js";
 import app from "../app";
-import { BaseCommand } from "../commands/DefaultCommand";
+import { BaseCommand } from "../commands/BaseCommand";
 import CommandsManager from "./CommandsManager";
 
 export default class ApplicationCommandsManager extends CommandsManager {

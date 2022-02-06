@@ -16,7 +16,7 @@ import User from "../structures/User";
 import ContextFormat from "../utils/ContextFormat";
 import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
-import { BaseCommand } from "./DefaultCommand";
+import { BaseCommand } from "./BaseCommand";
 
 export default class CommandMethod {
   public readonly d:

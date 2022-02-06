@@ -14,7 +14,7 @@ import {
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
 import app from "../app";
-import { BaseCommand } from "./DefaultCommand";
+import { BaseCommand } from "./BaseCommand";
 import Logger from "../utils/Logger";
 import CommandRequirementsHandler from "./RequirementHandler";
 import Response, { ResponseCodes } from "../utils/Response";

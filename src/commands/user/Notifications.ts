@@ -17,7 +17,7 @@ import { UserLevelPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { SelectMenuInteractionMethod } from "../CommandMethod";
-import { BaseCommand } from "../DefaultCommand";
+import { BaseCommand } from "../BaseCommand";
 
 export default class Notifications extends BaseCommand {
   constructor() {

@@ -10,7 +10,7 @@ import {
   ChatInputCommandInteraction,
   ApplicationCommandType,
 } from "discord.js";
-import { BaseCommand } from "./DefaultCommand";
+import { BaseCommand } from "./BaseCommand";
 import app from "../app";
 import Exception, { Reason, Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
