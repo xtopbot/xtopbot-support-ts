@@ -16,4 +16,13 @@ export default class Util {
   public static escapeRegex(input: string): string {
     return input.replace(/[\\^$*+?.()|[\]{}]/g, "\\$&");
   }
+
+  public static stringToJson(value: string): JSON | null {
+    try {
+      const json = JSON.parse(value);
+      return json;
+    } catch (err) {
+      return null;
+    }
+  }
 }
