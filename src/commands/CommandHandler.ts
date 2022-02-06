@@ -4,7 +4,6 @@ import {
   ClientUser,
   ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
-  GuildMember,
   InteractionReplyOptions,
   InteractionUpdateOptions,
   Message,
@@ -17,7 +16,6 @@ import Util from "../utils/Util";
 import app from "../app";
 import { BaseCommand } from "./DefaultCommand";
 import Logger from "../utils/Logger";
-import User from "../structures/User";
 import CommandRequirementsHandler from "./RequirementHandler";
 import Response, { ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
@@ -97,7 +95,7 @@ export default class CommandHandler {
   ): Promise<void> {
     //Auto Complete Response
     if (dcm.d instanceof AutocompleteInteraction) {
-      if (!response?.message)
+      if (!response?.message || !Array.isArray(response.message))
         return Logger.info(
           `[Response<Autocomplete>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
         );
