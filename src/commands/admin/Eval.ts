@@ -11,7 +11,7 @@ export default class Eval extends BaseCommand {
     super({
       name: "eval",
       aliases: [],
-      level: UserFlagPolicy.DEVELOPER,
+      flag: UserFlagPolicy.DEVELOPER,
       memberPermissions: ["Administrator"],
       botPermissions: ["SendMessages"],
       applicationCommandData: [],

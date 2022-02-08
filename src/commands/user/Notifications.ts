@@ -13,7 +13,7 @@ import {
   SelectMenuOption,
   ComponentType,
 } from "discord.js";
-import { UserLevelPolicy } from "../../structures/User";
+import { UserFlagPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { SelectMenuInteractionMethod } from "../CommandMethod";
@@ -22,7 +22,7 @@ import { BaseCommand } from "../BaseCommand";
 export default class Notifications extends BaseCommand {
   constructor() {
     super({
-      level: UserLevelPolicy.USER,
+      flag: UserFlagPolicy.USER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [

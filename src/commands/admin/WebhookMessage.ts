@@ -23,7 +23,7 @@ import Util from "../../utils/Util";
 export default class WebhookMessage extends BaseCommand {
   constructor() {
     super({
-      level: UserFlagPolicy.DEVELOPER,
+      flag: UserFlagPolicy.DEVELOPER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks", "ManageWebhooks"],
       applicationCommandData: [

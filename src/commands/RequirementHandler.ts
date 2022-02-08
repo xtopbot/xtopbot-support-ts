@@ -12,7 +12,7 @@ export default class CommandRequirementsHandler {
   }
 
   public async checkAll(): Promise<boolean | Response> {
-    if (!this.userLevelPolicy())
+    if (!this.userFlagPolicy())
       return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
         content: "Unauthorized user level policy", // related to locale system
         ephemeral: true,
@@ -53,8 +53,8 @@ export default class CommandRequirementsHandler {
     return true;
   }
 
-  public userLevelPolicy(): boolean {
-    if (this.dcm.command.level <= this.dcm.user.levelPolicy) return true;
+  public userFlagPolicy(): boolean {
+    if (this.dcm.command.flag <= this.dcm.user.flag) return true;
     return false;
   }
 

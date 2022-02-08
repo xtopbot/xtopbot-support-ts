@@ -27,7 +27,7 @@ export default class User {
     return new Date(this.data?.createdAt ?? "1970-1-1");
   }
 
-  public get levelPolicy(): UserFlagPolicy {
+  public get flag(): UserFlagPolicy {
     return this.data.xtopteam === XtopTeam.DEVELOPER
       ? UserFlagPolicy.DEVELOPER
       : UserFlagPolicy.USER;
