@@ -1,17 +1,20 @@
-import { PermissionsString } from "discord.js";
+import { PermissionsString, ChannelType } from "discord.js";
 
 export default class Constants {
   public static readonly DEFAULT_LOCALE: string = "en_US";
   public static readonly DEFAULT_COMMAND_DISABLEABLE_VALUE: boolean = true;
   public static readonly DEFAULT_COMMAND_DISABLED_VALUE: boolean = false;
   public static readonly REGEX_SNOWFLAKE = /^\d{17,18}$/;
+  public static readonly WEBHOOKS_CHANNEL_TYPES: ChannelType[] = [
+    ChannelType.GuildText,
+    ChannelType.GuildNews,
+  ];
 
   public static readonly DEFAULT_PREFIX: string = "!";
   public static readonly CHANNEL_PERMISSIONS: Array<PermissionsString> = [
     "ManageChannels",
     "ViewChannel",
     "CreateInstantInvite",
-    "ManageRoles",
     //Text Channel Only
     "ManageWebhooks",
     "AddReactions",
