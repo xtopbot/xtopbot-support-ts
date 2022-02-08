@@ -1,6 +1,5 @@
 import {
   ApplicationCommandData,
-  MessageComponent,
   MessageComponentInteraction,
   ApplicationCommandType,
   ApplicationCommandOptionType,
@@ -73,12 +72,36 @@ export default class ApplicationCommandsManager extends CommandsManager {
   }
 
   public deploy(): any {
-    const applicationCommandsData: Array<ApplicationCommandData> = this.values
+    const acd: Array<ApplicationCommandData> = this.values
       .map((command) => command.applicationCommandData)
       .flat();
-    return app.client.guilds.cache
-      .get("884642692980690975")
-      ?.commands.set(applicationCommandsData); // This is temporary
+
+    return app.client.guilds.cache.get("884642692980690975")?.commands.set(
+      acd
+        .filter(
+          (value, index, self) =>
+            index === self.findIndex((t) => t.name === value.name)
+        )
+        .map((_b) => {
+          _b = { ..._b };
+          (_b as any).options = acd
+            .filter((_a) => _a.name === _b.name)
+            .map((_a) => (_a as any).options ?? [])
+            .flat()
+            .filter(
+              (value, index, self) =>
+                index === self.findIndex((t) => t.name === value.name)
+            )
+            .map((__b, _index, self) => {
+              __b.options = self
+                .filter((_a) => _a.name === __b.name)
+                .map((_a) => _a.options ?? [])
+                .flat();
+              return __b;
+            });
+          return _b;
+        })
+    ); // This is temporary
 
     //return app.client.application?.commands.set(applicationCommandsData);
   }
