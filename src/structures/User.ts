@@ -1,4 +1,4 @@
-import { UserData, UserDataFlags } from "../managers/UserManager";
+import { UserData } from "../managers/UserManager";
 import db from "../providers/Mysql";
 export default class User {
   private data: UserData;
@@ -20,8 +20,8 @@ export default class User {
     return this.data?.locale ?? null;
   }
 
-  public get flag(): UserDataFlags {
-    return this.data?.flag ?? 0;
+  public get flags(): UserFlagsPolicy {
+    return this.data?.flags ?? 0;
   }
 
   public get createdAt(): Date {
@@ -48,4 +48,12 @@ export enum UserFeatures {
   VOTE,
   USER_PREMIUM,
   GUILD_PREMIUM,
+}
+export enum UserFlagsPolicy {
+  NONE = 0,
+  TESTER = 1 << 0,
+  SUPPORT = 1 << 1,
+  MODERATOR = 1 << 2,
+  ADMIN = 1 << 3,
+  DEVELOPER = 1 << 4,
 }

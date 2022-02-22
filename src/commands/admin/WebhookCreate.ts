@@ -5,7 +5,7 @@ import {
   NewsChannel,
   TextChannel,
 } from "discord.js";
-import { UserFlagPolicy } from "../../structures/User";
+import { UserFlagsPolicy } from "../../structures/User";
 import Constants from "../../utils/Constants";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
@@ -17,7 +17,7 @@ import CommandMethod, {
 export default class WebhookCreate extends BaseCommand {
   constructor() {
     super({
-      flag: UserFlagPolicy.DEVELOPER,
+      flag: UserFlagsPolicy.DEVELOPER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks", "ManageWebhooks"],
       applicationCommandData: [
@@ -74,6 +74,7 @@ export default class WebhookCreate extends BaseCommand {
     await (channel as TextChannel).createWebhook("xToP Support");
     return new Response(ResponseCodes.SUCCESS, {
       content: `Webhook created on <#${channel.id}>`, // related to locale system
+      ephemeral: true,
     });
   }
 }

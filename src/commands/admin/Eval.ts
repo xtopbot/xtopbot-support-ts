@@ -1,5 +1,5 @@
 import { Message, MessageAttachment } from "discord.js";
-import { UserFlagPolicy } from "../../structures/User";
+import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { MessageCommandMethod } from "../CommandMethod";
@@ -11,7 +11,7 @@ export default class Eval extends BaseCommand {
     super({
       name: "eval",
       aliases: [],
-      flag: UserFlagPolicy.DEVELOPER,
+      flag: UserFlagsPolicy.DEVELOPER,
       memberPermissions: ["Administrator"],
       botPermissions: ["SendMessages"],
       applicationCommandData: [],

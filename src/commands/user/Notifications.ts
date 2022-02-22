@@ -1,8 +1,4 @@
-import {
-  ActionRow,
-  ActionRowComponent,
-  createComponent,
-} from "@discordjs/builders";
+import { ActionRow, ActionRowComponent } from "@discordjs/builders";
 import {
   ButtonInteraction,
   ChatInputCommandInteraction,
@@ -13,7 +9,7 @@ import {
   SelectMenuOption,
   ComponentType,
 } from "discord.js";
-import { UserFlagPolicy } from "../../structures/User";
+import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, { SelectMenuInteractionMethod } from "../CommandMethod";
@@ -22,7 +18,7 @@ import { BaseCommand } from "../BaseCommand";
 export default class Notifications extends BaseCommand {
   constructor() {
     super({
-      flag: UserFlagPolicy.USER,
+      flag: UserFlagsPolicy.NONE,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [
@@ -81,12 +77,12 @@ export default class Notifications extends BaseCommand {
                 Number(!!notificationRoles.updates) +
                 Number(!!notificationRoles.status),
               min_values: 0,
-              placeholder: "Select your own notifications", // related to locale system
+              placeholder: "Select your own notifications",
               options: [
                 notificationRoles.news
                   ? {
-                      label: "NEWS", // related to locale system
-                      description: "All the important news regarding the bot!", // related to locale system
+                      label: "NEWS",
+                      description: "All the important news regarding the bot!",
                       value: DefaultNotificationRoles.NEWS,
                       default: !!dcm.member.roles.cache.has(
                         notificationRoles.news.id
@@ -95,9 +91,9 @@ export default class Notifications extends BaseCommand {
                   : null,
                 notificationRoles.updates
                   ? {
-                      label: "UPDATES", // related to locale system
+                      label: "UPDATES",
                       description:
-                        "Be the first to know about new commands and new changes in the bot!", // related to locale system
+                        "Be the first to know about new commands and new changes in the bot!",
                       value: DefaultNotificationRoles.UPDATES,
                       default: !!dcm.member.roles.cache.has(
                         notificationRoles.updates.id
@@ -106,9 +102,9 @@ export default class Notifications extends BaseCommand {
                   : null,
                 notificationRoles.status
                   ? {
-                      label: "STATUS", // related to locale system
+                      label: "STATUS",
                       description:
-                        "Status updates about xToP. Issues, downtime and maintenances.", // related to locale system
+                        "Status updates about xToP. Issues, downtime and maintenances.",
                       value: DefaultNotificationRoles.STATUS,
                       default: !!dcm.member.roles.cache.has(
                         notificationRoles.status.id
@@ -119,7 +115,7 @@ export default class Notifications extends BaseCommand {
             },
           ],
         },
-      ] as ActionRow<ActionRowComponent>[],
+      ] as unknown as ActionRow<ActionRowComponent>[],
     });
   }
 

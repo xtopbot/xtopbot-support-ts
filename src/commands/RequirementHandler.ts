@@ -1,6 +1,5 @@
-import { GuildMember, PermissionsString } from "discord.js";
+import { PermissionsString } from "discord.js";
 import Constants from "../utils/Constants";
-import Exception, { Reason, Severity } from "../utils/Exception";
 import Response, { ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
 import CommandMethod from "./CommandMethod";
@@ -54,8 +53,9 @@ export default class CommandRequirementsHandler {
   }
 
   public userFlagPolicy(): boolean {
-    if (this.dcm.command.flag <= this.dcm.user.flag) return true;
-    return false;
+    return (
+      (this.dcm.user.flags & this.dcm.command.flag) == this.dcm.command.flag
+    );
   }
 
   /**

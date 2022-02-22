@@ -1,4 +1,4 @@
-import User from "../structures/User";
+import User, { UserFlagsPolicy } from "../structures/User";
 import { Collection, User as DiscordUser } from "discord.js";
 import CacheManager from "./CacheManager";
 import db from "../providers/Mysql";
@@ -34,10 +34,13 @@ export default class UserManager extends CacheManager {
     }
 
     const raw: Array<UserData> = await db.query(
-      "SELECT * FROM `Users` WHERE userId = ?",
+      "SELECT userId, SUM(flags) as flags, locale, createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
-    if (!raw.length) this.create(user);
+    if (!raw.length) {
+      await this.create(user);
+      return this.fetch(_user, true);
+    }
     const u: User = new User(raw[0]);
     return this._add(u);
   }
@@ -47,7 +50,7 @@ export default class UserManager extends CacheManager {
     const user: DiscordUser =
       _user instanceof DiscordUser ? _user : await this._fetch(_user);
     await db.query(
-      "INSERT INTO `Users` SET userId = ?, locale = ? ON DUPLICATE KEY UPDATE `locale` = CASE ? WHEN null THEN `locale` ELSE ? END CASE;",
+      "INSERT INTO `Users` SET userId = ?, locale = ? ON DUPLICATE KEY UPDATE `locale` = CASE ? WHEN null THEN `locale` ELSE ? END;",
       [user.id, _locale, _locale, _locale]
     );
   }
@@ -57,14 +60,6 @@ export default class UserManager extends CacheManager {
 export interface UserData {
   userId: string;
   locale: string | null;
-  flag: UserDataFlags;
+  flags: UserFlagsPolicy;
   createdAt: Date;
-}
-
-export enum UserDataFlags {
-  TESTER = 1 << 0,
-  SUPPORT = 1 << 1,
-  MODERATOR = 1 << 2,
-  ADMIN = 1 << 3,
-  DEVELOPER = 1 << 4,
 }
