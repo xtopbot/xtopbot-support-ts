@@ -1,7 +1,5 @@
-import { UserData, XtopTeam } from "../managers/UserManager";
+import { UserData, UserDataFlags } from "../managers/UserManager";
 import db from "../providers/Mysql";
-import Constants from "../utils/Constants";
-import Exception, { Severity } from "../utils/Exception";
 export default class User {
   private data: UserData;
   public lastVotedAt: Date = new Date("1970-1-1");
@@ -15,22 +13,19 @@ export default class User {
   }
 
   public get id(): string {
-    if (!Constants.REGEX_SNOWFLAKE.test(this.data.id_discord))
-      throw new Exception(
-        `[${this.constructor.name}] Something was wrong with user id ${this.data.id_discord}`,
-        Severity.FAULT
-      );
-    return this.data.id_discord;
+    return this.data.userId;
+  }
+
+  public get locale(): string | null {
+    return this.data?.locale ?? null;
+  }
+
+  public get flag(): UserDataFlags {
+    return this.data?.flag ?? 0;
   }
 
   public get createdAt(): Date {
     return new Date(this.data?.createdAt ?? "1970-1-1");
-  }
-
-  public get flag(): UserFlagPolicy {
-    return this.data.xtopteam === XtopTeam.DEVELOPER
-      ? UserFlagPolicy.DEVELOPER
-      : UserFlagPolicy.USER;
   }
 
   public get lastVotedTimestampAt(): number {
@@ -53,14 +48,4 @@ export enum UserFeatures {
   VOTE,
   USER_PREMIUM,
   GUILD_PREMIUM,
-}
-
-export enum UserFlagPolicy {
-  BLOCKED,
-  USER,
-  PREMIUM,
-  SUPPORT,
-  STAFF,
-  ADMIN,
-  DEVELOPER,
 }
