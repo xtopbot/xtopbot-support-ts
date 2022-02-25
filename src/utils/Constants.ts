@@ -46,5 +46,5 @@ export default class Constants {
   ];
 
   //Support Server
-  public static readonly SERVER_ID: string = "";
+  public static readonly DEFAULT_WELCOME_CHANNEL_NAME: string = "sign-up";
 }
