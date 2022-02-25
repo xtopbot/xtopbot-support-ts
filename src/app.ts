@@ -26,12 +26,12 @@ export default class {
       "GuildMessageTyping",
       "DirectMessages",
     ],
-    partials: [Partials.Channel],
+    partials: [Partials.Channel, Partials.GuildMember],
   });
   public static commands: ApplicationCommandsManager =
     new ApplicationCommandsManager();
   public static users: UserManager = new UserManager();
-  public static locale: LocaleManager = new LocaleManager();
+  public static locales: LocaleManager = new LocaleManager();
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
