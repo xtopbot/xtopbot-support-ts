@@ -121,6 +121,10 @@ export default class CommandMethod {
       .replace(CommandHandler.regexMatches(this.command), "")
       .trim();
   }
+
+  public get locale() {
+    return app.locales.get("en_US");
+  }
 }
 
 export interface MessageCommandMethod extends CommandMethod {

@@ -9,8 +9,10 @@ import {
 import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
 import Constants from "../utils/Constants";
+import ContextFormat from "../utils/ContextFormat";
 import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
+import Response, { ResponseCodes } from "../utils/Response";
 
 export default class Welcomer {
   private static manager = new WelcomerManager();
@@ -43,7 +45,10 @@ export default class Welcomer {
           "[Welcomer] Unable to find content to send a message!"
         );
       const channel = this.getWelcomerChannel(member);
-      const response = await channel.send({
+      const cfx = new ContextFormat();
+      cfx.setObject("user", member.user);
+      cfx.formats.set("user.tag", member.user.tag);
+      const _response = new Response(ResponseCodes.PLUGIN_SUCCESS, {
         content: message,
         components: [
           {
@@ -52,7 +57,7 @@ export default class Welcomer {
               .map((localeRole) => ({
                 type: ComponentType.Button,
                 style: ButtonStyle.Secondary,
-                customId: `locale:${localeRole.locale}`,
+                customId: `locale:${localeRole.locale}:plugin(welcomer)`,
                 label: localeRole.button.label,
                 emoji: localeRole.button.emoji,
               }))
@@ -60,6 +65,7 @@ export default class Welcomer {
           },
         ],
       });
+      const response = await channel.send(cfx.resolve(_response));
       this.manager.cache.set(member.id, response);
     }
   }

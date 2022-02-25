@@ -9,8 +9,9 @@ import {
   ActionRowComponent,
   ComponentType,
   ButtonStyle,
+  Webhook,
 } from "discord.js";
-import { UserFlagPolicy } from "../../structures/User";
+import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
 import Response, { ResponseCodes } from "../../utils/Response";
 import CommandMethod, {
@@ -23,7 +24,7 @@ import Util from "../../utils/Util";
 export default class WebhookMessage extends BaseCommand {
   constructor() {
     super({
-      flag: UserFlagPolicy.DEVELOPER,
+      flag: UserFlagsPolicy.DEVELOPER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks", "ManageWebhooks"],
       applicationCommandData: [
@@ -50,7 +51,7 @@ export default class WebhookMessage extends BaseCommand {
                   name: "message",
                   description: "Put message data (json format)",
                   type: ApplicationCommandOptionType.String,
-                  required: true,
+                  required: false,
                 },
                 {
                   name: "message_id",
@@ -101,13 +102,35 @@ export default class WebhookMessage extends BaseCommand {
         ephemeral: true,
       });
     const messageOption = dcm.d.options.getString("message", false);
-    const messageData = Util.stringToJson(messageOption as string);
+    if (messageOption) return this.sendWebhook(dcm, webhook, messageOption);
+    return new Response(ResponseCodes.SUCCESS, {
+      custom_id: "a",
+      components: [
+        {
+          type: 4,
+          custom_id: "test",
+          style: 1,
+          label: "hello",
+        },
+      ] as any,
+    } as any);
+  }
+
+  private async sendWebhook(
+    dcm: CommandMethod,
+    webhook: Webhook,
+    message: string
+  ): Promise<Response> {
+    const messageData = Util.stringToJson(message);
     if (!messageData)
       return new Response(ResponseCodes.INVALID_JSON_DATA, {
         content: "Invalid json data",
         ephemeral: true,
       });
-    const messageId = dcm.d.options.getString("message_id", false);
+    const messageId =
+      dcm.d instanceof ChatInputCommandInteraction
+        ? dcm.d.options.getString("message_id", false)
+        : null;
     try {
       const post = !messageId
         ? await webhook.send(messageData as unknown as MessagePayload)
