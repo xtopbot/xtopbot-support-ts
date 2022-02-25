@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import Logger from "../utils/Logger";
 import Constants from "../utils/Constants";
+import en_US from "../locales/en_US/en_US.json";
 
 export default class LocaleManager extends CacheManager {
   private readonly defaultLocale: string;
@@ -13,6 +14,10 @@ export default class LocaleManager extends CacheManager {
     super();
     this.defaultLocale = defaultLocale;
     this.initialize();
+  }
+
+  public get cache(): Collection<string, Locale> {
+    return this._cache;
   }
 
   private async initialize(sync: boolean = true): Promise<void> {
@@ -81,12 +86,12 @@ export default class LocaleManager extends CacheManager {
     this.cache.forEach((locale) => {
       if (locale == dlocale) return;
       Logger.info(
-        `[${this.constructor.name}] Synchronize ${dlocale.flag} primary locale with ${locale.flag} locale.`
+        `[${this.constructor.name}] Synchronize ${dlocale.tag} primary locale with ${locale.tag} locale.`
       );
       this._sync(dlocale, locale);
     });
     Logger.info(
-      `[${this.constructor.name}] All locales synced with primary locale(${dlocale.flag})`
+      `[${this.constructor.name}] All locales synced with primary locale(${dlocale.tag})`
     );
   }
 
@@ -133,15 +138,11 @@ export default class LocaleManager extends CacheManager {
   private add(folder: string, data: any): void {
     if (!("tags" in data) || !Array.isArray(data.tags))
       throw new Exception(
-        `[${this.constructor.name}] Unable to find tags<> in file data. (tags are required!)`,
+        `[${this.constructor.name}] Unable to find tags<> in file data. (tags are required!) [folder: ${folder}]`,
         Severity.SUSPICIOUS
       );
-    const locale: Locale = new Locale({ ...data, folder: folder });
+    const locale: Locale = new Locale({ ...en_US, ...data, folder: folder });
     this._add(locale);
-  }
-
-  public get cache(): Collection<string, Locale> {
-    return this._cache;
   }
 
   public get(tag: string): Locale {

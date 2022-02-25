@@ -1,25 +1,28 @@
+import en_US from "../locales/en_US/en_US.json";
+
 export default class Locale {
-  setSync(arg0: boolean) {
-    throw new Error("Method not implemented.");
-  }
-  public data: any;
+  private _data;
   constructor(data: any) {
-    this.data = data;
-  }
-
-  get id(): string {
-    return this.data.folder;
-  }
-
-  get flag(): string {
-    return this.data.folder;
+    this._data = data;
   }
 
   public _patch(data: any): void {
-    this.data = data;
+    this._data = data;
+  }
+
+  public get origin() {
+    return Object.assign(en_US, { ...this._data } as unknown);
+  }
+
+  public get id(): string {
+    return this._data.folder;
+  }
+
+  public get tag(): string {
+    return this._data.folder;
   }
 
   public get tags(): Array<string> {
-    return [];
+    return this.origin.tags;
   }
 }
