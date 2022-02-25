@@ -41,8 +41,7 @@ export default class UserManager extends CacheManager {
       await this.create(user);
       return this.fetch(_user, true);
     }
-    const u: User = new User(raw[0]);
-    return this._add(u);
+    return this._add(new User(raw[0]));
   }
 
   async create(_user: DiscordUser | string, locale?: string): Promise<void> {
