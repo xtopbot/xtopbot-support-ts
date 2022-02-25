@@ -8,5 +8,15 @@
         "unknownError": {
             "content": "An error occurred while executing the request.\n```{{error}}```\n `Request Id:` `**{{request.id}}**`"
         }
+    },
+    "roleName": "English",
+    "welcomer": {
+        "memberJoin": {
+            "message": "Hey {{user.tag}}, Welcome!",
+            "button": {
+                "label": "English",
+                "emoji": ""
+            }
+        }
     }
 }
