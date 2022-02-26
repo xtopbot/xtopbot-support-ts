@@ -22,14 +22,14 @@ export default class ContextFormats {
   }
 
   private resolveObject(input: any): any {
-    if (typeof input == "string") return this.resloveString(input);
+    if (typeof input == "string") return this.resolveString(input);
     if (typeof input !== "object") return input;
     if (Array.isArray(input))
       return input.map((_input) => {
         typeof _input === "object"
           ? this.resolveObject(_input)
           : typeof _input === "string"
-          ? this.resloveString(_input)
+          ? this.resolveString(_input)
           : _input;
       });
     let obj = { ...input };
@@ -39,7 +39,7 @@ export default class ContextFormats {
           ? value.map((_v) => this.resolveObject(_v))
           : this.resolveObject(value);
       } else if (typeof value == "string") {
-        obj[key] = this.resloveString(value);
+        obj[key] = this.resolveString(value);
       }
     }
     return obj;
@@ -59,7 +59,7 @@ export default class ContextFormats {
     );
   }
 
-  private resloveString(input: string): string {
+  private resolveString(input: string): string {
     return input.replace(this.RegexFormats, (match) => {
       return this.formats.get(match.slice(2, -2)) ?? match ?? "";
     });
