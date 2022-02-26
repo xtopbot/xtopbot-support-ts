@@ -9,7 +9,7 @@ import {
 import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
 import Constants from "../utils/Constants";
-import ContextFormat from "../utils/ContextFormat";
+import ContextFormat from "../utils/ContextFormats";
 import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
 import Response, { ResponseCodes } from "../utils/Response";

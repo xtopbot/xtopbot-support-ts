@@ -24,8 +24,15 @@ export default class ContextFormats {
   private resolveObject(input: any): any {
     if (typeof input == "string") return this.resloveString(input);
     if (typeof input !== "object") return input;
+    if (Array.isArray(input))
+      return input.map((_input) => {
+        typeof _input === "object"
+          ? this.resolveObject(_input)
+          : typeof _input === "string"
+          ? this.resloveString(_input)
+          : _input;
+      });
     let obj = { ...input };
-
     for (let [key, value] of Object.entries(obj)) {
       if (typeof value == "object") {
         obj[key] = Array.isArray(value)
@@ -35,7 +42,6 @@ export default class ContextFormats {
         obj[key] = this.resloveString(value);
       }
     }
-
     return obj;
   }
 

@@ -13,7 +13,7 @@ import {
 } from "discord.js";
 import app from "../app";
 import User from "../structures/User";
-import ContextFormat from "../utils/ContextFormat";
+import ContextFormats from "../utils/ContextFormats";
 import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import { BaseCommand } from "./BaseCommand";
@@ -27,7 +27,7 @@ export default class CommandMethod {
     | ContextMenuCommandInteraction
     | AutocompleteInteraction;
   public readonly command: BaseCommand;
-  private readonly cf: ContextFormat = new ContextFormat();
+  public readonly cf: ContextFormats = new ContextFormats();
   public _user: User | null = null;
   private _member: GuildMember | null = null;
   private _channel: TextChannel | NewsChannel | ThreadChannel | null = null;

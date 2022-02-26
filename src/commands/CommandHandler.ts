@@ -94,12 +94,13 @@ export default class CommandHandler {
     response: Response | null
   ): Promise<void> {
     //Auto Complete Response
+    const message = response ? dcm.cf.resolve(response) : null;
     if (dcm.d instanceof AutocompleteInteraction) {
       if (!response?.message || !Array.isArray(response.message))
         return Logger.info(
           `[Response<Autocomplete>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
         );
-      dcm.d.respond(response.message as ApplicationCommandOptionChoice[]);
+      dcm.d.respond(message as ApplicationCommandOptionChoice[]);
     } else {
       if (response?.message === null)
         return Logger.info(
@@ -107,7 +108,7 @@ export default class CommandHandler {
         );
       if (dcm.d instanceof Message) {
         if (!response) return;
-        dcm.d.channel.send(response.message as MessageOptions);
+        dcm.d.channel.send(message as MessageOptions);
         return;
       } else if (
         dcm.d instanceof ChatInputCommandInteraction ||
@@ -119,8 +120,8 @@ export default class CommandHandler {
             Severity.FAULT
           );
         if (!dcm.d.deferred)
-          return dcm.d.reply(response.message as InteractionReplyOptions);
-        dcm.d.editReply(response.message as InteractionReplyOptions);
+          return dcm.d.reply(message as InteractionReplyOptions);
+        dcm.d.editReply(message as InteractionReplyOptions);
         return;
       } else if (
         dcm.d instanceof ButtonInteraction ||
@@ -129,11 +130,11 @@ export default class CommandHandler {
         if (!response) return dcm.d.deferUpdate();
 
         if (response.options?.update)
-          return dcm.d.update(response.message as InteractionUpdateOptions);
+          return dcm.d.update(message as InteractionUpdateOptions);
 
         if (!dcm.d.deferred)
-          return dcm.d.reply(response.message as InteractionReplyOptions);
-        dcm.d.editReply(response.message as InteractionReplyOptions);
+          return dcm.d.reply(message as InteractionReplyOptions);
+        dcm.d.editReply(message as InteractionReplyOptions);
         return;
       } else
         throw new Exception(
