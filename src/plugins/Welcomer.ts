@@ -1,26 +1,18 @@
-import {
-  ButtonStyle,
-  ChannelType,
-  ComponentType,
-  GuildMember,
-  Role,
-  TextChannel,
-} from "discord.js";
+import { ButtonStyle, ComponentType, GuildMember, Role } from "discord.js";
 import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
-import Constants from "../utils/Constants";
 import ContextFormat from "../utils/ContextFormats";
-import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
 import Response, { ResponseCodes } from "../utils/Response";
+import ServerUtil from "../utils/ServerUtil";
 
-export default class Welcomer {
+export default class WelcomerPlugin {
   private static manager = new WelcomerManager();
 
   public static async onMemberJoin(member: GuildMember): Promise<void> {
     const user = await app.users.fetch(member.user);
 
-    const localeRoles = this.getLocaleRoles(member);
+    const localeRoles = ServerUtil.getLocaleRoles(member.guild);
     if (!localeRoles.length)
       return Logger.warn(
         `[Welcomer] Unable to find locale roles in ${member.guild.name} (${member.guild.id})`
@@ -34,22 +26,23 @@ export default class Welcomer {
       Logger.info(
         `[Welcomer](Auto) Add ${userLocaleRole.locale}(@${userLocaleRole.role?.name}) to user ${member.user.tag} (${member.id}) [GuildId: ${member.guild.id}] `
       );
+      console.log(userLocaleRole);
       await member.roles.add(userLocaleRole.role as Role);
     } else {
-      const message: string = localeRoles
-        .filter((localeRole) => !!localeRole.message)
-        .map((localeRole) => localeRole.message)
+      const content: string = localeRoles
+        .filter((localeRole) => !!localeRole.content)
+        .map((localeRole) => localeRole.content)
         .join("\n\n");
-      if (!message)
+      if (!content)
         return Logger.debug(
           "[Welcomer] Unable to find content to send a message!"
         );
-      const channel = this.getWelcomerChannel(member);
+      const channel = ServerUtil.getWelcomerChannel(member.guild);
       const cfx = new ContextFormat();
       cfx.setObject("user", member.user);
       cfx.formats.set("user.tag", member.user.tag);
       const _response = new Response(ResponseCodes.PLUGIN_SUCCESS, {
-        content: message,
+        content: content,
         components: [
           {
             type: ComponentType.ActionRow,
@@ -58,8 +51,8 @@ export default class Welcomer {
                 type: ComponentType.Button,
                 style: ButtonStyle.Secondary,
                 customId: `locale:${localeRole.locale}:plugin(welcomer)`,
-                label: localeRole.button.label,
-                emoji: localeRole.button.emoji,
+                label: localeRole.button[0].label,
+                emoji: localeRole.button[0].emoji,
               }))
               .slice(0, 5),
           },
@@ -76,36 +69,5 @@ export default class Welcomer {
       welcomerMessage.delete();
       this.manager.cache.delete(member.id);
     }
-  }
-
-  private static getWelcomerChannel(member: GuildMember): TextChannel {
-    const channel: TextChannel = member.guild.channels.cache.find(
-      (channel) =>
-        channel.type === ChannelType.GuildText &&
-        channel.name.toLowerCase() ===
-          Constants.DEFAULT_WELCOME_CHANNEL_NAME.toLowerCase()
-    ) as TextChannel;
-    if (!channel)
-      throw new Exception(
-        `Welcome channel unable to find. [Guild Id: ${member.guild.id}]`,
-        Severity.FAULT
-      );
-    return channel;
-  }
-
-  private static getLocaleRoles(member: GuildMember) {
-    return app.locales.cache
-      .map((locale) => ({
-        locale: locale.tag,
-        role: member.guild.roles.cache.find(
-          (role) =>
-            role.name.toLowerCase() == locale.origin.roleName.toLowerCase()
-        ),
-        ...locale.origin.welcomer.memberJoin,
-      }))
-      .filter(
-        (localeRole) =>
-          typeof localeRole.role !== undefined && !!localeRole.message
-      );
   }
 }
