@@ -1,13 +1,16 @@
 import Response, { ResponseCodes } from "./Response";
 import { Util } from "discord.js";
 import Logger from "./Logger";
+import { v4 as uuidv4 } from "uuid";
 export default class Exception extends Response {
-  public reason: string | null;
-  public severity: Severity;
-  public cause?: Error | unknown | null = null;
+  public readonly reason: string | null;
+  public readonly severity: Severity;
+  public readonly cause?: Error | unknown | null = null;
   constructor(message: string, severity: Severity, cause?: Error | unknown) {
     super(ResponseCodes.EXCEPTION, {
-      content: `Error: \`${Util.escapeMarkdown(message)}\``, // related to locale system
+      content: `An error occurred while executing the request.\n\`\`\`${Util.escapeMarkdown(
+        message
+      )}\`\`\`\n \`Request Id:\`**\`${uuidv4()}\`**`,
       ephemeral: true,
     }); // this Reply message is temp while locale is finished
     this.reason = message;
