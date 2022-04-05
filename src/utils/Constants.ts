@@ -33,7 +33,6 @@ export default class Constants {
     "CreatePrivateThreads",
     "UseExternalStickers",
     //Voice Channel Only
-    "StartEmbeddedActivities",
     "Stream",
     "Connect",
     "Speak",
@@ -44,7 +43,4 @@ export default class Constants {
     "RequestToSpeak",
     "PrioritySpeaker",
   ];
-
-  //Support Server
-  public static readonly DEFAULT_WELCOME_CHANNEL_NAME: string = "sign-up";
 }

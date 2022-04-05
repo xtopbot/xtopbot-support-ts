@@ -1,55 +1,74 @@
 import { PermissionsString } from "discord.js";
 import Constants from "../utils/Constants";
-import Response, { ResponseCodes } from "../utils/Response";
+import Response, { Action, ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
-import CommandMethod from "./CommandMethod";
+import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
 
 export default class CommandRequirementsHandler {
-  private readonly dcm: CommandMethod;
-  public constructor(dcm: CommandMethod) {
+  private readonly dcm: CommandMethod<CommandMethodTypes>;
+  public constructor(dcm: CommandMethod<CommandMethodTypes>) {
     this.dcm = dcm;
   }
 
-  public async checkAll(): Promise<boolean | Response> {
+  public async checkAll(): Promise<void> {
     if (!this.userFlagPolicy())
-      return new Response(ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY, {
-        content: "Unauthorized user level policy", // related to locale system
-        ephemeral: true,
-      });
+      throw new Response(
+        ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY,
+        {
+          content: "Unauthorized user level policy", // related to locale system
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
     if (this.dcm.d.inGuild()) {
       if (!this.checkBotChannelPermissions())
-        return new Response(ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING, {
-          content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-            this.botChannelPermissionsMissing
-          ).join(", ")}\`.`, // related to locale system
-          ephemeral: true,
-        });
+        throw new Response(
+          ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING,
+          {
+            content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+              this.botChannelPermissionsMissing
+            ).join(", ")}\`.`, // related to locale system
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
 
       if (!this.checkBotGuildPermissions())
-        return new Response(ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING, {
-          content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-            this.botGuildPermissionsMissing
-          ).join(", ")}\`.`, // related to locale system
-          ephemeral: true,
-        });
+        throw new Response(
+          ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING,
+          {
+            content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+              this.botGuildPermissionsMissing
+            ).join(", ")}\`.`, // related to locale system
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
 
       if (!this.checkMemberChannelPermissions())
-        return new Response(ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING, {
-          content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-            this.memberChannelPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
-          ephemeral: true,
-        });
+        throw new Response(
+          ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING,
+          {
+            content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
+              this.memberChannelPermissionsMissing
+            ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
 
       if (!this.checkMemberGuildPermissions())
-        return new Response(ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING, {
-          content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-            this.memberGuildPermissionsMissing
-          ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
-          ephemeral: true,
-        });
+        throw new Response(
+          ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING,
+          {
+            content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
+              this.memberGuildPermissionsMissing
+            ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
     }
-    return true;
   }
 
   public userFlagPolicy(): boolean {

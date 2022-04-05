@@ -42,6 +42,20 @@ export default class User {
     if (!!raw.length) this.lastVotedAt = raw[0].createdAt;
     return !!raw.length;
   }
+
+  async setFlags(flags: number): Promise<void> {
+    await db.query("update set flags = ? where userId = ?", [
+      flags,
+      this.data.userId,
+    ]);
+  }
+
+  async addFlag(flag: UserFlagsPolicy): Promise<void> {
+    await db.query("update set flags = flags | ? where userId = ?", [
+      flag,
+      this.data.userId,
+    ]);
+  }
 }
 
 export enum UserFeatures {

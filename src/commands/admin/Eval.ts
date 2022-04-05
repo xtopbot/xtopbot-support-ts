@@ -1,8 +1,8 @@
 import { Message, MessageAttachment } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
-import Response, { ResponseCodes } from "../../utils/Response";
-import CommandMethod, { MessageCommandMethod } from "../CommandMethod";
+import Response, { Action, ResponseCodes } from "../../utils/Response";
+import CommandMethod from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import { VM } from "vm2";
@@ -17,26 +17,24 @@ export default class Eval extends BaseCommand {
       applicationCommandData: [],
     });
   }
-
-  public execute(dcm: CommandMethod): Promise<Response> {
-    if (dcm.d instanceof Message)
-      return this.message(dcm as MessageCommandMethod, dcm.context);
-    throw new Exception(
-      `[${this.constructor.name}] ${Reason.INTERACTION_TYPE_NOT_DETECT}`,
-      Severity.FAULT
-    );
+  public async message(dcm: CommandMethod<Message>) {
+    return this.runEval(dcm, dcm.context);
   }
-  private async message(
-    dcm: MessageCommandMethod,
+  private async runEval(
+    dcm: CommandMethod<Message>,
     input: string
-  ): Promise<Response> {
+  ): Promise<Response<Message>> {
     if (dcm.author.id !== "247519134080958464")
       throw new Exception("This error should not occur!", Severity.FAULT); // to be safe :)
     const rd = this.checkFlags(input.replace(/token/gi, ""));
     if (!rd.input)
-      return new Response(ResponseCodes.EMPTY_INPUT, {
-        content: "Empty Input",
-      });
+      return new Response(
+        ResponseCodes.EMPTY_INPUT,
+        {
+          content: "Empty Input",
+        },
+        Action.REPLY
+      );
     try {
       const vm = new VM({
         timeout: 3000,
@@ -47,28 +45,33 @@ export default class Eval extends BaseCommand {
       });
       var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
 
+      if (!rd.flags.includes(EvalFlags.OUTPUT))
+        return new Response(ResponseCodes.SUCCESS, null, Action.NONE);
       return new Response(
         ResponseCodes.SUCCESS,
-        !rd.flags.includes(EvalFlags.OUTPUT)
-          ? res.length >= 1900 || rd.flags.includes(EvalFlags.FILE)
-            ? {
-                content:
-                  res.length >= 1900
-                    ? `File Output (Large content) `
-                    : `File Output (Flag)`,
-                files: [new MessageAttachment(Buffer.from(res), "output.json")],
-              }
-            : {
-                content: `Output: \`\`\`${res}\`\`\``,
-              }
-          : null
+        res.length >= 1900 || rd.flags.includes(EvalFlags.FILE)
+          ? {
+              content:
+                res.length >= 1900
+                  ? `File Output (Large content) `
+                  : `File Output (Flag)`,
+              files: [new MessageAttachment(Buffer.from(res), "output.json")],
+            }
+          : {
+              content: `\`\`\`${res}\`\`\``,
+            },
+        Action.REPLY
       );
     } catch (error) {
-      return new Response(ResponseCodes.SUCCESS, {
-        content: `Failed to compile script: \`\`\`${
-          (error as Error).message
-        }\`\`\``,
-      });
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          content: `Failed to compile script: \`\`\`${
+            (error as Error).message
+          }\`\`\``,
+        },
+        Action.REPLY
+      );
     }
   }
 

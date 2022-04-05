@@ -1,11 +1,14 @@
 import {
   ApplicationCommandData,
-  MessageComponentInteraction,
   ApplicationCommandType,
   ApplicationCommandOptionType,
+  ModalSubmitInteraction,
+  ButtonInteraction,
+  SelectMenuInteraction,
 } from "discord.js";
 import app from "../app";
 import { BaseCommand } from "../commands/BaseCommand";
+import ComponentMethod from "../commands/ComponentMethod";
 import CommandsManager from "./CommandsManager";
 
 export default class ApplicationCommandsManager extends CommandsManager {
@@ -66,9 +69,13 @@ export default class ApplicationCommandsManager extends CommandsManager {
   }
 
   public getMessageComponentCommand(
-    d: MessageComponentInteraction
+    d: ButtonInteraction | SelectMenuInteraction | ModalSubmitInteraction
   ): BaseCommand | null {
-    return this.values.find((command) => command.messageComponent(d)) ?? null;
+    return (
+      this.values.find((command) =>
+        command.messageComponent(new ComponentMethod(d, command))
+      ) ?? null
+    );
   }
 
   public deploy(global: boolean = false): any {

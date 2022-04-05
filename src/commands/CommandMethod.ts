@@ -5,6 +5,7 @@ import {
   ContextMenuCommandInteraction,
   GuildMember,
   Message,
+  ModalSubmitInteraction,
   NewsChannel,
   SelectMenuInteraction,
   TextChannel,
@@ -18,29 +19,14 @@ import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import { BaseCommand } from "./BaseCommand";
 
-export default class CommandMethod {
-  public readonly d:
-    | Message
-    | ChatInputCommandInteraction
-    | ButtonInteraction
-    | SelectMenuInteraction
-    | ContextMenuCommandInteraction
-    | AutocompleteInteraction;
+export default class CommandMethod<T extends CommandMethodTypes> {
+  public readonly d: T;
   public readonly command: BaseCommand;
   public readonly cf: ContextFormats = new ContextFormats();
   public _user: User | null = null;
   private _member: GuildMember | null = null;
   private _channel: TextChannel | NewsChannel | ThreadChannel | null = null;
-  constructor(
-    d:
-      | Message
-      | ChatInputCommandInteraction
-      | ButtonInteraction
-      | SelectMenuInteraction
-      | ContextMenuCommandInteraction
-      | AutocompleteInteraction,
-    command: BaseCommand
-  ) {
+  constructor(d: T, command: BaseCommand) {
     this.d = d;
     this.command = command;
     this._member = this.d.member instanceof GuildMember ? this.d.member : null;
@@ -53,7 +39,8 @@ export default class CommandMethod {
   }
 
   public async fetch(): Promise<void> {
-    if (!this._channel) {
+    this.d.channel;
+    if (!this._channel && this.d.channelId) {
       const channel = await this.d.guild?.channels.fetch(this.d.channelId);
       if (
         !channel ||
@@ -69,8 +56,8 @@ export default class CommandMethod {
         );
       this._channel = channel;
     }
-    if (!this._member) {
-      const member = await this.d.guild?.members.fetch(this.d.channelId);
+    if (!this._member && this.d.member) {
+      const member = await this.d.guild?.members.fetch(this.d.member.user.id);
       if (!member)
         throw new Exception(
           "Unable to find member on guild.",
@@ -126,22 +113,11 @@ export default class CommandMethod {
     return app.locales.get("en_US");
   }
 }
-
-export interface MessageCommandMethod extends CommandMethod {
-  d: Message;
-}
-export interface ChatInputCommandInteractionMethod extends CommandMethod {
-  d: ChatInputCommandInteraction;
-}
-export interface ButtonInteractionMethod extends CommandMethod {
-  d: ButtonInteraction;
-}
-export interface SelectMenuInteractionMethod extends CommandMethod {
-  d: SelectMenuInteraction;
-}
-export interface ContextMenuCommandInteractionMethod extends CommandMethod {
-  d: ContextMenuCommandInteraction;
-}
-export interface AutocompleteInteractionMethod extends CommandMethod {
-  d: AutocompleteInteraction;
-}
+export type CommandMethodTypes =
+  | Message
+  | ChatInputCommandInteraction
+  | ButtonInteraction
+  | SelectMenuInteraction
+  | ContextMenuCommandInteraction
+  | AutocompleteInteraction
+  | ModalSubmitInteraction;

@@ -1,4 +1,5 @@
 import { Collection } from "discord.js";
+import { CommandMethodTypes } from "../commands/CommandMethod";
 import Response from "./Response";
 
 export default class ContextFormats {
@@ -17,7 +18,7 @@ export default class ContextFormats {
     }
   }
 
-  public resolve(response: Response): any {
+  public resolve(response: Response<CommandMethodTypes>): any {
     return this.resolveObject(response.message);
   }
 
@@ -25,22 +26,21 @@ export default class ContextFormats {
     if (typeof input == "string") return this.resolveString(input);
     if (typeof input !== "object") return input;
     if (Array.isArray(input))
-      return input.map((_input) => {
-        typeof _input === "object"
+      return input.map((_input) =>
+        typeof _input == "object"
           ? this.resolveObject(_input)
-          : typeof _input === "string"
+          : typeof _input == "string"
           ? this.resolveString(_input)
-          : _input;
-      });
+          : _input
+      );
     let obj = { ...input };
     for (let [key, value] of Object.entries(obj)) {
-      if (typeof value == "object") {
-        obj[key] = Array.isArray(value)
-          ? value.map((_v) => this.resolveObject(_v))
-          : this.resolveObject(value);
-      } else if (typeof value == "string") {
-        obj[key] = this.resolveString(value);
-      }
+      obj[key] =
+        typeof value == "object"
+          ? this.resolveObject(value)
+          : typeof value == "string"
+          ? this.resolveString(value)
+          : value;
     }
     return obj;
   }

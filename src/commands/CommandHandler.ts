@@ -4,12 +4,9 @@ import {
   ClientUser,
   ChatInputCommandInteraction,
   ContextMenuCommandInteraction,
-  InteractionReplyOptions,
-  InteractionUpdateOptions,
   Message,
-  MessageOptions,
   SelectMenuInteraction,
-  ApplicationCommandOptionChoice,
+  ModalSubmitInteraction,
 } from "discord.js";
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
@@ -17,9 +14,9 @@ import app from "../app";
 import { BaseCommand } from "./BaseCommand";
 import Logger from "../utils/Logger";
 import CommandRequirementsHandler from "./RequirementHandler";
-import Response, { ResponseCodes } from "../utils/Response";
+import Response, { Action, ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
-import CommandMethod from "./CommandMethod";
+import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
@@ -34,43 +31,40 @@ export default class CommandHandler {
   }
 
   protected static async executeCommand(
-    dcm: CommandMethod,
+    dcm: CommandMethod<CommandMethodTypes>,
     checkRequirements: boolean = true
-  ): Promise<Response> {
+  ): Promise<Response<CommandMethodTypes>> {
     if (!dcm.d.inGuild())
-      return new Response(ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD, {
-        content: "This command is not allowed to be used in DM.", // related to locale system
-      });
+      return new Response(
+        ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD,
+        {
+          content: "This command is not allowed to be used in DM.", // related to locale system
+        },
+        Action.REPLY
+      );
     await dcm.fetch();
     if (checkRequirements) {
       //Check command Requirements to continue to execute command
       const commandRequirements = new CommandRequirementsHandler(dcm);
-      const commandRequirementsCheck: Response | boolean =
+      try {
         await commandRequirements.checkAll();
-
-      if (commandRequirementsCheck instanceof Response)
-        return commandRequirementsCheck;
-
-      if (!commandRequirementsCheck)
+      } catch (err) {
+        if (err instanceof Response) return err;
         throw new Exception(
           "Something went wrong while processing the command requirements",
           Severity.FAULT
         );
+      }
     }
     return dcm.command.execute(dcm);
   }
 
   public static async executeHandler(
-    d:
-      | Message
-      | ChatInputCommandInteraction
-      | ButtonInteraction
-      | SelectMenuInteraction
-      | ContextMenuCommandInteraction
-      | AutocompleteInteraction,
+    d: CommandMethodTypes,
     command: BaseCommand
   ): Promise<void> {
-    const dcm: CommandMethod = new CommandMethod(d, command);
+    const dcm = new CommandMethod<CommandMethodTypes>(d, command);
+    dcm;
     try {
       return this.response(
         dcm,
@@ -90,11 +84,111 @@ export default class CommandHandler {
   }
 
   private static async response(
-    dcm: CommandMethod,
-    response: Response | null
+    dcm: CommandMethod<CommandMethodTypes>,
+    response: Response<CommandMethodTypes>
   ): Promise<void> {
+    /*if (!response.action)
+      return Logger.info(
+        `[Response] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
+      );
+    Logger.info(`[Response] (Function: ${response.action.name}) POST!`);
+    response.action(response.message);*/
+    const message = dcm.cf.resolve(response);
+    if (dcm.d instanceof Message) {
+      if (response.action === Action.REPLY) {
+        dcm.d.channel.send(message);
+        return;
+      }
+    } else if (dcm.d instanceof ChatInputCommandInteraction) {
+      if (response.action === Action.REPLY) {
+        dcm.d.reply(message);
+        return;
+      }
+      if (response.action === Action.MODAL) {
+        dcm.d.showModal(message);
+        return;
+      }
+    } else if (dcm.d instanceof ButtonInteraction) {
+      if (response.action === Action.REPLY) {
+        dcm.d.reply(message);
+        return;
+      }
+      if (response.action === Action.UPDATE) {
+        dcm.d.update(message);
+        return;
+      }
+      if (response.action === Action.DEFER) {
+        dcm.d.deferUpdate(message);
+        return;
+      }
+      if (response.action === Action.MODAL) {
+        dcm.d.showModal(message);
+        return;
+      }
+    } else if (dcm.d instanceof SelectMenuInteraction) {
+      if (response.action === Action.REPLY) {
+        dcm.d.reply(message);
+        return;
+      }
+      if (response.action === Action.UPDATE) {
+        dcm.d.update(message);
+        return;
+      }
+      if (response.action === Action.DEFER) {
+        dcm.d.deferUpdate(message);
+        return;
+      }
+      if (response.action === Action.MODAL) {
+        dcm.d.showModal(message);
+        return;
+      }
+    } else if (dcm.d instanceof AutocompleteInteraction) {
+      return dcm.d.respond(message);
+    } else if (dcm.d instanceof ContextMenuCommandInteraction) {
+      if (response.action === Action.REPLY) {
+        dcm.d.reply(message);
+        return;
+      }
+      if (response.action === Action.MODAL) {
+        dcm.d.showModal(message);
+        return;
+      }
+    } else if (dcm.d instanceof ModalSubmitInteraction) {
+      if (response.action === Action.REPLY) {
+        dcm.d.reply(message);
+        return;
+      }
+      if (dcm.d.isFromMessage()) {
+        if (response.action === Action.UPDATE) {
+          dcm.d.update(message);
+          return;
+        }
+        if (response.action === Action.DEFER) {
+          dcm.d.deferUpdate(message);
+          return;
+        }
+      }
+    }
+    Logger.info(
+      `[Response<${dcm.d.type}>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
+    );
+    if (
+      !(dcm.d instanceof AutocompleteInteraction) &&
+      !(dcm.d instanceof Message)
+    )
+      throw new Exception(
+        "Unable To Detect Interaction Action Type",
+        Severity.FAULT,
+        {
+          action:
+            typeof response.action == "number" ? Action[response.action] : null,
+          message: response.message,
+          code: response.code,
+        }
+      );
+
     //Auto Complete Response
-    const message = response ? dcm.cf.resolve(response) : null;
+    /*const message = response ? dcm.cf.resolve(response) : null;
     if (dcm.d instanceof AutocompleteInteraction) {
       if (!response?.message || !Array.isArray(response.message))
         return Logger.info(
@@ -112,27 +206,32 @@ export default class CommandHandler {
         return;
       } else if (
         dcm.d instanceof ChatInputCommandInteraction ||
-        dcm.d instanceof ContextMenuCommandInteraction
+        dcm.d instanceof ContextMenuCommandInteraction ||
+        (dcm.d instanceof ModalSubmitInteraction && !dcm.d.isFromMessage())
       ) {
         if (!response)
           throw new Exception(
             "Unable to detect response for this interaction",
             Severity.FAULT
           );
-        if (!dcm.d.deferred)
+        if (message.customId && !(dcm.d instanceof ModalSubmitInteraction))
+          return dcm.d.showModal(message);
+        if (dcm.d instanceof ModalSubmitInteraction || !dcm.d.deferred)
           return dcm.d.reply(message as InteractionReplyOptions);
         dcm.d.editReply(message as InteractionReplyOptions);
         return;
       } else if (
         dcm.d instanceof ButtonInteraction ||
-        dcm.d instanceof SelectMenuInteraction
+        dcm.d instanceof SelectMenuInteraction ||
+        (dcm.d instanceof ModalSubmitInteraction && dcm.d.isFromMessage())
       ) {
         if (!response) return dcm.d.deferUpdate();
-
+        if (message.customId && !(dcm.d instanceof ModalSubmitInteraction))
+          return dcm.d.showModal(message);
         if (response.options?.update)
           return dcm.d.update(message as InteractionUpdateOptions);
 
-        if (!dcm.d.deferred)
+        if (dcm.d instanceof ModalSubmitInteraction || !dcm.d.deferred)
           return dcm.d.reply(message as InteractionReplyOptions);
         dcm.d.editReply(message as InteractionReplyOptions);
         return;
@@ -140,8 +239,7 @@ export default class CommandHandler {
         throw new Exception(
           "Unable to detect interaction type",
           Severity.FAULT
-        );
-    }
+        );*/
   }
 
   private static matchesCommand(input: string): BaseCommand | null {

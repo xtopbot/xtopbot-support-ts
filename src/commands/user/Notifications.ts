@@ -1,19 +1,17 @@
-import { ActionRow, ActionRowComponent } from "@discordjs/builders";
 import {
-  ButtonInteraction,
-  ChatInputCommandInteraction,
-  MessageComponentInteraction,
-  SelectMenuInteraction,
   Role,
   ApplicationCommandType,
-  SelectMenuOption,
   ComponentType,
+  SelectMenuComponentOptionData,
+  SelectMenuInteraction,
+  ChatInputCommandInteraction,
+  ButtonInteraction,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Exception, { Reason, Severity } from "../../utils/Exception";
-import Response, { ResponseCodes } from "../../utils/Response";
-import CommandMethod, { SelectMenuInteractionMethod } from "../CommandMethod";
+import Response, { Action, ResponseCodes } from "../../utils/Response";
+import CommandMethod, { CommandMethodTypes } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
+import ComponentMethod from "../ComponentMethod";
 
 export default class Notifications extends BaseCommand {
   constructor() {
@@ -28,109 +26,116 @@ export default class Notifications extends BaseCommand {
           type: ApplicationCommandType.ChatInput,
         },
       ],
-      messageComponent: (d: MessageComponentInteraction) => {
-        if (d.customId === "notifications") return true;
+      messageComponent: (d) => {
+        if (d.matches("notifications")) {
+          d.setPath("getMessage");
+          return true;
+        }
         return false;
       },
     });
   }
 
-  public execute(dcm: CommandMethod): Promise<Response> {
-    if (dcm.d instanceof ChatInputCommandInteraction)
-      return this.displayNotificationRoles(dcm);
-    if (dcm.d instanceof ButtonInteraction)
-      return this.displayNotificationRoles(dcm);
-    if (dcm.d instanceof SelectMenuInteraction)
-      return this.selectMentInteraction(dcm as SelectMenuInteractionMethod);
-    throw new Exception(
-      `[${this.constructor.name}] ${Reason.INTERACTION_TYPE_NOT_DETECT}`,
-      Severity.FAULT
+  public async chatInputCommandInteraction(
+    dcm: CommandMethod<ChatInputCommandInteraction>
+  ) {
+    return this.getMessageNotificationRoles(dcm);
+  }
+
+  public async selectMenuInteraction(
+    dcm: ComponentMethod<SelectMenuInteraction>
+  ) {
+    const selectedRoles = dcm.d.values as DefaultNotificationRoles[];
+    await dcm.d.deferReply({ ephemeral: true });
+    return this.setMemberNotificationRole(dcm, selectedRoles);
+  }
+
+  private async getMessageNotificationRoles(
+    dcm: CommandMethod<ChatInputCommandInteraction | ButtonInteraction>
+  ): Promise<Response<ChatInputCommandInteraction | ButtonInteraction>> {
+    const notificationRoles: NotificationRoles =
+      await this.getNotificationRoles(dcm);
+    if (
+      !notificationRoles.news &&
+      !notificationRoles.updates &&
+      !notificationRoles.status
+    )
+      return new Response(
+        ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES,
+        {
+          content: "Uanble to find notification roles in this server.", // related to locale system
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    return new Response(
+      ResponseCodes.SUCCESS,
+      {
+        content: `select notifications`, // related to locale system
+        ephemeral: true,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.SelectMenu,
+                customId: "notifications",
+                maxValues:
+                  Number(!!notificationRoles.news) +
+                  Number(!!notificationRoles.updates) +
+                  Number(!!notificationRoles.status),
+                minValues: 0,
+                placeholder: "Select your own notifications",
+                options: [
+                  notificationRoles.news
+                    ? {
+                        label: "NEWS",
+                        description:
+                          "All the important news regarding the bot!",
+                        value: DefaultNotificationRoles.NEWS,
+                        default: !!dcm.member.roles.cache.has(
+                          notificationRoles.news.id
+                        ),
+                      }
+                    : null,
+                  notificationRoles.updates
+                    ? {
+                        label: "UPDATES",
+                        description:
+                          "Be the first to know about new commands and new changes in the bot!",
+                        value: DefaultNotificationRoles.UPDATES,
+                        default: !!dcm.member.roles.cache.has(
+                          notificationRoles.updates.id
+                        ),
+                      }
+                    : null,
+                  notificationRoles.status
+                    ? {
+                        label: "STATUS",
+                        description:
+                          "Status updates about xToP. Issues, downtime and maintenances.",
+                        value: DefaultNotificationRoles.STATUS,
+                        default: !!dcm.member.roles.cache.has(
+                          notificationRoles.status.id
+                        ),
+                      }
+                    : null,
+                ].filter(
+                  (option) => option !== null
+                ) as SelectMenuComponentOptionData[],
+              },
+            ],
+          },
+        ],
+      },
+      Action.REPLY
     );
   }
 
-  private async displayNotificationRoles(
-    dcm: CommandMethod
-  ): Promise<Response> {
-    const notificationRoles: NotificationRoles =
-      await this.getNotificationRoles(dcm);
-    if (
-      !notificationRoles.news &&
-      !notificationRoles.updates &&
-      !notificationRoles.status
-    )
-      return new Response(ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES, {
-        content: "Uanble to find notification roles in this server.", // related to locale system
-        ephemeral: true,
-      });
-    return new Response(ResponseCodes.SUCCESS, {
-      content: `select notifications`, // related to locale system
-      ephemeral: true,
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.SelectMenu,
-              custom_id: "notifications",
-              max_values:
-                Number(!!notificationRoles.news) +
-                Number(!!notificationRoles.updates) +
-                Number(!!notificationRoles.status),
-              min_values: 0,
-              placeholder: "Select your own notifications",
-              options: [
-                notificationRoles.news
-                  ? {
-                      label: "NEWS",
-                      description: "All the important news regarding the bot!",
-                      value: DefaultNotificationRoles.NEWS,
-                      default: !!dcm.member.roles.cache.has(
-                        notificationRoles.news.id
-                      ),
-                    }
-                  : null,
-                notificationRoles.updates
-                  ? {
-                      label: "UPDATES",
-                      description:
-                        "Be the first to know about new commands and new changes in the bot!",
-                      value: DefaultNotificationRoles.UPDATES,
-                      default: !!dcm.member.roles.cache.has(
-                        notificationRoles.updates.id
-                      ),
-                    }
-                  : null,
-                notificationRoles.status
-                  ? {
-                      label: "STATUS",
-                      description:
-                        "Status updates about xToP. Issues, downtime and maintenances.",
-                      value: DefaultNotificationRoles.STATUS,
-                      default: !!dcm.member.roles.cache.has(
-                        notificationRoles.status.id
-                      ),
-                    }
-                  : null,
-              ].filter((option) => option !== null) as SelectMenuOption[],
-            },
-          ],
-        },
-      ] as unknown as ActionRow<ActionRowComponent>[],
-    });
-  }
-
-  private async selectMentInteraction(
-    dcm: SelectMenuInteractionMethod
-  ): Promise<Response> {
-    const selectedRoles = dcm.d.values as DefaultNotificationRoles[];
-    await dcm.d.deferReply({ ephemeral: true });
-    return this.selectedNotificationRole(dcm, selectedRoles);
-  }
-
-  private async selectedNotificationRole(
-    dcm: CommandMethod,
+  private async setMemberNotificationRole(
+    dcm: CommandMethod<CommandMethodTypes>,
     roles: DefaultNotificationRoles[]
-  ): Promise<Response> {
+  ): Promise<Response<SelectMenuInteraction>> {
     const notificationRoles: NotificationRoles =
       await this.getNotificationRoles(dcm);
     if (
@@ -138,10 +143,14 @@ export default class Notifications extends BaseCommand {
       !notificationRoles.updates &&
       !notificationRoles.status
     )
-      return new Response(ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES, {
-        content: "Uanble to find notification roles in this server.", // related to locale system
-        ephemeral: true,
-      });
+      return new Response(
+        ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES,
+        {
+          content: "Uanble to find notification roles in this server.", // related to locale system
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
     if (notificationRoles.news) {
       if (roles.includes(DefaultNotificationRoles.NEWS))
         await dcm.member.roles.add(notificationRoles.news);
@@ -157,14 +166,18 @@ export default class Notifications extends BaseCommand {
         await dcm.member.roles.add(notificationRoles.status);
       else await dcm.member.roles.remove(notificationRoles.status);
     }
-    return new Response(ResponseCodes.SUCCESS, {
-      content: "Roles: " + roles.join(", "),
-      ephemeral: true,
-    });
+    return new Response(
+      ResponseCodes.SUCCESS,
+      {
+        content: "Roles: " + roles.join(", "),
+        ephemeral: true,
+      },
+      Action.REPLY
+    );
   }
 
   private async getNotificationRoles(
-    dcm: CommandMethod
+    dcm: CommandMethod<CommandMethodTypes>
   ): Promise<NotificationRoles> {
     const roles = await dcm.d.guild?.roles.fetch();
     return {

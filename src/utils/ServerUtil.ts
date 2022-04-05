@@ -1,15 +1,16 @@
 import { ChannelType, Guild, TextChannel } from "discord.js";
 import app from "../app";
-import Constants from "./Constants";
 import Exception, { Severity } from "./Exception";
 
 export default class ServerUtil {
+  public static readonly DEFAULT_WELCOME_CHANNEL_NAME = "sign-up";
+
   public static getWelcomerChannel(guild: Guild) {
     const channel: TextChannel = guild.channels.cache.find(
       (channel) =>
         channel.type === ChannelType.GuildText &&
         channel.name.toLowerCase() ===
-          Constants.DEFAULT_WELCOME_CHANNEL_NAME.toLowerCase()
+          this.DEFAULT_WELCOME_CHANNEL_NAME.toLowerCase()
     ) as TextChannel;
     if (!channel)
       throw new Exception(

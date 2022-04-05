@@ -5,22 +5,20 @@ import {
   MessagePayload,
   ApplicationCommandOptionType,
   ApplicationCommandType,
-  ActionRow,
-  ActionRowComponent,
   ComponentType,
   ButtonStyle,
+  ModalSubmitInteraction,
   Webhook,
+  TextInputStyle,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Reason, Severity } from "../../utils/Exception";
-import Response, { ResponseCodes } from "../../utils/Response";
-import CommandMethod, {
-  AutocompleteInteractionMethod,
-  ChatInputCommandInteractionMethod,
-} from "../CommandMethod";
+import Response, { Action, ResponseCodes } from "../../utils/Response";
+import CommandMethod from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import Util from "../../utils/Util";
+import ComponentMethod from "../ComponentMethod";
 export default class WebhookMessage extends BaseCommand {
   constructor() {
     super({
@@ -68,111 +66,9 @@ export default class WebhookMessage extends BaseCommand {
     });
   }
 
-  public execute(dcm: CommandMethod): Promise<Response> {
-    if (dcm.d instanceof ChatInputCommandInteraction)
-      return this.chatInputCommandInteraction(
-        dcm as ChatInputCommandInteractionMethod
-      );
-    if (dcm.d instanceof AutocompleteInteraction)
-      return this.autoCompleteInteractiom(dcm as AutocompleteInteractionMethod);
-    throw new Exception(
-      `[${this.constructor.name}] ${Reason.INTERACTION_TYPE_NOT_DETECT}`,
-      Severity.FAULT
-    );
-  }
-
-  private async chatInputCommandInteraction(
-    dcm: ChatInputCommandInteractionMethod
-  ): Promise<Response> {
-    await dcm.d.deferReply({ ephemeral: true });
-    const webhookOption = dcm.d.options.getString("webhook", false);
-    const webhook = webhookOption
-      ? (await dcm.d.guild?.fetchWebhooks())?.find(
-          (webhook) => webhook.id === webhookOption
-        )
-      : null;
-    if (!webhook)
-      return new Response(ResponseCodes.UNABLE_TO_FIND_WEBHOOK, {
-        content: `Unable to find webhook with \`${webhookOption}\` Id`,
-        ephemeral: true,
-      });
-    if (webhook.owner?.id !== app.client.user?.id)
-      return new Response(ResponseCodes.WEBHOOK_OWNER_NOT_ME, {
-        content: `Unable to find webhook with \`${webhookOption}\` Id`,
-        ephemeral: true,
-      });
-    const messageOption = dcm.d.options.getString("message", false);
-    if (messageOption) return this.sendWebhook(dcm, webhook, messageOption);
-    return new Response(ResponseCodes.SUCCESS, {
-      custom_id: "a",
-      components: [
-        {
-          type: 4,
-          custom_id: "test",
-          style: 1,
-          label: "hello",
-        },
-      ] as any,
-    } as any);
-  }
-
-  private async sendWebhook(
-    dcm: CommandMethod,
-    webhook: Webhook,
-    message: string
-  ): Promise<Response> {
-    const messageData = Util.stringToJson(message);
-    if (!messageData)
-      return new Response(ResponseCodes.INVALID_JSON_DATA, {
-        content: "Invalid json data",
-        ephemeral: true,
-      });
-    const messageId =
-      dcm.d instanceof ChatInputCommandInteraction
-        ? dcm.d.options.getString("message_id", false)
-        : null;
-    try {
-      const post = !messageId
-        ? await webhook.send(messageData as unknown as MessagePayload)
-        : await webhook.editMessage(
-            messageId,
-            messageData as unknown as MessagePayload
-          );
-      return new Response(ResponseCodes.SUCCESS, {
-        content: !messageId
-          ? "Message successfully sent! "
-          : "Message successfully edited!",
-        components: [
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              {
-                type: ComponentType.Button,
-                style: ButtonStyle.Link,
-                label: "Go to message",
-                url: `https://discord.com/channels/${webhook.guildId}/${webhook.channelId}/${post.id}`,
-              },
-            ],
-          },
-        ] as ActionRow<ActionRowComponent>[],
-      });
-    } catch (err) {
-      if (err instanceof DiscordAPIError)
-        return new Response(ResponseCodes.DISCORD_API_ERROR, {
-          content: `\`\`\`Discord API Error: ${err.message} (Status code: ${err.status})\`\`\``,
-          ephemeral: true,
-        });
-      throw new Exception(
-        "Unkown error while proccesing webhook message",
-        Severity.FAULT,
-        err
-      );
-    }
-  }
-
-  private async autoCompleteInteractiom(
-    dcm: AutocompleteInteractionMethod
-  ): Promise<Response> {
+  public async autoCompleteInteraction(
+    dcm: CommandMethod<AutocompleteInteraction>
+  ) {
     const webhookOption = dcm.d.options.getString("webhook");
     if (typeof webhookOption == "string" && webhookOption.length <= 32) {
       const webhooks = await dcm.d.guild?.fetchWebhooks(); // This not good for big bots :)
@@ -192,9 +88,160 @@ export default class WebhookMessage extends BaseCommand {
               webhook.channelId
             }`,
             value: webhook.id,
-          })) ?? []
+          })) ?? [],
+        Action.REPLY
       );
     }
-    return new Response(ResponseCodes.AUTOCOMPLETE_EMPTY_RESPONSE, null);
+    return new Response(
+      ResponseCodes.AUTOCOMPLETE_EMPTY_RESPONSE,
+      null,
+      Action.NONE
+    );
+  }
+
+  public async chatInputCommandInteraction(
+    dcm: CommandMethod<ChatInputCommandInteraction>
+  ) {
+    //await dcm.d.deferReply({ ephemeral: true });
+    const webhookOption = dcm.d.options.getString("webhook", false);
+    const webhook = webhookOption
+      ? (await dcm.d.guild?.fetchWebhooks())?.find(
+          (webhook: Webhook) => webhook.id === webhookOption
+        )
+      : null;
+    if (!webhook)
+      return new Response(
+        ResponseCodes.UNABLE_TO_FIND_WEBHOOK,
+        {
+          content: `Unable to find webhook with \`${webhookOption}\` Id`,
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    if (webhook.owner?.id !== app.client.user?.id)
+      return new Response(
+        ResponseCodes.WEBHOOK_OWNER_NOT_ME,
+        {
+          content: `Unable to find webhook with \`${webhookOption}\` Id`,
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    const message = dcm.d.options.getString("message", false);
+    const messageId = dcm.d.options.getString("message_id", false);
+    if (message) return this.sendMessageToWebhook(webhook, message, messageId);
+    return new Response(
+      ResponseCodes.SUCCESS,
+      {
+        customId: `webhook:${webhook.id}${
+          messageId ? `:messageId:${messageId}` : ""
+        }`,
+        title: `Send Message To Webhook`,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.TextInput,
+                minLength: 1,
+                customId: "messageData",
+                required: true,
+                style: TextInputStyle.Paragraph,
+                label: "Message",
+              },
+            ],
+          },
+        ],
+      },
+      Action.MODAL
+    );
+  }
+
+  public async modalSubmitInteraction(
+    dcm: ComponentMethod<ModalSubmitInteraction>
+  ) {
+    const webhookId = dcm.getValue("webhook");
+    const webhook = webhookId
+      ? (await dcm.d.guild?.fetchWebhooks())?.find(
+          (webhook: Webhook) => webhook.id === webhookId
+        )
+      : null;
+    if (!webhook)
+      return new Response(
+        ResponseCodes.UNABLE_TO_FIND_WEBHOOK,
+        {
+          content: `Unable to find webhook with \`${webhookId}\` Id`,
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    return this.sendMessageToWebhook(
+      webhook,
+      dcm.d.fields.getTextInputValue("messageData"),
+      dcm.getValue("messageId", false)
+    );
+  }
+
+  private async sendMessageToWebhook(
+    webhook: Webhook,
+    message: string,
+    message_id?: string | null
+  ): Promise<Response<ChatInputCommandInteraction | ModalSubmitInteraction>> {
+    const messageData = Util.stringToJson(message);
+    if (!messageData)
+      return new Response(
+        ResponseCodes.INVALID_JSON_DATA,
+        {
+          content: "Invalid json data",
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    try {
+      const post = !message_id
+        ? await webhook.send(messageData as unknown as MessagePayload)
+        : await webhook.editMessage(
+            message_id,
+            messageData as unknown as MessagePayload
+          );
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          content: !message_id
+            ? "Message successfully sent! "
+            : "Message successfully edited!",
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Link,
+                  label: "Go to message",
+                  url: `https://discord.com/channels/${webhook.guildId}/${webhook.channelId}/${post.id}`,
+                },
+              ],
+            },
+          ],
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
+    } catch (err) {
+      if (err instanceof DiscordAPIError)
+        return new Response(
+          ResponseCodes.DISCORD_API_ERROR,
+          {
+            content: `\`\`\`Discord API Error: ${err.message} (Status code: ${err.status})\`\`\``,
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
+      throw new Exception(
+        "Unkown error while proccesing webhook message",
+        Severity.FAULT,
+        err
+      );
+    }
   }
 }

@@ -33,11 +33,12 @@ export default class UserManager extends CacheManager {
       if (cached instanceof User) return cached;
     }
 
-    const raw: Array<UserData> = await db.query(
+    const raw = await db.query(
       "SELECT userId, SUM(flags) as flags, locale, createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
-    if (!raw.length) {
+    if (!raw[0].userId) {
+      console.log("User not found");
       await this.create(user);
       return this.fetch(_user, true);
     }

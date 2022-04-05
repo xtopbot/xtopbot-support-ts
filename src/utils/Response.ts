@@ -1,35 +1,71 @@
 import {
   ApplicationCommandOptionChoice,
+  AutocompleteInteraction,
+  ButtonInteraction,
+  ChatInputCommandInteraction,
+  ContextMenuCommandInteraction,
   InteractionReplyOptions,
   InteractionUpdateOptions,
+  Message,
   MessageOptions,
+  ModalData,
+  ModalSubmitInteraction,
+  SelectMenuInteraction,
 } from "discord.js";
+import { CommandMethodTypes } from "../commands/CommandMethod";
 
-export default class Response {
+export default class Response<T extends CommandMethodTypes> {
   public code: ResponseCodes;
-  public message:
-    | MessageOptions
-    | InteractionReplyOptions
-    | InteractionUpdateOptions
-    | ApplicationCommandOptionChoice[] // For Autocomplete Interaction
-    | null;
-  public options?: OptionsResponse | null = null;
+  public message: MessageResponse<T>;
+  public action: ActionResponse<T>;
   public constructor(
     code: ResponseCodes,
-    message:
-      | MessageOptions
-      | InteractionReplyOptions
-      | InteractionUpdateOptions
-      | ApplicationCommandOptionChoice[]
-      | null,
-    options?: OptionsResponse
+    message: MessageResponse<T>,
+    action: ActionResponse<T>
   ) {
     this.code = code;
     this.message = message;
-    this.options ??= options ?? null;
+    this.action = action;
   }
 }
+type MessageResponse<T extends CommandMethodTypes> = T extends Message
+  ? MessageOptions | null
+  : T extends ChatInputCommandInteraction
+  ? InteractionReplyOptions | InteractionUpdateOptions | ModalData
+  : T extends ButtonInteraction
+  ? InteractionReplyOptions | InteractionUpdateOptions | ModalData
+  : T extends SelectMenuInteraction
+  ? InteractionReplyOptions | InteractionUpdateOptions | ModalData
+  : T extends ContextMenuCommandInteraction
+  ? InteractionReplyOptions | InteractionUpdateOptions | ModalData
+  : T extends AutocompleteInteraction
+  ? ApplicationCommandOptionChoice[]
+  : T extends ModalSubmitInteraction
+  ? InteractionReplyOptions | InteractionUpdateOptions
+  : null;
 
+type ActionResponse<T extends CommandMethodTypes> = T extends Message
+  ? Action.REPLY | Action.NONE
+  : T extends ChatInputCommandInteraction
+  ? Action.REPLY | Action.MODAL
+  : T extends ButtonInteraction
+  ? Action.REPLY | Action.MODAL | Action.DEFER | Action.UPDATE
+  : T extends SelectMenuInteraction
+  ? Action.REPLY | Action.MODAL | Action.DEFER | Action.UPDATE
+  : T extends ContextMenuCommandInteraction
+  ? Action.REPLY | Action.MODAL
+  : T extends AutocompleteInteraction
+  ? Action.REPLY
+  : T extends ModalSubmitInteraction
+  ? Action.REPLY | Action.DEFER | Action.UPDATE
+  : null;
+export enum Action {
+  NONE,
+  REPLY,
+  DEFER,
+  UPDATE,
+  MODAL,
+}
 export enum ResponseCodes {
   UNKNOWN = 0,
   SUCCESS = 200,
@@ -51,7 +87,4 @@ export enum ResponseCodes {
   INVALID_JSON_DATA = 3001,
   DISCORD_API_ERROR = 3002,
   EXCEPTION = 5000,
-}
-interface OptionsResponse {
-  update?: boolean; // for Message Components
 }

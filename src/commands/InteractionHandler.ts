@@ -6,9 +6,9 @@ import {
   Interaction,
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
-  MessageComponentInteraction,
   ChatInputCommandInteraction,
   ApplicationCommandType,
+  ModalSubmitInteraction,
 } from "discord.js";
 import { BaseCommand } from "./BaseCommand";
 import app from "../app";
@@ -28,6 +28,7 @@ export default class InteractionHandler {
         d instanceof ContextMenuCommandInteraction ||
         d instanceof ButtonInteraction ||
         d instanceof SelectMenuInteraction ||
+        d instanceof ModalSubmitInteraction ||
         d instanceof AutocompleteInteraction
       )
     )
@@ -59,7 +60,11 @@ export default class InteractionHandler {
           ? ApplicationCommandType.Message
           : ApplicationCommandType.ChatInput
       );
-    } else if (d instanceof MessageComponentInteraction) {
+    } else if (
+      d instanceof ButtonInteraction ||
+      d instanceof SelectMenuInteraction ||
+      d instanceof ModalSubmitInteraction
+    ) {
       return app.commands.getMessageComponentCommand(d);
     }
     throw new Exception(Reason.INTERACTION_TYPE_NOT_DETECT, Severity.FAULT);
