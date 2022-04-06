@@ -101,7 +101,8 @@ export default class CommandHandler {
       }
     } else if (dcm.d instanceof ChatInputCommandInteraction) {
       if (response.action === Action.REPLY) {
-        dcm.d.reply(message);
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
       if (response.action === Action.MODAL) {
@@ -110,7 +111,8 @@ export default class CommandHandler {
       }
     } else if (dcm.d instanceof ButtonInteraction) {
       if (response.action === Action.REPLY) {
-        dcm.d.reply(message);
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
       if (response.action === Action.UPDATE) {
@@ -127,7 +129,8 @@ export default class CommandHandler {
       }
     } else if (dcm.d instanceof SelectMenuInteraction) {
       if (response.action === Action.REPLY) {
-        dcm.d.reply(message);
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
       if (response.action === Action.UPDATE) {
@@ -146,7 +149,8 @@ export default class CommandHandler {
       return dcm.d.respond(message);
     } else if (dcm.d instanceof ContextMenuCommandInteraction) {
       if (response.action === Action.REPLY) {
-        dcm.d.reply(message);
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
       if (response.action === Action.MODAL) {
@@ -155,7 +159,8 @@ export default class CommandHandler {
       }
     } else if (dcm.d instanceof ModalSubmitInteraction) {
       if (response.action === Action.REPLY) {
-        dcm.d.reply(message);
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
       if (dcm.d.isFromMessage()) {
