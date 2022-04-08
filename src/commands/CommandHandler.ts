@@ -17,6 +17,7 @@ import CommandRequirementsHandler from "./RequirementHandler";
 import Response, { Action, ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
+import ComponentMethod, { ComponentTypes } from "./ComponentMethod";
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
@@ -63,7 +64,12 @@ export default class CommandHandler {
     d: CommandMethodTypes,
     command: BaseCommand
   ): Promise<void> {
-    const dcm = new CommandMethod<CommandMethodTypes>(d, command);
+    const dcm =
+      d instanceof ButtonInteraction ||
+      d instanceof SelectMenuInteraction ||
+      d instanceof ModalSubmitInteraction
+        ? new ComponentMethod<ComponentTypes>(d, command)
+        : new CommandMethod<CommandMethodTypes>(d, command);
     dcm;
     try {
       return this.response(

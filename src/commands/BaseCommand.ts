@@ -58,13 +58,13 @@ export abstract class BaseCommand implements BaseCommandType {
       );
     if (dcm.d instanceof ModalSubmitInteraction && this.modalSubmitInteraction)
       return this.modalSubmitInteraction(
-        dcm as CommandMethod<ModalSubmitInteraction>
+        dcm as ComponentMethod<ModalSubmitInteraction>
       );
     if (dcm.d instanceof ButtonInteraction && this.buttonInteraction)
-      return this.buttonInteraction(dcm as CommandMethod<ButtonInteraction>);
+      return this.buttonInteraction(dcm as ComponentMethod<ButtonInteraction>);
     if (dcm.d instanceof SelectMenuInteraction && this.selectMenuInteraction)
       return this.selectMenuInteraction(
-        dcm as CommandMethod<SelectMenuInteraction>
+        dcm as ComponentMethod<SelectMenuInteraction>
       );
     if (dcm.d instanceof Message && this.message)
       return this.message(dcm as CommandMethod<Message>);

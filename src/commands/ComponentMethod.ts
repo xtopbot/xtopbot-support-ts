@@ -26,12 +26,12 @@ export default class ComponentMethod<
   }
 
   public getValue(value: string, required: boolean = true): string {
-    const findIndex = this.customId.findIndex(
-      (customId) => customId.toLowerCase() == value.toLowerCase()
+    const findIndex = this.customId?.findIndex(
+      (customId) => customId.toLowerCase() === value.toLowerCase()
     );
-    if (findIndex === -1)
+    if (findIndex === -1 && required)
       throw new Exception("Custom Id invalid.", Severity.FAULT, this.command);
-    return this.customId.at(findIndex + 1) ?? "";
+    return findIndex === -1 ? "" : this.customId?.at(findIndex + 1) ?? "";
   }
 
   public setPath(value: string): void {
