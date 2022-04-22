@@ -1,11 +1,7 @@
 import { Collection, Message } from "discord.js";
 import CacheManager from "./CacheManager";
-export default class WelcomerManager extends CacheManager {
+export default class WelcomerManager extends CacheManager<any> {
   constructor() {
     super();
-  }
-
-  public get cache(): Collection<string, Message> {
-    return this._cache;
   }
 }

@@ -8,16 +8,12 @@ import Logger from "../utils/Logger";
 import Constants from "../utils/Constants";
 import en_US from "../locales/en_US/en_US.json";
 
-export default class LocaleManager extends CacheManager {
+export default class LocaleManager extends CacheManager<Locale> {
   private readonly defaultLocale: string;
   constructor(defaultLocale: string = Constants.DEFAULT_LOCALE) {
     super();
     this.defaultLocale = defaultLocale;
     this.initialize();
-  }
-
-  public get cache(): Collection<string, Locale> {
-    return this._cache;
   }
 
   private async initialize(sync: boolean = true): Promise<void> {
@@ -145,13 +141,20 @@ export default class LocaleManager extends CacheManager {
     this._add(locale);
   }
 
-  public get(tag: string): Locale {
+  public get(tag: string, required = false): Locale {
     const _get = this.cache.get(tag);
-    if (!_get)
+    if (!_get && required)
       throw new Exception(
-        `[${this.constructor.name}]  Unable to find \'${tag}\' in cached locale.`,
+        `An error occurred while fetching "${tag}" language content.`,
         Severity.SUSPICIOUS
       );
-    return _get;
+    const defaultLocale = this.cache.get(this.defaultLocale);
+    if (!defaultLocale)
+      throw new Exception(
+        `An error occurred while fetching content for language`,
+        Severity.FAULT,
+        "This must not happen go check on it! [LocaleManager get()]"
+      );
+    return _get || defaultLocale;
   }
 }

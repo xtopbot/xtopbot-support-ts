@@ -18,8 +18,8 @@ export default class ContextFormats {
     }
   }
 
-  public resolve(response: Response<CommandMethodTypes>): any {
-    return this.resolveObject(response.message);
+  public resolve(response: Response<CommandMethodTypes> | any): any {
+    return this.resolveObject(response.message || response);
   }
 
   private resolveObject(input: any): any {

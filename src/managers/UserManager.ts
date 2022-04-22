@@ -4,13 +4,9 @@ import CacheManager from "./CacheManager";
 import db from "../providers/Mysql";
 import app from "../app";
 import Exception, { Severity } from "../utils/Exception";
-export default class UserManager extends CacheManager {
+export default class UserManager extends CacheManager<User> {
   constructor() {
     super();
-  }
-
-  public get cache(): Collection<string, User> {
-    return this._cache;
   }
 
   private async _fetch(userId: string): Promise<DiscordUser> {

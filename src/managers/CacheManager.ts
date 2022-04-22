@@ -1,18 +1,22 @@
 import Collection from "@discordjs/collection";
-export default class {
-  protected _cache: Collection<string, any>;
+export default class CacheManager<T extends CacheMangerType> {
+  public cache: Collection<string, T>;
   protected constructor() {
-    this._cache = new Collection();
+    this.cache = new Collection();
     //setInterval(() => this._cache.clear(), 60 * 60 * 1000); // 1hour;
   }
 
-  protected _add(data: any): any {
-    const cached: any = this._cache.get(data?.id);
-    if (cached) {
+  protected _add(data: T): T {
+    const cached = this.cache.get(data.id);
+    if (cached && typeof cached?._patch === "function") {
       cached._patch(data);
       return cached;
     }
-    this._cache.set(data.id, data);
+    this.cache.set(data.id, data);
     return data;
   }
+}
+interface CacheMangerType {
+  id: string;
+  _patch?(data: any): void;
 }

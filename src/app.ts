@@ -25,6 +25,7 @@ export default class {
       "GuildMessageReactions",
       "GuildMessageTyping",
       "DirectMessages",
+      "MessageContent",
     ],
     partials: [Partials.Channel, Partials.GuildMember],
   });
