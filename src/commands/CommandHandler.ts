@@ -18,14 +18,18 @@ import Response, { Action, ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
 import ComponentMethod, { ComponentTypes } from "./ComponentMethod";
+import InteractionOnly from "../plugins/InteractionOnly";
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");
-    const command: BaseCommand | null = this.matchesCommand(d.content);
+    const command = this.matchesCommand(d.content);
     if (!(command instanceof BaseCommand))
       return Logger.warn(
         `[CommandHandler] Unable to find matches command from ${d.author.tag}<${d.author.id}>;`
       );
+    if (InteractionOnly.isExecutable(d, await app.users.fetch(d.author)))
+      return;
+
     Logger.info(`[CommandHandler] Found Command Macthes ${command.name}`);
 
     this.executeHandler(d, command);
@@ -93,12 +97,6 @@ export default class CommandHandler {
     dcm: CommandMethod<CommandMethodTypes>,
     response: Response<CommandMethodTypes>
   ): Promise<void> {
-    /*if (!response.action)
-      return Logger.info(
-        `[Response] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
-      );
-    Logger.info(`[Response] (Function: ${response.action.name}) POST!`);
-    response.action(response.message);*/
     const message = dcm.cf.resolve(response);
     if (dcm.d instanceof Message) {
       if (response.action === Action.REPLY) {
@@ -197,60 +195,6 @@ export default class CommandHandler {
           code: response.code,
         }
       );
-
-    //Auto Complete Response
-    /*const message = response ? dcm.cf.resolve(response) : null;
-    if (dcm.d instanceof AutocompleteInteraction) {
-      if (!response?.message || !Array.isArray(response.message))
-        return Logger.info(
-          `[Response<Autocomplete>] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
-        );
-      dcm.d.respond(message as ApplicationCommandOptionChoice[]);
-    } else {
-      if (response?.message === null)
-        return Logger.info(
-          `[Response] We decected no response form [${dcm.command.name}] requested by ${dcm.author.tag}<${dcm.author.id}>`
-        );
-      if (dcm.d instanceof Message) {
-        if (!response) return;
-        dcm.d.channel.send(message as MessageOptions);
-        return;
-      } else if (
-        dcm.d instanceof ChatInputCommandInteraction ||
-        dcm.d instanceof ContextMenuCommandInteraction ||
-        (dcm.d instanceof ModalSubmitInteraction && !dcm.d.isFromMessage())
-      ) {
-        if (!response)
-          throw new Exception(
-            "Unable to detect response for this interaction",
-            Severity.FAULT
-          );
-        if (message.customId && !(dcm.d instanceof ModalSubmitInteraction))
-          return dcm.d.showModal(message);
-        if (dcm.d instanceof ModalSubmitInteraction || !dcm.d.deferred)
-          return dcm.d.reply(message as InteractionReplyOptions);
-        dcm.d.editReply(message as InteractionReplyOptions);
-        return;
-      } else if (
-        dcm.d instanceof ButtonInteraction ||
-        dcm.d instanceof SelectMenuInteraction ||
-        (dcm.d instanceof ModalSubmitInteraction && dcm.d.isFromMessage())
-      ) {
-        if (!response) return dcm.d.deferUpdate();
-        if (message.customId && !(dcm.d instanceof ModalSubmitInteraction))
-          return dcm.d.showModal(message);
-        if (response.options?.update)
-          return dcm.d.update(message as InteractionUpdateOptions);
-
-        if (dcm.d instanceof ModalSubmitInteraction || !dcm.d.deferred)
-          return dcm.d.reply(message as InteractionReplyOptions);
-        dcm.d.editReply(message as InteractionReplyOptions);
-        return;
-      } else
-        throw new Exception(
-          "Unable to detect interaction type",
-          Severity.FAULT
-        );*/
   }
 
   private static matchesCommand(input: string): BaseCommand | null {
