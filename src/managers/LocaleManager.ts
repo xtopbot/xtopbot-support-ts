@@ -9,7 +9,7 @@ import Constants from "../utils/Constants";
 import en_US from "../locales/en_US/en_US.json";
 
 export default class LocaleManager extends CacheManager<Locale> {
-  private readonly defaultLocale: string;
+  public readonly defaultLocale: string;
   constructor(defaultLocale: string = Constants.DEFAULT_LOCALE) {
     super();
     this.defaultLocale = defaultLocale;
