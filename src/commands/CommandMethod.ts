@@ -113,11 +113,11 @@ export default class CommandMethod<T extends CommandMethodTypes> {
     return app.locales.get("en_US");
   }
 }
-export type CommandMethodTypes =
-  | Message
+export type InteractionsType =
   | ChatInputCommandInteraction
   | ButtonInteraction
   | SelectMenuInteraction
   | ContextMenuCommandInteraction
   | AutocompleteInteraction
   | ModalSubmitInteraction;
+export type CommandMethodTypes = Message | InteractionsType;

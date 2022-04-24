@@ -1,6 +1,5 @@
 import {
   ButtonInteraction,
-  MessageComponentInteraction,
   ModalSubmitInteraction,
   SelectMenuInteraction,
 } from "discord.js";
