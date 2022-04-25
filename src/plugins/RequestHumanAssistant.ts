@@ -7,36 +7,40 @@ import {
   TextChannel,
 } from "discord.js";
 import app from "../app";
-import CommandMethod, { InteractionsType } from "../commands/CommandMethod";
-import ComponentMethod, { ComponentTypes } from "../commands/ComponentMethod";
+import CommandMethod, { AnyInteraction } from "../commands/CommandMethod";
+import ComponentMethod, {
+  AnyComponentInteraction,
+} from "../commands/ComponentMethod";
 import Logger from "../utils/Logger";
 import Response, { Action, ResponseCodes } from "../utils/Response";
 
 export default class RequestHumanAssistantPlugin {
-  public readonly requests: Collection<string, RequestHumanAssistant> =
+  public static readonly requests: Collection<string, RequestHumanAssistant> =
     new Collection();
-  private readonly defaultInteractionExpires =
+  private static readonly defaultInteractionExpires =
     1000 /*MiliSecond*/ * 60 /*Minute*/ * 15; //ms
-  private readonly defaultAssistanceRoleName = "assistance";
-  private readonly defaultAssistanceChannelName = "assistance";
+  private static readonly defaultAssistanceRoleName = "assistance";
+  private static readonly defaultAssistanceChannelName = "assistance";
 
-  public async request(
+  public static async request(
     issue: string,
-    dcm: CommandMethod<InteractionsType> | ComponentMethod<ComponentTypes>,
+    dcm:
+      | CommandMethod<AnyInteraction>
+      | ComponentMethod<AnyComponentInteraction>,
     guild: Guild
-  ): Promise<Response<InteractionsType>> {
+  ): Promise<Response<AnyInteraction>> {
     const guildAssistants = this.getGuildAssistants(guild);
     if (!dcm.user.locale)
       return new Response(
-        ResponseCodes.LOCALE_ASSISTANCE_ROLE_NOT_FOUND,
-        { content: "You must Have lang" },
+        ResponseCodes.REQUIRED_USER_LOCALE,
+        { content: "You must Have lang", ephemeral: true },
         Action.REPLY
       ); // User must have lang
     const assistant = guildAssistants.get(dcm.user.locale);
     if (!assistant)
       return new Response(
-        ResponseCodes.LOCALE_ASSISTANCE_ROLE_NOT_FOUND,
-        { content: "Unable to find Assistant for your lang" },
+        ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
+        { content: "Unable to find Assistant for your lang", ephemeral: true },
         Action.REPLY
       );
     const requested = this.requests.get(dcm.user.id);
@@ -48,21 +52,25 @@ export default class RequestHumanAssistantPlugin {
       ) {
         return new Response(
           ResponseCodes.ALREADY_REQUESTED_ASSISTANT,
-          { content: "Already requested" },
+          { content: "Already requested", ephemeral: true },
           Action.REPLY
         );
       }
       await this.removeRequestedUser(dcm.user.id, guild);
     }
+    await dcm.member.roles.add(assistant.role);
     assistant.channel.send(`${dcm.d.user.tag} need help. issue: \`${issue}\``);
     return new Response(
       ResponseCodes.PLUGIN_SUCCESS,
-      { content: `Done! Go to <#${assistant.channel.id}>` },
+      { content: `Done! Go to <#${assistant.channel.id}>`, ephemeral: true },
       Action.REPLY
     );
   }
 
-  public async removeRequestedUser(id: string, guild?: Guild): Promise<void> {
+  public static async removeRequestedUser(
+    id: string,
+    guild?: Guild
+  ): Promise<void> {
     if (guild) {
       const request = this.requests.get(id);
       if (request) {
@@ -84,7 +92,9 @@ export default class RequestHumanAssistantPlugin {
     this.requests.delete(id);
   }
 
-  public getGuildAssistants(guild: Guild): Collection<string, AssistanceUtil> {
+  public static getGuildAssistants(
+    guild: Guild
+  ): Collection<string, AssistanceUtil> {
     const assistances: Collection<string, AssistanceUtil> = new Collection();
     app.locales.cache.forEach((locale) => {
       const assistanceRole = guild.roles.cache.find(
@@ -103,10 +113,11 @@ export default class RequestHumanAssistantPlugin {
             (tag) =>
               channel.name.toLowerCase() ==
               this.defaultAssistanceChannelName.toLowerCase() +
-                " " +
+                "-" +
                 tag.toLowerCase()
           ) && channel.type === ChannelType.GuildText
       );
+
       if (assistanceRole && assistanceChannel)
         assistances.set(locale.tag, {
           role: assistanceRole,
@@ -119,7 +130,7 @@ export default class RequestHumanAssistantPlugin {
 
 type RequestHumanAssistant = {
   requestedAt: string;
-  interaction: InteractionsType;
+  interaction: AnyInteraction;
   locale: string;
 };
 

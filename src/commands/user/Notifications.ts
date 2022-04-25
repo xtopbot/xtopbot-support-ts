@@ -9,9 +9,13 @@ import {
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Response, { Action, ResponseCodes } from "../../utils/Response";
-import CommandMethod, { CommandMethodTypes } from "../CommandMethod";
+import CommandMethod, {
+  AnyInteraction,
+  AnyMethod,
+  CommandMethodTypes,
+  Method,
+} from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
-import ComponentMethod from "../ComponentMethod";
 
 export default class Notifications extends BaseCommand {
   constructor() {
@@ -37,21 +41,19 @@ export default class Notifications extends BaseCommand {
   }
 
   public async chatInputCommandInteraction(
-    dcm: CommandMethod<ChatInputCommandInteraction>
+    dcm: Method<ChatInputCommandInteraction>
   ) {
     return this.getMessageNotificationRoles(dcm);
   }
 
-  public async selectMenuInteraction(
-    dcm: ComponentMethod<SelectMenuInteraction>
-  ) {
+  public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     const selectedRoles = dcm.d.values as DefaultNotificationRoles[];
     await dcm.d.deferReply({ ephemeral: true });
     return this.setMemberNotificationRole(dcm, selectedRoles);
   }
 
   private async getMessageNotificationRoles(
-    dcm: CommandMethod<ChatInputCommandInteraction | ButtonInteraction>
+    dcm: Method<ChatInputCommandInteraction | ButtonInteraction>
   ): Promise<Response<ChatInputCommandInteraction | ButtonInteraction>> {
     const notificationRoles: NotificationRoles =
       await this.getNotificationRoles(dcm);
@@ -133,7 +135,7 @@ export default class Notifications extends BaseCommand {
   }
 
   private async setMemberNotificationRole(
-    dcm: CommandMethod<CommandMethodTypes>,
+    dcm: Method<AnyInteraction>,
     roles: DefaultNotificationRoles[]
   ): Promise<Response<SelectMenuInteraction>> {
     const notificationRoles: NotificationRoles =
@@ -177,7 +179,7 @@ export default class Notifications extends BaseCommand {
   }
 
   private async getNotificationRoles(
-    dcm: CommandMethod<CommandMethodTypes>
+    dcm: AnyMethod
   ): Promise<NotificationRoles> {
     const roles = await dcm.d.guild?.roles.fetch();
     return {

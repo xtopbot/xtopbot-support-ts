@@ -8,7 +8,7 @@ import { BaseCommand } from "./BaseCommand";
 import CommandMethod from "./CommandMethod";
 
 export default class ComponentMethod<
-  T extends ComponentTypes
+  T extends AnyComponentInteraction
 > extends CommandMethod<T> {
   public readonly customId: string[];
   public path: string = "";
@@ -38,7 +38,7 @@ export default class ComponentMethod<
   }
 }
 
-export type ComponentTypes =
+export type AnyComponentInteraction =
   | ButtonInteraction
   | SelectMenuInteraction
   | ModalSubmitInteraction;

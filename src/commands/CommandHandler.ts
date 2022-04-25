@@ -17,7 +17,7 @@ import CommandRequirementsHandler from "./RequirementHandler";
 import Response, { Action, ResponseCodes } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
-import ComponentMethod, { ComponentTypes } from "./ComponentMethod";
+import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import InteractionOnly from "../plugins/InteractionOnly";
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
@@ -72,7 +72,7 @@ export default class CommandHandler {
       d instanceof ButtonInteraction ||
       d instanceof SelectMenuInteraction ||
       d instanceof ModalSubmitInteraction
-        ? new ComponentMethod<ComponentTypes>(d, command)
+        ? new ComponentMethod<AnyComponentInteraction>(d, command)
         : new CommandMethod<CommandMethodTypes>(d, command);
     dcm;
     try {

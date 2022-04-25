@@ -1,8 +1,8 @@
 import { Message, MessageAttachment } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Exception, { Reason, Severity } from "../../utils/Exception";
+import Exception, { Severity } from "../../utils/Exception";
 import Response, { Action, ResponseCodes } from "../../utils/Response";
-import CommandMethod from "../CommandMethod";
+import CommandMethod, { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import { VM } from "vm2";
@@ -21,7 +21,7 @@ export default class Eval extends BaseCommand {
     return this.runEval(dcm, dcm.context);
   }
   private async runEval(
-    dcm: CommandMethod<Message>,
+    dcm: Method<Message>,
     input: string
   ): Promise<Response<Message>> {
     if (dcm.author.id !== "247519134080958464")

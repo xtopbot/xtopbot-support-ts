@@ -18,6 +18,7 @@ import ContextFormats from "../utils/ContextFormats";
 import Exception, { Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import { BaseCommand } from "./BaseCommand";
+import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 
 export default class CommandMethod<T extends CommandMethodTypes> {
   public readonly d: T;
@@ -113,11 +114,31 @@ export default class CommandMethod<T extends CommandMethodTypes> {
     return app.locales.get("en_US");
   }
 }
-export type InteractionsType =
+export type AnyInteraction =
   | ChatInputCommandInteraction
   | ButtonInteraction
   | SelectMenuInteraction
   | ContextMenuCommandInteraction
   | AutocompleteInteraction
   | ModalSubmitInteraction;
-export type CommandMethodTypes = Message | InteractionsType;
+export type CommandMethodTypes = Message | AnyInteraction;
+
+export type AnyMethod =
+  | ComponentMethod<AnyComponentInteraction>
+  | CommandMethod<AnyInteraction>;
+
+export type Method<T extends CommandMethodTypes> = T extends Message
+  ? CommandMethod<Message>
+  : T extends ChatInputCommandInteraction
+  ? CommandMethod<ChatInputCommandInteraction>
+  : T extends ButtonInteraction
+  ? ComponentMethod<ButtonInteraction>
+  : T extends SelectMenuInteraction
+  ? ComponentMethod<SelectMenuInteraction>
+  : T extends ContextMenuCommandInteraction
+  ? CommandMethod<ContextMenuCommandInteraction>
+  : T extends AutocompleteInteraction
+  ? CommandMethod<AutocompleteInteraction>
+  : T extends ModalSubmitInteraction
+  ? ComponentMethod<ModalSubmitInteraction>
+  : null;

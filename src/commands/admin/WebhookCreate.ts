@@ -8,7 +8,7 @@ import { UserFlagsPolicy } from "../../structures/User";
 import Constants from "../../utils/Constants";
 import Response, { Action, ResponseCodes } from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import CommandMethod from "../CommandMethod";
+import { Method } from "../CommandMethod";
 
 export default class WebhookCreate extends BaseCommand {
   constructor() {
@@ -44,7 +44,7 @@ export default class WebhookCreate extends BaseCommand {
   }
 
   public async chatInputCommandInteraction(
-    dcm: CommandMethod<ChatInputCommandInteraction>
+    dcm: Method<ChatInputCommandInteraction>
   ) {
     const _channel = dcm.d.options.getChannel("channel");
     const channel = _channel

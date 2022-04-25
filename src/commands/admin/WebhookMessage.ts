@@ -12,13 +12,12 @@ import {
   TextInputStyle,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Exception, { Reason, Severity } from "../../utils/Exception";
+import Exception, { Severity } from "../../utils/Exception";
 import Response, { Action, ResponseCodes } from "../../utils/Response";
-import CommandMethod from "../CommandMethod";
+import { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import Util from "../../utils/Util";
-import ComponentMethod from "../ComponentMethod";
 export default class WebhookMessage extends BaseCommand {
   constructor() {
     super({
@@ -73,9 +72,7 @@ export default class WebhookMessage extends BaseCommand {
     });
   }
 
-  public async autoCompleteInteraction(
-    dcm: CommandMethod<AutocompleteInteraction>
-  ) {
+  public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
     const webhookOption = dcm.d.options.getString("webhook");
     if (typeof webhookOption == "string" && webhookOption.length <= 32) {
       const webhooks = await dcm.d.guild?.fetchWebhooks(); // This not good for big bots :)
@@ -107,7 +104,7 @@ export default class WebhookMessage extends BaseCommand {
   }
 
   public async chatInputCommandInteraction(
-    dcm: CommandMethod<ChatInputCommandInteraction>
+    dcm: Method<ChatInputCommandInteraction>
   ) {
     //await dcm.d.deferReply({ ephemeral: true });
     const webhookOption = dcm.d.options.getString("webhook", false);
@@ -164,9 +161,7 @@ export default class WebhookMessage extends BaseCommand {
     );
   }
 
-  public async modalSubmitInteraction(
-    dcm: ComponentMethod<ModalSubmitInteraction>
-  ) {
+  public async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
     const webhookId = dcm.getValue("webhook");
     const webhook = webhookId
       ? (await dcm.d.guild?.fetchWebhooks())?.find(
