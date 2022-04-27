@@ -37,7 +37,7 @@ export default class MysqlDatabase {
     query: string,
     values: Array<any>
   ): Promise<any | Exception> {
-    Logger.info(`[Mysql] ${query} Query...`);
+    Logger.info(`[Mysql<Query>] ${query}`);
     try {
       const [raw] = await this.db.query(query, values);
       return raw;

@@ -20,7 +20,7 @@ export default class UserManager extends CacheManager<User> {
 
   public async fetch(
     _user: DiscordUser | string,
-    force: boolean = false
+    force: boolean = true
   ): Promise<User> {
     const user: DiscordUser =
       _user instanceof DiscordUser ? _user : await this._fetch(_user);

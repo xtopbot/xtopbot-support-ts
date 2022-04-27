@@ -10,7 +10,7 @@ import en_US from "../locales/en_US/en_US.json";
 
 export default class LocaleManager extends CacheManager<Locale> {
   public readonly defaultLocale: string;
-  constructor(defaultLocale: string = Constants.DEFAULT_LOCALE) {
+  constructor(defaultLocale: LocaleTag = Constants.DEFAULT_LOCALE) {
     super();
     this.defaultLocale = defaultLocale;
     this.initialize();
@@ -141,8 +141,9 @@ export default class LocaleManager extends CacheManager<Locale> {
     this._add(locale);
   }
 
-  public get(tag: string, required = false): Locale {
-    const _get = this.cache.get(tag);
+  // null == defautl locale
+  public get(tag: LocaleTag | null, required = false): Locale {
+    const _get = this.cache.get(tag === null ? this.defaultLocale : tag);
     if (!_get && required)
       throw new Exception(
         `An error occurred while fetching "${tag}" language content.`,
@@ -158,3 +159,5 @@ export default class LocaleManager extends CacheManager<Locale> {
     return _get || defaultLocale;
   }
 }
+
+export type LocaleTag = "ar_SA" | "en_US";

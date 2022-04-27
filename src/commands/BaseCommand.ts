@@ -11,9 +11,13 @@ import {
   AutocompleteInteraction,
 } from "discord.js";
 import { UserFlagsPolicy } from "../structures/User";
-import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
-import Response from "../utils/Response";
-import ComponentMethod, { ComponentTypes } from "./ComponentMethod";
+import CommandMethod, { CommandMethodTypes, Method } from "./CommandMethod";
+import Response, {
+  AutocompleteResponse,
+  MessageResponse,
+  ModalResponse,
+} from "../utils/Response";
+import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import Exception, { Severity } from "../utils/Exception";
 
 export abstract class BaseCommand implements BaseCommandType {
@@ -22,7 +26,9 @@ export abstract class BaseCommand implements BaseCommandType {
   public memberPermissions: Array<PermissionsString>; // Permissions requirements for a user to access the use of the command
   public botPermissions: Array<PermissionsString>; // The requirements for the bot permission to perform the command
   public applicationCommandData: Array<ApplicationCommandData>;
-  public messageComponent: (d: ComponentMethod<ComponentTypes>) => boolean;
+  public messageComponent: (
+    d: ComponentMethod<AnyComponentInteraction>
+  ) => boolean;
 
   protected constructor(data: BaseCommandDataType) {
     this.data = data;
@@ -74,23 +80,25 @@ export abstract class BaseCommand implements BaseCommandType {
 
   public autoCompleteInteraction?(
     dcm: CommandMethod<AutocompleteInteraction>
-  ): Promise<Response<AutocompleteInteraction>>;
+  ): Promise<Response<AutocompleteResponse>>;
   public chatInputCommandInteraction?(
     dcm: CommandMethod<ChatInputCommandInteraction>
-  ): Promise<Response<ChatInputCommandInteraction>>;
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   public contextMenuCommandInteraction?(
     dcm: CommandMethod<ContextMenuCommandInteraction>
-  ): Promise<Response<ContextMenuCommandInteraction>>;
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   public modalSubmitInteraction?(
     dcm: CommandMethod<ModalSubmitInteraction>
-  ): Promise<Response<ModalSubmitInteraction>>;
+  ): Promise<Response<MessageResponse>>;
   public buttonInteraction?(
     dcm: CommandMethod<ButtonInteraction>
-  ): Promise<Response<ButtonInteraction>>;
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   public selectMenuInteraction?(
     dcm: CommandMethod<SelectMenuInteraction>
-  ): Promise<Response<SelectMenuInteraction>>;
-  public message?(dcm: CommandMethod<Message>): Promise<Response<Message>>;
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+  public message?(
+    dcm: CommandMethod<Message>
+  ): Promise<Response<MessageResponse | null>>;
 
   public get name(): string | null {
     return this.data.name ?? null;
@@ -138,33 +146,33 @@ interface BaseCommandDataType {
   readonly memberPermissions: Array<PermissionsString>;
   readonly botPermissions: Array<PermissionsString>;
   readonly applicationCommandData: Array<ApplicationCommandData>;
-  messageComponent?: (d: ComponentMethod<ComponentTypes>) => boolean;
+  messageComponent?: (d: ComponentMethod<AnyComponentInteraction>) => boolean;
   disableable?: boolean;
   disabled?: boolean;
 }
 
 interface BaseCommandType extends BaseCommandDataType {
   readonly applicationCommandOnly: boolean;
-  messageComponent: (d: ComponentMethod<ComponentTypes>) => boolean;
+  messageComponent: (d: ComponentMethod<AnyComponentInteraction>) => boolean;
   autoCompleteInteraction?(
-    dcm: CommandMethod<AutocompleteInteraction>
-  ): Promise<Response<AutocompleteInteraction>>;
+    dcm: Method<AutocompleteInteraction>
+  ): Promise<Response<AutocompleteResponse>>;
   chatInputInteraction?(
-    dcm: CommandMethod<ChatInputCommandInteraction>
-  ): Promise<Response<ChatInputCommandInteraction>>;
+    dcm: Method<ChatInputCommandInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   contextMenuCommandInteraction?(
-    dcm: CommandMethod<ContextMenuCommandInteraction>
-  ): Promise<Response<ContextMenuCommandInteraction>>;
+    dcm: Method<ContextMenuCommandInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   modalSubmitInteraction?(
-    dcm: CommandMethod<ModalSubmitInteraction>
-  ): Promise<Response<ModalSubmitInteraction>>;
+    dcm: Method<ModalSubmitInteraction>
+  ): Promise<Response<MessageResponse>>;
   buttonInteraction?(
-    dcm: CommandMethod<ButtonInteraction>
-  ): Promise<Response<ButtonInteraction>>;
+    dcm: Method<ButtonInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
   selectMenuInteraction?(
-    dcm: CommandMethod<SelectMenuInteraction>
-  ): Promise<Response<SelectMenuInteraction>>;
-  message?(dcm: CommandMethod<Message>): Promise<Response<Message>>;
+    dcm: Method<SelectMenuInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+  message?(dcm: Method<Message>): Promise<Response<MessageResponse | null>>;
   setDisable(): void;
   setEnable(): void;
 }

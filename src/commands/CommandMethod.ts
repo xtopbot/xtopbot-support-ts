@@ -40,7 +40,6 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   }
 
   public async fetch(): Promise<void> {
-    this.d.channel;
     if (!this._channel && this.d.channelId) {
       const channel = await this.d.guild?.channels.fetch(this.d.channelId);
       if (
