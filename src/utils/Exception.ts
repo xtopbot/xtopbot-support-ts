@@ -1,9 +1,9 @@
-import Response, { Action, ResponseCodes } from "./Response";
+import Response, { Action, MessageResponse, ResponseCodes } from "./Response";
 import { Util } from "discord.js";
 import Logger from "./Logger";
 import { v4 as uuidv4 } from "uuid";
 import { CommandMethodTypes } from "../commands/CommandMethod";
-export default class Exception extends Response<CommandMethodTypes> {
+export default class Exception extends Response<MessageResponse> {
   public readonly reason: string | null;
   public readonly severity: Severity;
   public readonly cause?: Error | unknown | null = null;

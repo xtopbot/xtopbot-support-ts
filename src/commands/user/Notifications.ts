@@ -8,7 +8,11 @@ import {
   ButtonInteraction,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Response, { Action, ResponseCodes } from "../../utils/Response";
+import Response, {
+  Action,
+  MessageResponse,
+  ResponseCodes,
+} from "../../utils/Response";
 import CommandMethod, {
   AnyInteraction,
   AnyMethod,
@@ -54,7 +58,7 @@ export default class Notifications extends BaseCommand {
 
   private async getMessageNotificationRoles(
     dcm: Method<ChatInputCommandInteraction | ButtonInteraction>
-  ): Promise<Response<ChatInputCommandInteraction | ButtonInteraction>> {
+  ): Promise<Response<MessageResponse>> {
     const notificationRoles: NotificationRoles =
       await this.getNotificationRoles(dcm);
     if (
@@ -137,7 +141,7 @@ export default class Notifications extends BaseCommand {
   private async setMemberNotificationRole(
     dcm: Method<AnyInteraction>,
     roles: DefaultNotificationRoles[]
-  ): Promise<Response<SelectMenuInteraction>> {
+  ): Promise<Response<MessageResponse>> {
     const notificationRoles: NotificationRoles =
       await this.getNotificationRoles(dcm);
     if (

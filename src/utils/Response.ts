@@ -1,33 +1,43 @@
 import {
   ApplicationCommandOptionChoice,
-  AutocompleteInteraction,
-  ButtonInteraction,
-  ChatInputCommandInteraction,
-  ContextMenuCommandInteraction,
   InteractionReplyOptions,
   InteractionUpdateOptions,
   Message,
-  MessageOptions,
   ModalData,
-  ModalSubmitInteraction,
-  SelectMenuInteraction,
 } from "discord.js";
-import { CommandMethodTypes } from "../commands/CommandMethod";
-
-export default class Response<T extends CommandMethodTypes> {
+export default class Response<T extends AnyResponse = AnyResponse> {
   public code: ResponseCodes;
-  public message: MessageResponse<T>;
-  public action: ActionResponse<T>;
+  public message: T;
+  public action: ActionResponse<T> | Action;
   public constructor(
     code: ResponseCodes,
-    message: MessageResponse<T>,
-    action: ActionResponse<T>
+    message: T,
+    action?: ActionResponse<T>
   ) {
     this.code = code;
     this.message = message;
-    this.action = action;
+    this.action = action ?? Action.REPLY;
   }
 }
+export type ModalResponse = ModalData;
+export type AutocompleteResponse = ApplicationCommandOptionChoice[];
+export type MessageResponse =
+  | InteractionReplyOptions
+  | InteractionUpdateOptions
+  | Message;
+export type AnyResponse =
+  | ModalResponse
+  | AutocompleteResponse
+  | MessageResponse
+  | null;
+type ActionResponse<T extends AnyResponse> = T extends MessageResponse
+  ? Action.REPLY | Action.UPDATE
+  : T extends ModalResponse
+  ? Action.MODAL
+  : T extends AutocompleteResponse
+  ? Action.REPLY
+  : never;
+/*
 type MessageResponse<T extends CommandMethodTypes> = T extends Message
   ? MessageOptions | null
   : T extends ChatInputCommandInteraction
@@ -42,7 +52,7 @@ type MessageResponse<T extends CommandMethodTypes> = T extends Message
   ? ApplicationCommandOptionChoice[]
   : T extends ModalSubmitInteraction
   ? InteractionReplyOptions | InteractionUpdateOptions
-  : null;
+  : null;*
 
 type ActionResponse<T extends CommandMethodTypes> = T extends Message
   ? Action.REPLY | Action.NONE
@@ -58,9 +68,8 @@ type ActionResponse<T extends CommandMethodTypes> = T extends Message
   ? Action.REPLY
   : T extends ModalSubmitInteraction
   ? Action.REPLY | Action.DEFER | Action.UPDATE
-  : null;
+  : null;*/
 export enum Action {
-  NONE,
   REPLY,
   DEFER,
   UPDATE,

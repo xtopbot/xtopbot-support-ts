@@ -3,7 +3,11 @@ import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
 import ContextFormat from "../utils/ContextFormats";
 import Logger from "../utils/Logger";
-import Response, { Action, ResponseCodes } from "../utils/Response";
+import Response, {
+  Action,
+  MessageResponse,
+  ResponseCodes,
+} from "../utils/Response";
 import ServerUtil from "../utils/ServerUtil";
 
 export default class WelcomerPlugin {
@@ -41,7 +45,7 @@ export default class WelcomerPlugin {
       const cfx = new ContextFormat();
       cfx.setObject("user", member.user);
       cfx.formats.set("user.tag", member.user.tag);
-      const _response = new Response(
+      const _response = new Response<MessageResponse>(
         ResponseCodes.PLUGIN_SUCCESS,
         {
           content: content,
@@ -59,8 +63,7 @@ export default class WelcomerPlugin {
                 .slice(0, 5),
             },
           ],
-        },
-        Action.NONE
+        }
       );
       const response = await channel.send(cfx.resolve(_response));
       this.manager.cache.set(member.id, response);

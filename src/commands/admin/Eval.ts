@@ -1,7 +1,11 @@
 import { Message, MessageAttachment } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
-import Response, { Action, ResponseCodes } from "../../utils/Response";
+import Response, {
+  Action,
+  MessageResponse,
+  ResponseCodes,
+} from "../../utils/Response";
 import CommandMethod, { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
@@ -23,7 +27,7 @@ export default class Eval extends BaseCommand {
   private async runEval(
     dcm: Method<Message>,
     input: string
-  ): Promise<Response<Message>> {
+  ): Promise<Response<MessageResponse | null>> {
     if (dcm.author.id !== "247519134080958464")
       throw new Exception("This error should not occur!", Severity.FAULT); // to be safe :)
     const rd = this.checkFlags(input.replace(/token/gi, ""));
@@ -46,7 +50,7 @@ export default class Eval extends BaseCommand {
       var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
 
       if (!rd.flags.includes(EvalFlags.OUTPUT))
-        return new Response(ResponseCodes.SUCCESS, null, Action.NONE);
+        return new Response(ResponseCodes.SUCCESS, null);
       return new Response(
         ResponseCodes.SUCCESS,
         res.length >= 1900 || rd.flags.includes(EvalFlags.FILE)

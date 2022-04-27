@@ -14,7 +14,11 @@ import app from "../app";
 import { BaseCommand } from "./BaseCommand";
 import Logger from "../utils/Logger";
 import CommandRequirementsHandler from "./RequirementHandler";
-import Response, { Action, ResponseCodes } from "../utils/Response";
+import Response, {
+  Action,
+  AnyResponse,
+  ResponseCodes,
+} from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
 import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
 import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
@@ -38,7 +42,7 @@ export default class CommandHandler {
   protected static async executeCommand(
     dcm: CommandMethod<CommandMethodTypes>,
     checkRequirements: boolean = true
-  ): Promise<Response<CommandMethodTypes>> {
+  ): Promise<Response<AnyResponse>> {
     if (!dcm.d.inGuild())
       return new Response(
         ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD,
@@ -95,11 +99,11 @@ export default class CommandHandler {
 
   private static async response(
     dcm: CommandMethod<CommandMethodTypes>,
-    response: Response<CommandMethodTypes>
+    response: Response<AnyResponse>
   ): Promise<void> {
     const message = dcm.cf.resolve(response);
     if (dcm.d instanceof Message) {
-      if (response.action === Action.REPLY) {
+      if (response.message && response.action === Action.REPLY) {
         dcm.d.channel.send(message);
         return;
       }

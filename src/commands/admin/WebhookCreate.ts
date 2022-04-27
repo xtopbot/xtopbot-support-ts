@@ -6,7 +6,11 @@ import {
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Constants from "../../utils/Constants";
-import Response, { Action, ResponseCodes } from "../../utils/Response";
+import Response, {
+  Action,
+  MessageResponse,
+  ResponseCodes,
+} from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
 import { Method } from "../CommandMethod";
 
@@ -65,7 +69,7 @@ export default class WebhookCreate extends BaseCommand {
 
   private async createWebhook(
     channel: TextChannel
-  ): Promise<Response<ChatInputCommandInteraction>> {
+  ): Promise<Response<MessageResponse>> {
     await channel.createWebhook("xToP Support");
     return new Response(
       ResponseCodes.SUCCESS,

@@ -1,6 +1,6 @@
 import { Collection } from "discord.js";
 import { CommandMethodTypes } from "../commands/CommandMethod";
-import Response from "./Response";
+import Response, { AnyResponse } from "./Response";
 
 export default class ContextFormats {
   public readonly formats: Collection<string, string> = new Collection();
@@ -18,7 +18,7 @@ export default class ContextFormats {
     }
   }
 
-  public resolve(response: Response<CommandMethodTypes> | any): any {
+  public resolve(response: Response<AnyResponse> | any): any {
     return this.resolveObject(response.message || response);
   }
 

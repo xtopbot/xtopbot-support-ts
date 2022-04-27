@@ -13,7 +13,11 @@ import {
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
-import Response, { Action, ResponseCodes } from "../../utils/Response";
+import Response, {
+  Action,
+  ModalResponse,
+  ResponseCodes,
+} from "../../utils/Response";
 import { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
@@ -96,11 +100,7 @@ export default class WebhookMessage extends BaseCommand {
         Action.REPLY
       );
     }
-    return new Response(
-      ResponseCodes.AUTOCOMPLETE_EMPTY_RESPONSE,
-      null,
-      Action.NONE
-    );
+    return new Response(ResponseCodes.AUTOCOMPLETE_EMPTY_RESPONSE, []);
   }
 
   public async chatInputCommandInteraction(
@@ -134,7 +134,7 @@ export default class WebhookMessage extends BaseCommand {
     const message = dcm.d.options.getString("message", false);
     const messageId = dcm.d.options.getString("message_id", false);
     if (message) return this.sendMessageToWebhook(webhook, message, messageId);
-    return new Response(
+    return new Response<ModalResponse>(
       ResponseCodes.SUCCESS,
       {
         customId: `webhook:${webhook.id}${
@@ -188,7 +188,7 @@ export default class WebhookMessage extends BaseCommand {
     webhook: Webhook,
     message: string,
     message_id?: string | null
-  ): Promise<Response<ChatInputCommandInteraction | ModalSubmitInteraction>> {
+  ) {
     const messageData = Util.stringToJson(message);
     if (!messageData)
       return new Response(
