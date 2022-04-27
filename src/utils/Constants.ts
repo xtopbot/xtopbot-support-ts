@@ -1,7 +1,8 @@
 import { PermissionsString, ChannelType } from "discord.js";
+import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Constants {
-  public static readonly DEFAULT_LOCALE: string = "en_US";
+  public static readonly DEFAULT_LOCALE: LocaleTag = "en_US";
   public static readonly DEFAULT_COMMAND_DISABLEABLE_VALUE: boolean = true;
   public static readonly DEFAULT_COMMAND_DISABLED_VALUE: boolean = false;
   public static readonly REGEX_SNOWFLAKE = /^\d{17,18}$/;

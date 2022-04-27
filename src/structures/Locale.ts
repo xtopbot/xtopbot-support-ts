@@ -1,4 +1,5 @@
 import en_US from "../locales/en_US/en_US.json";
+import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Locale {
   private _data;
@@ -18,7 +19,7 @@ export default class Locale {
     return this._data.folder;
   }
 
-  public get tag(): string {
+  public get tag(): LocaleTag {
     return this._data.folder;
   }
 

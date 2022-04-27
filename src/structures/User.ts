@@ -1,8 +1,9 @@
+import { LocaleTag } from "../managers/LocaleManager";
 import { UserData } from "../managers/UserManager";
 import db from "../providers/Mysql";
 export default class User {
   public id: string = "";
-  public locale: string | null = null;
+  public locale: LocaleTag | null = null;
   public flags: UserFlagsPolicy = UserFlagsPolicy.NONE;
   public createdAt: Date = new Date("1970-1-1");
   public lastVotedAt: Date = new Date("1970-1-1");
@@ -13,7 +14,8 @@ export default class User {
   }
 
   public _patch(data: UserData): void {
-    if ("locale" in data) this.locale = data.locale;
+    if ("locale" in data)
+      this.locale = data.locale == "ar_SA" ? "ar_SA" : "en_US";
     if ("flags" in data) this.flags = Number(data.flags);
     if ("createdAt" in data) this.createdAt = data.createdAt;
   }
