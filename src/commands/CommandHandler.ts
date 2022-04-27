@@ -31,8 +31,7 @@ export default class CommandHandler {
       return Logger.warn(
         `[CommandHandler] Unable to find matches command from ${d.author.tag}<${d.author.id}>;`
       );
-    if (InteractionOnly.isExecutable(d, await app.users.fetch(d.author)))
-      return;
+    if (await InteractionOnly.isExecutable(d, d.author)) return;
 
     Logger.info(`[CommandHandler] Found Command Macthes ${command.name}`);
 

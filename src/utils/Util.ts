@@ -17,6 +17,10 @@ export default class Util {
     return input.replace(/[\\^$*+?.()|[\]{}]/g, "\\$&");
   }
 
+  public static textEllipsis(str: string, truncate: number): string {
+    return str.length > truncate ? str.substring(0, truncate - 3) + "..." : str;
+  }
+
   public static stringToJson(value: string): JSON | null {
     try {
       const json = JSON.parse(value);
