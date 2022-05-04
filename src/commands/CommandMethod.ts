@@ -2,15 +2,16 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   ChatInputCommandInteraction,
-  ContextMenuCommandInteraction,
   GuildMember,
   Message,
+  MessageContextMenuCommandInteraction,
   ModalSubmitInteraction,
   NewsChannel,
   SelectMenuInteraction,
   TextChannel,
   ThreadChannel,
   User as DiscordUser,
+  UserContextMenuCommandInteraction,
 } from "discord.js";
 import app from "../app";
 import User from "../structures/User";
@@ -24,7 +25,7 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   public readonly d: T;
   public readonly command: BaseCommand;
   public readonly cf: ContextFormats = new ContextFormats();
-  public _user: User | null = null;
+  private _user: User | null = null;
   private _member: GuildMember | null = null;
   private _channel: TextChannel | NewsChannel | ThreadChannel | null = null;
   constructor(d: T, command: BaseCommand) {
@@ -112,32 +113,46 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   public get locale() {
     return app.locales.get("en_US");
   }
+
+  public isComponentInteraction(): this is ComponentMethod<
+    ModalSubmitInteraction & ButtonInteraction & SelectMenuInteraction
+  >;
+  public isComponentInteraction() {
+    return (
+      this.d instanceof ButtonInteraction ||
+      this.d instanceof SelectMenuInteraction ||
+      this.d instanceof ModalSubmitInteraction
+    );
+  }
 }
 export type AnyInteraction =
   | ChatInputCommandInteraction
   | ButtonInteraction
   | SelectMenuInteraction
-  | ContextMenuCommandInteraction
+  | UserContextMenuCommandInteraction
+  | MessageContextMenuCommandInteraction
   | AutocompleteInteraction
   | ModalSubmitInteraction;
 export type CommandMethodTypes = Message | AnyInteraction;
 
 export type AnyMethod =
   | ComponentMethod<AnyComponentInteraction>
-  | CommandMethod<AnyInteraction>;
+  | CommandMethod<CommandMethodTypes>;
 
 export type Method<T extends CommandMethodTypes> = T extends Message
   ? CommandMethod<Message>
   : T extends ChatInputCommandInteraction
   ? CommandMethod<ChatInputCommandInteraction>
+  : T extends UserContextMenuCommandInteraction
+  ? CommandMethod<UserContextMenuCommandInteraction>
+  : T extends MessageContextMenuCommandInteraction
+  ? CommandMethod<MessageContextMenuCommandInteraction>
+  : T extends AutocompleteInteraction
+  ? CommandMethod<AutocompleteInteraction>
   : T extends ButtonInteraction
   ? ComponentMethod<ButtonInteraction>
   : T extends SelectMenuInteraction
   ? ComponentMethod<SelectMenuInteraction>
-  : T extends ContextMenuCommandInteraction
-  ? CommandMethod<ContextMenuCommandInteraction>
-  : T extends AutocompleteInteraction
-  ? CommandMethod<AutocompleteInteraction>
   : T extends ModalSubmitInteraction
   ? ComponentMethod<ModalSubmitInteraction>
-  : null;
+  : never;

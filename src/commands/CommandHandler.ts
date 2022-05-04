@@ -3,10 +3,11 @@ import {
   ButtonInteraction,
   ClientUser,
   ChatInputCommandInteraction,
-  ContextMenuCommandInteraction,
   Message,
   SelectMenuInteraction,
   ModalSubmitInteraction,
+  UserContextMenuCommandInteraction,
+  MessageContextMenuCommandInteraction,
 } from "discord.js";
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
@@ -20,7 +21,11 @@ import Response, {
   ResponseCodes,
 } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
-import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
+import CommandMethod, {
+  AnyMethod,
+  CommandMethodTypes,
+  Method,
+} from "./CommandMethod";
 import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import InteractionOnly from "../plugins/InteractionOnly";
 export default class CommandHandler {
@@ -35,11 +40,11 @@ export default class CommandHandler {
 
     Logger.info(`[CommandHandler] Found Command Macthes ${command.name}`);
 
-    this.executeHandler(d, command);
+    this.executeHandler(new CommandMethod(d, command));
   }
 
   protected static async executeCommand(
-    dcm: CommandMethod<CommandMethodTypes>,
+    dcm: AnyMethod,
     checkRequirements: boolean = true
   ): Promise<Response<AnyResponse>> {
     if (!dcm.d.inGuild())
@@ -60,7 +65,8 @@ export default class CommandHandler {
         if (err instanceof Response) return err;
         throw new Exception(
           "Something went wrong while processing the command requirements",
-          Severity.FAULT
+          Severity.FAULT,
+          err
         );
       }
     }
@@ -68,25 +74,23 @@ export default class CommandHandler {
   }
 
   public static async executeHandler(
-    d: CommandMethodTypes,
-    command: BaseCommand
+    dcm: AnyMethod,
+    followUp: boolean = false
   ): Promise<void> {
-    const dcm =
-      d instanceof ButtonInteraction ||
-      d instanceof SelectMenuInteraction ||
-      d instanceof ModalSubmitInteraction
-        ? new ComponentMethod<AnyComponentInteraction>(d, command)
-        : new CommandMethod<CommandMethodTypes>(d, command);
-    dcm;
     try {
-      return this.response(
+      const response = await this.executeCommand(
         dcm,
-        await this.executeCommand(
-          dcm,
-          !(dcm instanceof AutocompleteInteraction)
-        )
+        !(dcm instanceof AutocompleteInteraction)
       );
+      await this.response(dcm, response, followUp);
+      if (
+        dcm.isComponentInteraction() &&
+        !followUp &&
+        response.code === ResponseCodes.SUCCESS
+      )
+        this.commandFollowUp(dcm);
     } catch (err) {
+      Logger.error("Error in handler");
       console.log(err);
       if (err instanceof Exception) {
         // just reply to requster
@@ -97,8 +101,9 @@ export default class CommandHandler {
   }
 
   private static async response(
-    dcm: CommandMethod<CommandMethodTypes>,
-    response: Response<AnyResponse>
+    dcm: AnyMethod,
+    response: Response<AnyResponse>,
+    followUp: boolean
   ): Promise<void> {
     const message = dcm.cf.resolve(response);
     if (dcm.d instanceof Message) {
@@ -106,6 +111,11 @@ export default class CommandHandler {
         dcm.d.channel.send(message);
         return;
       }
+    } else if (dcm.d instanceof AutocompleteInteraction)
+      return dcm.d.respond(message);
+    else if (followUp) {
+      dcm.d.followUp(message);
+      return;
     } else if (dcm.d instanceof ChatInputCommandInteraction) {
       if (response.action === Action.REPLY) {
         if (dcm.d.deferred) dcm.d.editReply(message);
@@ -116,7 +126,10 @@ export default class CommandHandler {
         dcm.d.showModal(message);
         return;
       }
-    } else if (dcm.d instanceof ButtonInteraction) {
+    } else if (
+      dcm.d instanceof SelectMenuInteraction ||
+      dcm.d instanceof ButtonInteraction
+    ) {
       if (response.action === Action.REPLY) {
         if (dcm.d.deferred) dcm.d.editReply(message);
         else dcm.d.reply(message);
@@ -134,27 +147,10 @@ export default class CommandHandler {
         dcm.d.showModal(message);
         return;
       }
-    } else if (dcm.d instanceof SelectMenuInteraction) {
-      if (response.action === Action.REPLY) {
-        if (dcm.d.deferred) dcm.d.editReply(message);
-        else dcm.d.reply(message);
-        return;
-      }
-      if (response.action === Action.UPDATE) {
-        dcm.d.update(message);
-        return;
-      }
-      if (response.action === Action.DEFER) {
-        dcm.d.deferUpdate(message);
-        return;
-      }
-      if (response.action === Action.MODAL) {
-        dcm.d.showModal(message);
-        return;
-      }
-    } else if (dcm.d instanceof AutocompleteInteraction) {
-      return dcm.d.respond(message);
-    } else if (dcm.d instanceof ContextMenuCommandInteraction) {
+    } else if (
+      dcm.d instanceof UserContextMenuCommandInteraction ||
+      dcm.d instanceof MessageContextMenuCommandInteraction
+    ) {
       if (response.action === Action.REPLY) {
         if (dcm.d.deferred) dcm.d.editReply(message);
         else dcm.d.reply(message);
@@ -200,7 +196,24 @@ export default class CommandHandler {
       );
   }
 
+  private static commandFollowUp(dcm: Method<AnyComponentInteraction>) {
+    if (dcm.isFollowUp()) {
+      const followUp = dcm.customIds.findIndex(
+        (customId) => customId == "followUp"
+      );
+      dcm.customIds.slice(followUp + 1);
+      const command = app.commands.getCommadFromComponent(dcm);
+      if (!command)
+        return Logger.debug(
+          "CustomId have follow up argument but command not found. followUp:" +
+            dcm.getValue("followUp", false)
+        );
+      return this.executeHandler(new ComponentMethod(dcm.d, command), true);
+    }
+  }
+
   private static matchesCommand(input: string): BaseCommand | null {
+    if (!input) return null;
     input = input.trim().replace(/\s+/g, " ");
     return (
       app.commands.values.find(

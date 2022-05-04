@@ -7,8 +7,9 @@ import {
   ButtonInteraction,
   SelectMenuInteraction,
   Message,
-  ContextMenuCommandInteraction,
   AutocompleteInteraction,
+  UserContextMenuCommandInteraction,
+  MessageContextMenuCommandInteraction,
 } from "discord.js";
 import { UserFlagsPolicy } from "../structures/User";
 import CommandMethod, { CommandMethodTypes, Method } from "./CommandMethod";
@@ -56,11 +57,18 @@ export abstract class BaseCommand implements BaseCommandType {
         dcm as CommandMethod<ChatInputCommandInteraction>
       );
     if (
-      dcm.d instanceof ContextMenuCommandInteraction &&
-      this.contextMenuCommandInteraction
+      dcm.d instanceof UserContextMenuCommandInteraction &&
+      this.userContextMenuCommandInteraction
     )
-      return this.contextMenuCommandInteraction(
-        dcm as CommandMethod<ContextMenuCommandInteraction>
+      return this.userContextMenuCommandInteraction(
+        dcm as CommandMethod<UserContextMenuCommandInteraction>
+      );
+    if (
+      dcm.d instanceof MessageContextMenuCommandInteraction &&
+      this.messageContextMenuCommandInteraction
+    )
+      return this.messageContextMenuCommandInteraction(
+        dcm as CommandMethod<MessageContextMenuCommandInteraction>
       );
     if (dcm.d instanceof ModalSubmitInteraction && this.modalSubmitInteraction)
       return this.modalSubmitInteraction(
@@ -84,8 +92,11 @@ export abstract class BaseCommand implements BaseCommandType {
   public chatInputCommandInteraction?(
     dcm: CommandMethod<ChatInputCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse>>;
-  public contextMenuCommandInteraction?(
-    dcm: CommandMethod<ContextMenuCommandInteraction>
+  public userContextMenuCommandInteraction?(
+    dcm: CommandMethod<UserContextMenuCommandInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+  public messageContextMenuCommandInteraction?(
+    dcm: CommandMethod<MessageContextMenuCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse>>;
   public modalSubmitInteraction?(
     dcm: CommandMethod<ModalSubmitInteraction>
@@ -160,8 +171,11 @@ interface BaseCommandType extends BaseCommandDataType {
   chatInputInteraction?(
     dcm: Method<ChatInputCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse>>;
-  contextMenuCommandInteraction?(
-    dcm: Method<ContextMenuCommandInteraction>
+  userContextMenuCommandInteraction?(
+    dcm: Method<UserContextMenuCommandInteraction>
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+  messageContextMenuCommandInteraction?(
+    dcm: Method<MessageContextMenuCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse>>;
   modalSubmitInteraction?(
     dcm: Method<ModalSubmitInteraction>

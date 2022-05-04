@@ -68,7 +68,6 @@ export default class WebhookMessage extends BaseCommand {
       ],
       messageComponent: (d) => {
         if (d.matches("webhook")) {
-          d.setPath("sendMessage");
           return true;
         }
         return false;

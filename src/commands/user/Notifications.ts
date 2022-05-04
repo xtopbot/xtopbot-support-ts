@@ -35,10 +35,7 @@ export default class Notifications extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("notifications")) {
-          d.setPath("getMessage");
-          return true;
-        }
+        if (d.matches("notifications")) return true;
         return false;
       },
     });

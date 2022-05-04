@@ -8,7 +8,9 @@ import {
 } from "discord.js";
 import app from "../app";
 import { BaseCommand } from "../commands/BaseCommand";
-import ComponentMethod from "../commands/ComponentMethod";
+import ComponentMethod, {
+  AnyComponentInteraction,
+} from "../commands/ComponentMethod";
 import CommandsManager from "./CommandsManager";
 
 export default class ApplicationCommandsManager extends CommandsManager {
@@ -68,12 +70,18 @@ export default class ApplicationCommandsManager extends CommandsManager {
     );
   }
 
-  public getMessageComponentCommand(
-    d: ButtonInteraction | SelectMenuInteraction | ModalSubmitInteraction
+  public getCommadFromComponent(
+    d:
+      | ButtonInteraction
+      | SelectMenuInteraction
+      | ModalSubmitInteraction
+      | ComponentMethod<AnyComponentInteraction>
   ): BaseCommand | null {
     return (
       this.values.find((command) =>
-        command.messageComponent(new ComponentMethod(d, command))
+        command.messageComponent(
+          d instanceof ComponentMethod ? d : new ComponentMethod(d, command)
+        )
       ) ?? null
     );
   }

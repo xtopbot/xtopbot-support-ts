@@ -49,7 +49,7 @@ export default class Eval extends BaseCommand {
       });
       var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
 
-      if (!rd.flags.includes(EvalFlags.OUTPUT))
+      if (rd.flags.includes(EvalFlags.OUTPUT))
         return new Response(ResponseCodes.SUCCESS, null);
       return new Response(
         ResponseCodes.SUCCESS,
@@ -84,7 +84,7 @@ export default class Eval extends BaseCommand {
       input: input,
       flags: [],
     };
-    const REGEX_OUTPUT_FLAG = /(--output|-o)/i;
+    const REGEX_OUTPUT_FLAG = /(--\!output|-\!o)/i;
     if (REGEX_OUTPUT_FLAG.test(input)) {
       data.input = data.input.replace(REGEX_OUTPUT_FLAG, "").trim();
       data.flags.push(EvalFlags.OUTPUT);

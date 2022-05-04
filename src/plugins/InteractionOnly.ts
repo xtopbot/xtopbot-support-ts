@@ -54,7 +54,7 @@ export default class InteractionOnly {
     } else {
       d.member?.disableCommunicationUntil(
         userRL.blockedEndAt?.getTime() ?? Date.now() + 5 * 60 * 1000,
-        `Spam in commands channel (#${d.channel.id}).`
+        `Spam in (#${d.channel.id}) channel.`
       );
     }
   }
