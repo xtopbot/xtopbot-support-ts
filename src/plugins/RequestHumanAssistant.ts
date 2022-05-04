@@ -1,10 +1,13 @@
 import {
   ChannelType,
   Collection,
+  ComponentType,
   DiscordAPIError,
   Guild,
+  GuildMember,
   Role,
   TextChannel,
+  TextInputStyle,
   ThreadChannel,
 } from "discord.js";
 import app from "../app";
@@ -22,6 +25,7 @@ import Logger from "../utils/Logger";
 import Response, {
   Action,
   MessageResponse,
+  ModalResponse,
   ResponseCodes,
 } from "../utils/Response";
 import Util from "../utils/Util";
@@ -36,81 +40,41 @@ export default class RequestHumanAssistantPlugin {
   private static readonly defaultAssistanceChannelName = "assistance";
 
   public static async request(
+    issue: null,
+    dcm: Method<AnyInteraction>,
+    guild: Guild
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+  public static async request(
     issue: string,
     dcm: Method<AnyInteraction>,
     guild: Guild
-  ): Promise<Response<MessageResponse>> {
+  ): Promise<Response<MessageResponse>>;
+  public static async request(
+    issue: string | null,
+    dcm: Method<AnyInteraction>,
+    guild: Guild
+  ): Promise<Response<MessageResponse | ModalResponse>> {
     const guildAssistants = this.getGuildAssistants(guild);
-    const availability = await this.checkAvailability(guildAssistants, dcm);
-    if (availability) return availability;
-    const requested = this.requests.get(dcm.user.id);
-    if (requested) {
-      if (
-        requested.interaction.createdTimestamp >
-          Date.now() - this.defaultInteractionExpires &&
-        dcm.member.roles.cache.get((guildAssistants.role as Role).id)
-      ) {
-        return new Response(ResponseCodes.ALREADY_REQUESTED_ASSISTANT, {
-          content: "Already requested",
-          ephemeral: true,
-        });
-      }
-      await this.removeRequestedUser(dcm.user.id, guild);
-    }
-    await dcm.member.roles.add(guildAssistants.role as Role);
-    const thread = await (
-      guildAssistants.channel as TextChannel
-    ).threads.create({
-      name: Util.textEllipsis(issue, 100),
-      autoArchiveDuration: 60,
-      type:
-        guild.premiumTier >= 2
-          ? ChannelType.GuildPrivateThread
-          : ChannelType.GuildPublicThread,
-      invitable: false,
-    });
-    const locale = app.locales.get(dcm.user.locale);
-    const assistant = guildAssistants.assistants.get(locale.tag) as {
-      role: Role;
-    };
-    await thread.members.add(dcm.d.user.id);
-    dcm.cf.setObject("user", dcm.d.user);
-    dcm.cf.formats.set("user.tag", dcm.d.user.tag);
-    dcm.cf.formats.set("support.role.id", assistant.role.id);
-    dcm.cf.formats.set("thread.id", thread.id);
-    thread.send(
-      dcm.cf.resolve(
-        locale.origin.plugins.requestHumanAssistant.threadCreated.thread
-      )
-    );
-    this.requests.set(dcm.d.user.id, {
-      interaction: dcm.d,
-      locale: locale.tag,
-      requestedAt: new Date(),
-      thread: thread,
-    });
-    return new Response(
-      ResponseCodes.PLUGIN_SUCCESS,
-      {
-        ...locale.origin.plugins.requestHumanAssistant.threadCreated
-          .interaction,
-        ephemeral: true,
-      },
-      Action.REPLY
-    );
-  }
 
-  public static async checkAvailability(
-    guildAssistants: GuildAssistants,
-    dcm: Method<AnyInteraction>
-  ): Promise<Response<MessageResponse> | null> {
     const locale = app.locales.get(dcm.user.locale);
     if (!dcm.user.locale)
       return new Response(
         ResponseCodes.REQUIRED_USER_LOCALE,
-        { content: "You must Have lang", ephemeral: true },
+        {
+          ...locale.origin.plugins.pluginRequiredUserLocale,
+          components: app.locales.getMessageWithMenuOfLocales(
+            dcm.user,
+            "helpdesk:requestAssistant:setLocale"
+          ).components,
+          ephemeral: true,
+        },
         Action.REPLY
       ); // User must have lang
+    await app.locales.checkUserRoles(
+      dcm.user,
+      dcm.d.guild as Guild,
+      dcm.d.member as GuildMember
+    );
     if (!guildAssistants.role || !guildAssistants.channel)
       return new Response(
         ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
@@ -142,10 +106,92 @@ export default class RequestHumanAssistantPlugin {
     if (!assistant)
       return new Response(
         ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
-        { content: "Unable to find Assistant for your lang", ephemeral: true },
+        {
+          content: "Unable to find Assistant for your lang",
+          ephemeral: true,
+        },
         Action.REPLY
       );
-    return null;
+    const requested = this.requests.get(dcm.user.id);
+    if (requested) {
+      if (
+        requested.interaction.createdTimestamp >
+          Date.now() - this.defaultInteractionExpires &&
+        dcm.member.roles.cache.get((guildAssistants.role as Role).id)
+      ) {
+        return new Response(ResponseCodes.ALREADY_REQUESTED_ASSISTANT, {
+          content: "Already requested",
+          ephemeral: true,
+        });
+      }
+      await this.removeRequestedUser(dcm.user.id, guild);
+    }
+    if (issue === null) return this.openModal();
+    //
+    await dcm.member.roles.add(guildAssistants.role as Role);
+    const thread = await (
+      guildAssistants.channel as TextChannel
+    ).threads.create({
+      name: Util.textEllipsis(issue, 100),
+      autoArchiveDuration: 60,
+      type:
+        guild.premiumTier >= 2
+          ? ChannelType.GuildPrivateThread
+          : ChannelType.GuildPublicThread,
+      invitable: false,
+    });
+    await thread.members.add(dcm.d.user.id);
+    dcm.cf.setObject("user", dcm.d.user);
+    dcm.cf.formats.set("user.tag", dcm.d.user.tag);
+    dcm.cf.formats.set("support.role.id", assistant.role.id);
+    dcm.cf.formats.set("thread.id", thread.id);
+    thread.send(
+      dcm.cf.resolve(
+        locale.origin.plugins.requestHumanAssistant.threadCreated.thread
+      )
+    );
+    this.requests.set(dcm.d.user.id, {
+      interaction: dcm.d,
+      locale: locale.tag,
+      requestedAt: new Date(),
+      thread: thread,
+    });
+    return new Response(
+      ResponseCodes.PLUGIN_SUCCESS,
+      {
+        ...locale.origin.plugins.requestHumanAssistant.threadCreated
+          .interaction,
+        ephemeral: true,
+      },
+      Action.REPLY
+    );
+  }
+
+  private static openModal(): Response<ModalResponse> {
+    return new Response<ModalResponse>(
+      ResponseCodes.SUCCESS,
+      {
+        customId: "helpdesk:requestAssistant",
+        title: "Request Assistant",
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.TextInput,
+                customId: "issue",
+                label: "issue",
+                required: true,
+                minLength: 5,
+                maxLength: 100,
+                style: TextInputStyle.Paragraph,
+              },
+            ],
+          },
+        ],
+      },
+      Action.MODAL
+    );
   }
 
   public static async removeRequestedUser(
