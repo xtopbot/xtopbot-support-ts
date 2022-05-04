@@ -2,7 +2,7 @@ import {
   ApplicationCommandOptionChoice,
   InteractionReplyOptions,
   InteractionUpdateOptions,
-  Message,
+  MessageOptions,
   ModalData,
 } from "discord.js";
 export default class Response<T extends AnyResponse = AnyResponse> {
@@ -24,7 +24,7 @@ export type AutocompleteResponse = ApplicationCommandOptionChoice[];
 export type MessageResponse =
   | InteractionReplyOptions
   | InteractionUpdateOptions
-  | Message;
+  | MessageOptions;
 export type AnyResponse =
   | ModalResponse
   | AutocompleteResponse
@@ -77,6 +77,7 @@ export enum Action {
 }
 export enum ResponseCodes {
   UNKNOWN = 0,
+  UNKNOWN_ARGUMENTS = 1,
   SUCCESS = 200,
   AUTOCOMPLETE_EMPTY_RESPONSE = 201,
   PLUGIN_SUCCESS = 202,
@@ -93,6 +94,7 @@ export enum ResponseCodes {
   UNABLE_TO_FIND_WEBHOOK = 2005,
   WEBHOOK_OWNER_NOT_ME = 2006,
   WEBHOOK_UNABLE_TO_FIND_MESSAGE = 2007,
+  LOCALE_ROLE_NOT_FOUND = 2008,
   INVALID_JSON_DATA = 3001,
   DISCORD_API_ERROR = 3002,
   //Plugins

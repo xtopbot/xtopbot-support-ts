@@ -1,4 +1,11 @@
-import { Collection } from "discord.js";
+import {
+  Collection,
+  ComponentType,
+  Guild,
+  GuildMember,
+  MessageOptions,
+  Role,
+} from "discord.js";
 import Locale from "../structures/Locale";
 import Exception, { Severity } from "../utils/Exception";
 import CacheManager from "./CacheManager";
@@ -7,6 +14,7 @@ import path from "path";
 import Logger from "../utils/Logger";
 import Constants from "../utils/Constants";
 import en_US from "../locales/en_US/en_US.json";
+import User from "../structures/User";
 
 export default class LocaleManager extends CacheManager<Locale> {
   public readonly defaultLocale: string;
@@ -157,6 +165,68 @@ export default class LocaleManager extends CacheManager<Locale> {
         "This must not happen go check on it! [LocaleManager get()]"
       );
     return _get || defaultLocale;
+  }
+
+  public getGuildLocaleRoles(guild: Guild): Collection<string, Role> {
+    const localeRoles: Collection<LocaleTag, Role> = new Collection();
+    this.cache.forEach((locale) => {
+      let role = guild.roles.cache.find(
+        (r) => r.name.toLowerCase() == locale.origin.name.toLowerCase()
+      );
+      if (role) localeRoles.set(locale.tag, role);
+    });
+    return localeRoles;
+  }
+
+  public getMessageWithMenuOfLocales(user?: User): MessageOptions;
+  public getMessageWithMenuOfLocales(customId?: string): MessageOptions;
+  public getMessageWithMenuOfLocales(
+    user: User,
+    customId?: string
+  ): MessageOptions;
+  public getMessageWithMenuOfLocales(
+    arg?: User | string,
+    customId?: string
+  ): MessageOptions {
+    const _user: User | null = arg instanceof User ? arg : null;
+    const _customId: string | null =
+      typeof arg === "string" ? arg : customId ?? null;
+    return {
+      content: "\n",
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.SelectMenu,
+              customId: _customId ?? "languages:set",
+              placeholder: "Select language you might understand", // related to locale system.
+              minValues: 1,
+              maxValues: 1,
+              options: this.cache.map((locale) => ({
+                label: locale.origin.name,
+                value: locale.tag,
+                default: _user?.locale == locale.tag,
+              })),
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  public async checkUserRoles(
+    user: User,
+    guild: Guild,
+    member: GuildMember
+  ): Promise<void> {
+    const guildLocaleRoles = this.getGuildLocaleRoles(guild);
+    const role = user.locale ? guildLocaleRoles.get(user.locale) : null;
+    guildLocaleRoles.map(async (r) => {
+      if (member.roles.cache.has(r.id) && role !== r)
+        await member.roles.remove(r);
+    });
+    if (role && !member.roles.cache.has(role.id)) await member.roles.add(role);
   }
 }
 
