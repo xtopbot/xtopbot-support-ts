@@ -1,5 +1,5 @@
 import {
-  ApplicationCommandOptionChoice,
+  ApplicationCommandOptionChoiceData,
   InteractionReplyOptions,
   InteractionUpdateOptions,
   MessageOptions,
@@ -20,7 +20,7 @@ export default class Response<T extends AnyResponse = AnyResponse> {
   }
 }
 export type ModalResponse = ModalData;
-export type AutocompleteResponse = ApplicationCommandOptionChoice[];
+export type AutocompleteResponse = ApplicationCommandOptionChoiceData[];
 export type MessageResponse =
   | InteractionReplyOptions
   | InteractionUpdateOptions

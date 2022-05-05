@@ -26,8 +26,9 @@ export default class {
       "GuildMessageTyping",
       "DirectMessages",
       "MessageContent",
+      "GuildMembers",
     ],
-    partials: [Partials.Channel, Partials.GuildMember],
+    partials: [Partials.Channel, Partials.GuildMember, Partials.ThreadMember],
   });
   public static commands: ApplicationCommandsManager =
     new ApplicationCommandsManager();

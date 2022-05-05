@@ -16,7 +16,7 @@
     "@sapphire/snowflake": "^3.1.0",
     "@types/mysql": "^2.15.19",
     "dayjs": "^1.10.7",
-    "discord.js": "^14.0.0-dev.1649160496-402514f",
+    "discord.js": "^14.0.0-dev.1651493371-4ba0f56",
     "dotenv": "^10.0.0",
     "fuse.js": "^6.5.3",
     "mysql2": "^2.3.3",
