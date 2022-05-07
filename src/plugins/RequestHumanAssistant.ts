@@ -1,63 +1,62 @@
 import {
+  AutocompleteInteraction,
   ChannelType,
+  ChatInputCommandInteraction,
   Collection,
   ComponentType,
-  DiscordAPIError,
   Guild,
   GuildMember,
+  Message,
+  PartialThreadMember,
   Role,
+  Snowflake,
   TextChannel,
   TextInputStyle,
   ThreadChannel,
+  ThreadMember,
 } from "discord.js";
 import app from "../app";
-import CommandMethod, {
-  AnyInteraction,
-  Method,
-} from "../commands/CommandMethod";
-import ComponentMethod, {
-  AnyComponentInteraction,
-} from "../commands/ComponentMethod";
+import { AnyInteraction, Method } from "../commands/CommandMethod";
 import { LocaleTag } from "../managers/LocaleManager";
-import User from "../structures/User";
-import ContextFormats from "../utils/ContextFormats";
-import Logger from "../utils/Logger";
+import AssistanceThread, {
+  SummonerStatus,
+} from "../structures/AssistanceThread";
+import User, { UserFlagsPolicy } from "../structures/User";
+import Constants from "../utils/Constants";
 import Response, {
   Action,
   MessageResponse,
   ModalResponse,
   ResponseCodes,
 } from "../utils/Response";
-import Util from "../utils/Util";
+import Util, { Diff } from "../utils/Util";
 
 export default class RequestHumanAssistantPlugin {
-  public static readonly requests: Collection<string, RequestHumanAssistant> =
+  public static readonly threads: Collection<string, AssistanceThread> =
     new Collection();
-  private static readonly defaultInteractionExpires =
-    1000 /*MiliSecond*/ * 60 /*Minute*/ * 15; //ms
   private static readonly defaultAssistantRoleName = "assistant";
   private static readonly defaultAssistanceRoleName = "assistance";
   private static readonly defaultAssistanceChannelName = "assistance";
 
   public static async request(
     issue: null,
-    dcm: Method<AnyInteraction>,
+    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
     guild: Guild
   ): Promise<Response<MessageResponse | ModalResponse>>;
   public static async request(
     issue: string,
-    dcm: Method<AnyInteraction>,
+    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
     guild: Guild
   ): Promise<Response<MessageResponse>>;
   public static async request(
     issue: string | null,
-    dcm: Method<AnyInteraction>,
+    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
     guild: Guild
   ): Promise<Response<MessageResponse | ModalResponse>> {
     const guildAssistants = this.getGuildAssistants(guild);
 
     const locale = app.locales.get(dcm.user.locale);
-    if (!dcm.user.locale)
+    if (!dcm.user.locale || !app.locales.get(dcm.user.locale ?? "", false))
       return new Response(
         ResponseCodes.REQUIRED_USER_LOCALE,
         {
@@ -84,9 +83,11 @@ export default class RequestHumanAssistantPlugin {
         },
         Action.REPLY
       );
-    const oldRequest = this.requests.get(dcm.user.id);
+    const oldRequest = this.threads
+      .map((t) => t)
+      .find((t) => t.userId == dcm.user.id);
     if (oldRequest) {
-      const thread = await dcm.d.guild?.channels.fetch(oldRequest.thread.id);
+      const thread = await oldRequest.thread.fetch(true);
       if (thread) {
         dcm.cf.formats.set("thread.id", thread.id);
         if (!dcm.member.roles.cache.get(guildAssistants.role.id))
@@ -101,6 +102,7 @@ export default class RequestHumanAssistantPlugin {
             Action.REPLY
           );
       }
+      this.threads.delete(oldRequest.thread.id);
     }
     const assistant = guildAssistants.assistants.get(dcm.user.locale);
     if (!assistant)
@@ -112,20 +114,6 @@ export default class RequestHumanAssistantPlugin {
         },
         Action.REPLY
       );
-    const requested = this.requests.get(dcm.user.id);
-    if (requested) {
-      if (
-        requested.interaction.createdTimestamp >
-          Date.now() - this.defaultInteractionExpires &&
-        dcm.member.roles.cache.get((guildAssistants.role as Role).id)
-      ) {
-        return new Response(ResponseCodes.ALREADY_REQUESTED_ASSISTANT, {
-          content: "Already requested",
-          ephemeral: true,
-        });
-      }
-      await this.removeRequestedUser(dcm.user.id, guild);
-    }
     if (issue === null) return this.openModal();
     //
     await dcm.member.roles.add(guildAssistants.role as Role);
@@ -150,12 +138,10 @@ export default class RequestHumanAssistantPlugin {
         locale.origin.plugins.requestHumanAssistant.threadCreated.thread
       )
     );
-    this.requests.set(dcm.d.user.id, {
-      interaction: dcm.d,
-      locale: locale.tag,
-      requestedAt: new Date(),
-      thread: thread,
-    });
+    this.threads.set(
+      thread.id,
+      new AssistanceThread(dcm.d.user.id, dcm.d, thread, locale.tag)
+    );
     return new Response(
       ResponseCodes.PLUGIN_SUCCESS,
       {
@@ -193,14 +179,11 @@ export default class RequestHumanAssistantPlugin {
       Action.MODAL
     );
   }
-
-  public static async removeRequestedUser(
-    id: string,
-    guild?: Guild
-  ): Promise<void> {
+  /*
+  public static async removeSummoner(id: string): Promise<void> {
     if (guild) {
-      const request = this.requests.get(id);
-      if (request) {
+      const summoner = this.summoners.get(id);
+      if (summoner) {
         const guildAssistants = this.getGuildAssistants(guild);
         if (guildAssistants.role) {
           try {
@@ -217,8 +200,8 @@ export default class RequestHumanAssistantPlugin {
         }
       }
     }
-    this.requests.delete(id);
-  }
+    this.summoners.delete(id);
+  }*/
 
   public static getGuildAssistants(guild: Guild): GuildAssistants {
     const assistants: Collection<LocaleTag, { role: Role }> = new Collection();
@@ -255,14 +238,128 @@ export default class RequestHumanAssistantPlugin {
       assistants: assistants,
     };
   }
-}
 
-type RequestHumanAssistant = {
-  requestedAt: Date;
-  interaction: AnyInteraction;
-  thread: ThreadChannel;
-  locale: LocaleTag;
-};
+  //Events
+
+  public static async onThreadMembersUpdate(
+    addedMembers: Collection<Snowflake, ThreadMember>,
+    removedMembers: Collection<Snowflake, ThreadMember | PartialThreadMember>,
+    thread: ThreadChannel
+  ) {
+    /*
+    // Added Member
+    if (addedMembers.size > 0) {
+    }
+
+    if (removedMembers.size > 0) {
+      removedMembers.forEach(async (threadMember) => {
+        const requestMember = this.requests.get(threadMember.id);
+        if (!requestMember) return; // User leave thread but not requested
+        await thread.fetch();
+        thread.setLocked(true, "The requester left the thread.");
+      });
+    }*/
+
+    console.log("Thread Members Update (addedMembers)", addedMembers);
+    console.log("Thread Members Update (removedMembers)", removedMembers);
+  }
+
+  public static async onThreadUpdate(
+    oldThread: ThreadChannel,
+    newThread: ThreadChannel
+  ) {
+    if (!oldThread.archived && newThread.archived) {
+      const at = this.threads
+        .map((t) => t)
+        .find((t) => t.thread.id === newThread.id);
+      if (!at) return;
+      if (!newThread.locked) newThread.setLocked(true);
+      if (
+        at.status === SummonerStatus.ACTIVE &&
+        at.interaction.createdTimestamp >
+          Date.now() - Constants.DEFAULT_INTERACTION_EXPIRES
+      )
+        at.interaction.followUp({
+          content: "Hello Are you there?",
+          ephemeral: true,
+        });
+      //newThread.setArchived(true);
+      //Thread was archived.
+    }
+
+    console.log("Thread Update (old)", oldThread);
+    console.log("Thread Update (new)", newThread);
+  }
+
+  public static isUserAllowedSendMessageInThread(
+    user: User,
+    thread: ThreadChannel
+  ): boolean {
+    if (
+      (user.flags & (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+      0
+    )
+      return true;
+    const at = this.threads.get(thread.id);
+    if (at && at.userId === user.id) return true;
+    return false;
+  }
+
+  public static async onMessageInThread(message: Message) {
+    if (!(message.channel instanceof ThreadChannel)) return;
+    const thread = message.channel;
+    const at = this.threads.get(thread.id);
+    if (!at) return;
+    const user = await app.users.fetch(message.author, false);
+    if (at.userId === user.id) return;
+    if ((user.flags & Constants.StaffBitwise) !== 0) {
+      //Staff
+      if (!at.assistantId) {
+        // Assistant not assgined.
+        at.setAssistant(user.id); // Assgin Assistant
+      } else {
+        if (
+          (user.flags & (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+          0
+        )
+          return;
+        if (at.assistantId == user.id) return;
+        message.delete();
+      }
+    } else {
+      //User
+      const guildAssistants = this.getGuildAssistants(message.guild as Guild);
+      const atSpamer = this.threads
+        .map((t) => t)
+        .find((t) => t.userId == user.id);
+      if (
+        guildAssistants.role &&
+        message.member?.roles.cache.get(guildAssistants.role.id) &&
+        atSpamer?.status != SummonerStatus.ACTIVE
+      )
+        message.member?.roles.remove(guildAssistants.role);
+      const spamer = at.spamerUsers.get(user);
+      message.delete();
+      if (spamer.isAllowed()) {
+        console.log(spamer.remaining);
+        if (spamer.remaining >= 4)
+          atSpamer?.interaction.followUp({
+            content: `Hey <@${user.id}>,\nYou seems are sending message in the wrong thread. Head to your thread <#${atSpamer.thread.id}> and start sending message there!`,
+            ephemeral: true,
+          });
+      } else {
+        message.member?.disableCommunicationUntil(
+          spamer.blockedEndAt?.getTime() ?? Date.now() + 5 * 60 * 1000,
+          `Spam sending messages in thread (#${thread.id}) that does not belong to him`
+        );
+        atSpamer?.interaction.followUp({
+          content: `Hey <@${user.id}>,\nYou have sent a lot of messages on thread that is not yours! I had to ban you for a while. (Your thread has been closed due to your bad behavior)`,
+          ephemeral: true,
+        });
+      }
+    }
+  }
+}
 
 type GuildAssistants = {
   role: Role | null;
