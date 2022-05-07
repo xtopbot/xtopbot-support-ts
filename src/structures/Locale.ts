@@ -2,7 +2,7 @@ import en_US from "../locales/en_US/en_US.json";
 import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Locale {
-  private _data;
+  public _data;
   constructor(data: any) {
     this._data = data;
   }

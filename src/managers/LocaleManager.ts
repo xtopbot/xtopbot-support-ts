@@ -150,21 +150,24 @@ export default class LocaleManager extends CacheManager<Locale> {
   }
 
   // null == defautl locale
-  public get(tag: LocaleTag | null, required = false): Locale {
+  public get(tag: LocaleTag, required: true): Locale;
+  public get(tag: LocaleTag, required?: boolean): Locale | null;
+  public get(tag: LocaleTag | null, required?: boolean): Locale;
+  public get(tag: LocaleTag | null, required: boolean = false): Locale | null {
     const _get = this.cache.get(tag === null ? this.defaultLocale : tag);
-    if (!_get && required)
+    const defaultLocale = this.cache.get(this.defaultLocale);
+    if (tag !== null && !_get && required)
       throw new Exception(
         `An error occurred while fetching "${tag}" language content.`,
         Severity.SUSPICIOUS
       );
-    const defaultLocale = this.cache.get(this.defaultLocale);
-    if (!defaultLocale)
+    if (!defaultLocale && tag === null)
       throw new Exception(
         `An error occurred while fetching content for language`,
         Severity.FAULT,
         "This must not happen go check on it! [LocaleManager get()]"
       );
-    return _get || defaultLocale;
+    return _get ?? defaultLocale ?? null;
   }
 
   public getGuildLocaleRoles(guild: Guild): Collection<string, Role> {
