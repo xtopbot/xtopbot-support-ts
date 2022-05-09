@@ -41,32 +41,36 @@ export default class User {
     return !!raw.length;
   }
 
-  public async setFlags(flags: number): Promise<void> {
+  public async setFlags(flags: number): Promise<this> {
     await db.query("update Users set flags = ? where userId = ?", [
       flags,
       this.id,
     ]);
     this.flags = flags;
+    return this;
   }
 
-  public async addFlag(flag: UserFlagsPolicy): Promise<void> {
+  public async addFlag(flag: UserFlagsPolicy): Promise<this> {
     await db.query("update Users set flags = flags | ? where userId = ?", [
       flag,
       this.id,
     ]);
     await this.update();
+    return this;
   }
 
-  public async setLocale(locale: LocaleTag): Promise<void> {
+  public async setLocale(locale: LocaleTag): Promise<this> {
     await db.query("update Users set locale = ? where userId = ?", [
       locale,
       this.id,
     ]);
     this.locale = locale;
+    return this;
   }
 
-  public async update(): Promise<void> {
+  public async update(): Promise<this> {
     await app.users.fetch(this.id);
+    return this;
   }
 }
 

@@ -1,10 +1,12 @@
 {
+    "name": "عربي",
     "tags": [
         "ar",
         "arabic",
         "arab",
         "عربي"
     ],
+    "roleNames": [],
     "exceptions": {
         "unknownError": {
             "content": "An error occurred while executing the request.\n```{{error}}```\n `Request Id:` `**{{request.id}}**`"

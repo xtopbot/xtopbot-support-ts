@@ -19,7 +19,7 @@ import app from "../app";
 import { AnyInteraction, Method } from "../commands/CommandMethod";
 import { LocaleTag } from "../managers/LocaleManager";
 import AssistanceThread, {
-  SummonerStatus,
+  AThreadStatus,
 } from "../structures/AssistanceThread";
 import User, { UserFlagsPolicy } from "../structures/User";
 import Constants from "../utils/Constants";
@@ -179,29 +179,6 @@ export default class RequestHumanAssistantPlugin {
       Action.MODAL
     );
   }
-  /*
-  public static async removeSummoner(id: string): Promise<void> {
-    if (guild) {
-      const summoner = this.summoners.get(id);
-      if (summoner) {
-        const guildAssistants = this.getGuildAssistants(guild);
-        if (guildAssistants.role) {
-          try {
-            await (
-              await guild.members.fetch(id)
-            ).roles.remove(guildAssistants.role);
-          } catch (err) {
-            Logger.error(
-              `[RequestHumanAssistantPlugin] Role Remove Error: ${
-                (err as DiscordAPIError).message
-              }`
-            );
-          }
-        }
-      }
-    }
-    this.summoners.delete(id);
-  }*/
 
   public static getGuildAssistants(guild: Guild): GuildAssistants {
     const assistants: Collection<LocaleTag, { role: Role }> = new Collection();
@@ -242,26 +219,35 @@ export default class RequestHumanAssistantPlugin {
   //Events
 
   public static async onThreadMembersUpdate(
-    addedMembers: Collection<Snowflake, ThreadMember>,
+    _addedMembers: Collection<Snowflake, ThreadMember>,
     removedMembers: Collection<Snowflake, ThreadMember | PartialThreadMember>,
     thread: ThreadChannel
   ) {
-    /*
-    // Added Member
-    if (addedMembers.size > 0) {
+    const at = this.threads.get(thread.id);
+    if (!at) return;
+    //Remove member
+    if (removedMembers.get(at.userId) && !at.assistantId) {
+      await at.close(
+        AThreadStatus.CLOSED,
+        {
+          content: "You have closed your thread.",
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.SelectMenu,
+                  customId: "helpdesk:closeThread:" + thread.id,
+                  minValues: 1,
+                  maxValues: 1,
+                  placeholder: "Tell us why you closed the thread",
+                },
+              ],
+            },
+          ],
+        } // related to locale system
+      );
     }
-
-    if (removedMembers.size > 0) {
-      removedMembers.forEach(async (threadMember) => {
-        const requestMember = this.requests.get(threadMember.id);
-        if (!requestMember) return; // User leave thread but not requested
-        await thread.fetch();
-        thread.setLocked(true, "The requester left the thread.");
-      });
-    }*/
-
-    console.log("Thread Members Update (addedMembers)", addedMembers);
-    console.log("Thread Members Update (removedMembers)", removedMembers);
   }
 
   public static async onThreadUpdate(
@@ -269,17 +255,11 @@ export default class RequestHumanAssistantPlugin {
     newThread: ThreadChannel
   ) {
     if (!oldThread.archived && newThread.archived) {
-      const at = this.threads
-        .map((t) => t)
-        .find((t) => t.thread.id === newThread.id);
+      const at = this.threads.get(newThread.id);
       if (!at) return;
       if (!newThread.locked) newThread.setLocked(true);
-      if (
-        at.status === SummonerStatus.ACTIVE &&
-        at.interaction.createdTimestamp >
-          Date.now() - Constants.DEFAULT_INTERACTION_EXPIRES
-      )
-        at.interaction.followUp({
+      if (at.status === AThreadStatus.ACTIVE)
+        at.close(AThreadStatus.SOLVED, {
           content: "Hello Are you there?",
           ephemeral: true,
         });
@@ -306,7 +286,8 @@ export default class RequestHumanAssistantPlugin {
   }
 
   public static async onMessageInThread(message: Message) {
-    if (!(message.channel instanceof ThreadChannel)) return;
+    if (!(message.channel instanceof ThreadChannel) || message.author.bot)
+      return;
     const thread = message.channel;
     const at = this.threads.get(thread.id);
     if (!at) return;
@@ -328,6 +309,8 @@ export default class RequestHumanAssistantPlugin {
       }
     } else {
       //User
+      message.delete();
+      thread.members.remove(user.id);
       const guildAssistants = this.getGuildAssistants(message.guild as Guild);
       const atSpamer = this.threads
         .map((t) => t)
@@ -335,27 +318,27 @@ export default class RequestHumanAssistantPlugin {
       if (
         guildAssistants.role &&
         message.member?.roles.cache.get(guildAssistants.role.id) &&
-        atSpamer?.status != SummonerStatus.ACTIVE
+        atSpamer?.status != AThreadStatus.ACTIVE
       )
-        message.member?.roles.remove(guildAssistants.role);
+        return message.member?.roles.remove(guildAssistants.role);
       const spamer = at.spamerUsers.get(user);
-      message.delete();
       if (spamer.isAllowed()) {
-        console.log(spamer.remaining);
         if (spamer.remaining >= 4)
-          atSpamer?.interaction.followUp({
-            content: `Hey <@${user.id}>,\nYou seems are sending message in the wrong thread. Head to your thread <#${atSpamer.thread.id}> and start sending message there!`,
-            ephemeral: true,
-          });
+          if (atSpamer?.isInteractionExpired() === false)
+            atSpamer.interaction.followUp({
+              // related to locale system
+              content: `Hey <@${user.id}>,\nYou seems are sending message in the wrong thread. Head to your thread <#${atSpamer.thread.id}> and start sending message there!`,
+              ephemeral: true,
+            });
       } else {
+        atSpamer?.close(AThreadStatus.CLOSED, {
+          // related to locale system
+          content: `Hey <@${user.id}>,\nYou have sent a lot of messages on thread that is not yours! I had to timeout you for a while. (Your thread has been closed due to your bad behavior)`,
+        });
         message.member?.disableCommunicationUntil(
           spamer.blockedEndAt?.getTime() ?? Date.now() + 5 * 60 * 1000,
           `Spam sending messages in thread (#${thread.id}) that does not belong to him`
         );
-        atSpamer?.interaction.followUp({
-          content: `Hey <@${user.id}>,\nYou have sent a lot of messages on thread that is not yours! I had to ban you for a while. (Your thread has been closed due to your bad behavior)`,
-          ephemeral: true,
-        });
       }
     }
   }

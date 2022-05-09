@@ -47,8 +47,11 @@ export default class Eval extends BaseCommand {
           dcm: dcm,
         },
       });
-      var res: string = JSON.stringify(await vm.run(rd.input), null, 2);
-
+      var res: string = JSON.stringify(
+        await vm.run(`(async () =>${rd.input})()`),
+        null,
+        2
+      );
       if (rd.flags.includes(EvalFlags.OUTPUT))
         return new Response(ResponseCodes.SUCCESS, null);
       return new Response(

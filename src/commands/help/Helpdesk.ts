@@ -115,10 +115,10 @@ export default class HelpDesk extends BaseCommand {
     dcm: CommandMethod<any> | ComponentMethod<any>,
     id: number
   ) {
-    const article = dcm.locale.origin.helpdesk.articles.find(
+    /*const article = dcm.locale.origin.helpdesk.articles.find(
       (article) => article.id == id
     );
     if (!article) throw new Exception("Article not found", Severity.FAULT);
-    return article;
+    return article;*/
   }
 }

@@ -1,4 +1,5 @@
 {
+    "name": "English",
     "tags": [
         "en",
         "english",
@@ -6,6 +7,12 @@
     ],
     "roleName": "English",
     "plugins": {
+        "pluginRequiredUserLocale": {
+            "content": "This action requires that you select one of the available languages."
+        },
+        "serverNotMeetPluginCriteria": {
+            "content": "This server does not meet the criteria for this plugin. Please contact the bot developer"
+        },
         "welcomer": {
             "memberJoin": {
                 "content": "Hey {{user.tag}}, Welcome!",
@@ -16,11 +23,47 @@
                     }
                 ]
             }
+        },
+        "interactionOnly": {
+            "content": "Hey {{user.tag}}, This channel is for **Slash Command** only, you cannot use regular command or start conversation.",
+            "buttons": [
+                "I need assistance"
+            ]
+        },
+        "requestHumanAssistant": {
+            "threadCreated": {
+                "thread": {
+                    "content": "<@&{{support.role.id}}>\n\nHello <@{{user.id}}>, please wait for one of the technical support to contact you in this thread."
+                },
+                "interaction": {
+                    "content": "Thread has been created. One of our technical support will contact you in this <#{{thread.id}}> thread."
+                }
+            },
+            "activeThread": {
+                "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
+            }
         }
     },
-    "helpdesk": [
-        {
-            "title": ""
+    "language": {
+        "set": {
+            "content": "English language has been added. You will be shown the helpdesk channel and it will be presented in English."
         }
-    ]
+    },
+    "helpdesk": {
+        "articles": [
+            {
+                "id": 34,
+                "article": "كيف أقوم بأضافة البوت الى السيرفر الخاص بي؟",
+                "tags": [],
+                "response": {
+                    "embeds": [
+                        {
+                            "title": "{{article}}",
+                            "description": ""
+                        }
+                    ]
+                }
+            }
+        ]
+    }
 }
