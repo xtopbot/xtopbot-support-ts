@@ -72,12 +72,12 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   }
 
   public get me(): GuildMember {
-    if (!this.d.guild?.me)
+    if (!this.d.guild?.members.me)
       throw new Exception(
         "Unable to find data about bot on guild",
         Severity.FAULT
       );
-    return this.d.guild.me;
+    return this.d.guild.members.me;
   }
 
   get user(): User {
