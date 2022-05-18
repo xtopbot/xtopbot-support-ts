@@ -31,12 +31,61 @@
             ]
         },
         "requestHumanAssistant": {
+            "publicThread": {
+                "notBelongToHim": {
+                    "warning": {
+                        "content": "Hey <@{{user.id}}>,\nYou seems are sending message in the wrong thread. Head to your thread <#{{active.thread.id}}> and start sending message there!"
+                    },
+                    "timeout": {
+                        "content": "Hey <@{{user.id}}>,\nYou have sent a lot of messages on thread that is not yours! I had to timeout you for a while. (Your thread has been closed due to your bad behavior)"
+                    }
+                }
+            },
             "threadCreated": {
                 "thread": {
                     "content": "<@&{{support.role.id}}>\n\nHello <@{{user.id}}>, please wait for one of the technical support to contact you in this thread."
                 },
                 "interaction": {
                     "content": "Thread has been created. One of our technical support will contact you in this <#{{thread.id}}> thread."
+                }
+            },
+            "solvedIssue": {
+                "interaction": {
+                    "content": "**Would you mind taking a minute to tell us how we did?**\njust two quick questions if you don't mind.",
+                    "buttons": [
+                        "Give Feedback"
+                    ]
+                },
+                "thread": {}
+            },
+            "summonerLeftTheThread": {
+                "interaction": {
+                    "content": "You left the thread and no assistant came to help you with your issue. Can you provide a reason for leaving the thread?",
+                    "selectMenu": [
+                        {
+                            "placeholder": "The reason for leaving thread",
+                            "options": [
+                                {
+                                    "label": "I solved the issue"
+                                },
+                                {
+                                    "label": "Assistant delayed"
+                                },
+                                {
+                                    "label": "Other"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "thread": {}
+            },
+            "survey": {
+                "thread": {
+                    "content": "How would you rate your overall thread experience with **{{assistant.tag}}**?"
+                },
+                "service": {
+                    "content": "How satisfied are you with our services?"
                 }
             },
             "activeThread": {
@@ -46,7 +95,7 @@
     },
     "language": {
         "set": {
-            "content": "English language has been added. You will be shown the helpdesk channel and it will be presented in English."
+            "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
         }
     },
     "helpdesk": {

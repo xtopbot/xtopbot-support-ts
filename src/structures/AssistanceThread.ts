@@ -1,36 +1,38 @@
 import {
-  AutocompleteInteraction,
-  Guild,
   InteractionReplyOptions,
+  InteractionWebhook,
   ThreadChannel,
 } from "discord.js";
-import { AnyInteraction } from "../commands/CommandMethod";
 import { LocaleTag } from "../managers/LocaleManager";
 import RatelimitManager from "../managers/RatelimitManager";
 import RequestHumanAssistant from "../plugins/RequestHumanAssistant";
 import Constants from "../utils/Constants";
 import Exception, { Severity } from "../utils/Exception";
 import User from "./User";
-type Diff<T, U> = T extends U ? never : T;
 export default class AssistanceThread {
+  public readonly id: string;
   public readonly userId: string;
-  public readonly interaction: Diff<AnyInteraction, AutocompleteInteraction>;
-  public readonly thread: ThreadChannel;
+  public readonly webhook: InteractionWebhook;
+  public readonly thread: ThreadChannel | null;
   public readonly locale: LocaleTag;
   public readonly createdAt: Date = new Date();
   public status: AThreadStatus = AThreadStatus.ACTIVE;
   public assistantId: string | null = null;
   public spamerUsers = new RatelimitManager<User>(120000, 5);
   constructor(
+    threadId: string,
     userId: string,
-    interaction: Diff<AnyInteraction, AutocompleteInteraction>,
-    thread: ThreadChannel,
-    locale: LocaleTag
+    webhook: InteractionWebhook,
+    thread: ThreadChannel | null,
+    locale: LocaleTag,
+    createdAt?: Date
   ) {
+    this.id = threadId;
     this.userId = userId;
-    this.interaction = interaction;
+    this.webhook = webhook;
     this.thread = thread;
     this.locale = locale;
+    this.createdAt = createdAt ?? new Date();
   }
 
   private setStatus(status: AThreadStatus): this {
@@ -49,6 +51,7 @@ export default class AssistanceThread {
     status: AThreadStatus,
     followUp?: InteractionReplyOptions
   ): Promise<this> {
+    if (!this.thread) throw new Exception("Thread not exist!", Severity.FAULT);
     this.setStatus(status);
     await this.thread.fetch();
     if (!this.thread.archived) {
@@ -67,13 +70,13 @@ export default class AssistanceThread {
     )
       await member.roles.remove(guildAssistants.role);
     if (followUp && member && !this.isInteractionExpired())
-      this.interaction.followUp({ ...followUp, ephemeral: true });
+      this.webhook.send({ ...followUp, ephemeral: true });
     return this;
   }
 
   public isInteractionExpired(): boolean {
     return (
-      this.interaction.createdTimestamp <=
+      this.createdAt.getTime() <=
       Date.now() - Constants.DEFAULT_INTERACTION_EXPIRES
     );
   }
