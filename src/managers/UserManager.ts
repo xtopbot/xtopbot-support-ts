@@ -19,15 +19,15 @@ export default class UserManager extends CacheManager<User> {
       const cached = this.cache.get(user.id);
       if (cached instanceof User) return cached;
     }
-    const raw = await db.query(
+    const [raw] = await db.query(
       "SELECT userId, SUM(flags) as flags, locale, createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
-    if (!raw[0].userId) {
+    if (!raw.userId) {
       await this.create(user);
       return this.fetch(user, true);
     }
-    return this._add(new User(raw[0]));
+    return this._add(new User(raw));
   }
 
   public async create(

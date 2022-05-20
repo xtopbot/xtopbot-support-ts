@@ -20,6 +20,8 @@ export default class Constants {
     UserFlagsPolicy.DEVELOPER;
 
   public static readonly DEFAULT_PREFIX: string = "!";
+  public static readonly DEFAULT_NAME_ASSISATANT_REQUEST_LOG_CHANNEL: string =
+    "RHA-Log";
   public static readonly CHANNEL_PERMISSIONS: Array<PermissionsString> = [
     "ManageChannels",
     "ViewChannel",

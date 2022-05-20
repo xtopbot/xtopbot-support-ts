@@ -1,8 +1,4 @@
-import {
-  InteractionWebhook,
-  ThreadChannel,
-  User as DiscordUser,
-} from "discord.js";
+import { InteractionWebhook, ThreadChannel } from "discord.js";
 import CacheManager from "./CacheManager";
 import db from "../providers/Mysql";
 import AssistanceThread from "../structures/AssistanceThread";
@@ -43,7 +39,7 @@ export default class UserManager extends CacheManager<AssistanceThread> {
         raw.interactionToken
       ),
       thread,
-      raw.threadLocale,
+      raw.locale,
       raw.createdAt
     );
     AT.assistantId ??= raw.assistantId;

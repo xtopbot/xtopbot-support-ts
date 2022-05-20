@@ -2,7 +2,6 @@ import {
   AutocompleteInteraction,
   ButtonStyle,
   ChannelType,
-  ChatInputCommandInteraction,
   Collection,
   ComponentType,
   Guild,
@@ -23,7 +22,7 @@ import { LocaleTag } from "../managers/LocaleManager";
 import AssistanceThread, {
   AThreadStatus,
 } from "../structures/AssistanceThread";
-import User, { UserFlagsPolicy } from "../structures/User";
+import { UserFlagsPolicy } from "../structures/User";
 import Constants from "../utils/Constants";
 import ContextFormats from "../utils/ContextFormats";
 import Response, {
@@ -33,6 +32,7 @@ import Response, {
   ResponseCodes,
 } from "../utils/Response";
 import Util, { Diff } from "../utils/Util";
+import db from "../providers/Mysql";
 
 export default class RequestHumanAssistantPlugin {
   public static readonly threads = new AssistanceThreadManager();
@@ -146,6 +146,10 @@ export default class RequestHumanAssistantPlugin {
         locale.origin.plugins.requestHumanAssistant.threadCreated.thread
       )
     );
+    await db.query(
+      "INSTER INTO `Assistance.Threads` SET threadId = ?, userId = ?, guildId = ?, interactionToken = ?, locale = ?",
+      [thread.id, dcm.d.user.id, thread.guild.id, dcm.d.token, locale.tag]
+    );
     this.threads.cache.set(
       thread.id,
       new AssistanceThread(
@@ -243,12 +247,8 @@ export default class RequestHumanAssistantPlugin {
     if (removedMembers.get(at.userId)) {
       const user = await app.users.fetch(at.userId);
       const locale = app.locales.get(user.locale);
-      const cfx = new ContextFormats();
       if (at.assistantId) {
         // Assistant responsed. Means Status will be SOLVED
-        const assistant = await thread.guild.members.fetch(at.assistantId);
-        cfx.setObject("assistant", assistant.user);
-        cfx.formats.set("assistant.tag", assistant.user.tag);
         await at.close(AThreadStatus.SOLVED, {
           ...locale.origin.plugins.requestHumanAssistant.solvedIssue
             .interaction,
@@ -346,19 +346,38 @@ export default class RequestHumanAssistantPlugin {
       const at = await this.threads.fetch(newThread.id);
       if (!at) return;
       if (!newThread.locked) newThread.setLocked(true);
-      if (at.status === AThreadStatus.ACTIVE)
-        at.close(AThreadStatus.SOLVED, {
-          content: "Hello Are you there?",
-          ephemeral: true,
-        });
-      //newThread.setArchived(true);
-      //Thread was archived.
-    } else if (oldThread.archived && !newThread.archived) {
-      // Thread was Unarchived
-    }
+      if (at.status !== AThreadStatus.ACTIVE) return;
 
-    console.log("Thread Update (old)", oldThread);
-    console.log("Thread Update (new)", newThread);
+      const user = await app.users.fetch(at.userId);
+      const locale = app.locales.get(user.locale);
+      if (at.assistantId) {
+        await at.close(AThreadStatus.SOLVED, {
+          ...locale.origin.plugins.requestHumanAssistant.solvedIssue
+            .interaction,
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.Button,
+                  label:
+                    locale.origin.plugins.requestHumanAssistant.solvedIssue
+                      .interaction.buttons[0],
+                  customId: "helpdesk:survey",
+                  style: ButtonStyle.Primary,
+                },
+              ],
+            },
+          ],
+        });
+      } else {
+        await at.close(AThreadStatus.CLOSED);
+      }
+    } /* else if (oldThread.archived && !newThread.archived) {
+      // Thread was Unarchived
+      const at = await this.threads.fetch(newThread.id);
+      if (!at) return;
+    }*/
   }
 
   public static async onMessageInThread(message: Message) {

@@ -95,6 +95,7 @@ export default class HelpDesk extends BaseCommand {
   }
   public async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
     if (dcm.getValue("helpdesk", false) === "requestAssistant") {
+      await dcm.d.deferReply({ ephemeral: true });
       return RequestHumanAssistantPlugin.request(
         dcm.d.fields.getTextInputValue("issue"),
         dcm,
