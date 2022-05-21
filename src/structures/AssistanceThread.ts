@@ -20,7 +20,7 @@ export default class AssistanceThread {
   public readonly id: string;
   public readonly userId: string;
   public readonly webhook: InteractionWebhook;
-  public readonly thread: ThreadChannel | null;
+  public thread: ThreadChannel | null;
   public readonly locale: LocaleTag;
   public readonly createdAt: Date = new Date();
   public status: AThreadStatus = AThreadStatus.ACTIVE;
@@ -63,10 +63,9 @@ export default class AssistanceThread {
 
     this.setStatus(status);
 
-    await this.thread.fetch();
+    this.thread = (await this.thread.fetch()) ?? this.thread;
     if (!this.thread.archived) {
-      if (!this.thread.locked) await this.thread.setLocked(true);
-      this.thread.setArchived(true);
+      await this.thread.edit({ archived: true, locked: true });
     }
 
     const member = await this.thread.guild.members
@@ -75,22 +74,26 @@ export default class AssistanceThread {
     const guildAssistants = RequestHumanAssistant.getGuildAssistants(
       this.thread.guild
     );
+
     if (
       guildAssistants.role &&
       member?.roles.cache.get(guildAssistants.role.id)
     )
       await member.roles.remove(guildAssistants.role);
+    cfx ??= new ContextFormats();
+    if (this.assistantId) {
+      const assistant = await app.client.users.fetch(this.assistantId);
+      cfx.setObject("assistant", assistant);
+      cfx.formats.set("assistant.tag", assistant.tag);
+    }
+    console.log(followUp);
     if (followUp) {
-      cfx ??= new ContextFormats();
-      if (this.assistantId) {
-        const assistant = await app.client.users.fetch(this.assistantId);
-        cfx.setObject("assistant", assistant);
-        cfx.formats.set("assistant.tag", assistant.tag);
-      }
-
       if (member && !this.isInteractionExpired())
         this.webhook.send({ ...cfx.resolve(followUp), ephemeral: true });
     }
+    await this.thread.send({
+      content: "**Thread closed.**",
+    });
     /*
      Send Request Assistant Log
     */
@@ -102,13 +105,34 @@ export default class AssistanceThread {
           channel.type === ChannelType.GuildText
       ) as TextChannel | undefined
     )?.send({
-      content: `<#${this.id}> Thread Belongs to (<@${this.userId}>[${
-        member?.user.tag ?? ""
-      }]) ${
-        this.assistantId
-          ? `**\`Solved\`** By <@${this.assistantId}>.`
-          : `**\`Closed\`**.`
-      } **(It took ${moment(this.createdAt).fromNow(true)})**`,
+      embeds: [
+        {
+          title: `Thread **\`${this.assistantId ? "Solved" : "Closed"}\`**`,
+          description:
+            (this.assistantId ? `Assisted By <@${this.assistantId}>` : "") +
+            `(its took ${moment(
+              Math.round(this.createdAt.getTime() / 1000)
+            ).fromNow(true)})`,
+          color: !this.assistantId ? 12235697 /* Silver */ : 4553134 /* Blue */,
+          fields: [
+            {
+              name: "Thread",
+              value: `<#${this.id}>`,
+              inline: true,
+            },
+            {
+              name: "Summoner",
+              value: `<@${this.userId}> (${member?.user.tag ?? ""})`,
+              inline: true,
+            },
+            {
+              name: "Created At",
+              value: `<t:${Math.round(this.createdAt.getTime() / 1000)}:F>`,
+              inline: true,
+            },
+          ],
+        },
+      ],
     });
 
     //Update row in database
@@ -129,7 +153,7 @@ export default class AssistanceThread {
 }
 
 export enum AThreadStatus {
-  ACTIVE,
+  ACTIVE = 1,
   SOLVED, //Summoner issue was solved by assistant
   INACTIVE, // Summoner was inactive with assistant
   CLOSED, // Summoner left the thread.

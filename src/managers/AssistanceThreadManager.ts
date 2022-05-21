@@ -21,7 +21,7 @@ export default class UserManager extends CacheManager<AssistanceThread> {
       }
     }
     const [raw] = await db.query(
-      "SELECT * FROM `Assistance.Threads` WHERE threadId = ?",
+      "SELECT threadId, userId, guildId, interactionToken, assistantId, (`status` + 0) as status, locale, createdAt FROM `Assistance.Threads` WHERE threadId = ?",
       [threadId]
     );
     if (!raw?.threadId) return null;
@@ -43,7 +43,7 @@ export default class UserManager extends CacheManager<AssistanceThread> {
       raw.createdAt
     );
     AT.assistantId ??= raw.assistantId;
-    AT.status ??= raw.status;
+    AT.status = raw.status;
     return this._add(AT);
   }
 }

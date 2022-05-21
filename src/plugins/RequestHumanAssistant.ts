@@ -147,7 +147,7 @@ export default class RequestHumanAssistantPlugin {
       )
     );
     await db.query(
-      "INSTER INTO `Assistance.Threads` SET threadId = ?, userId = ?, guildId = ?, interactionToken = ?, locale = ?",
+      "INSERT INTO `Assistance.Threads` (threadId, userId, guildId, interactionToken, locale) values (?, ?, ?, ?, ?)",
       [thread.id, dcm.d.user.id, thread.guild.id, dcm.d.token, locale.tag]
     );
     this.threads.cache.set(
@@ -341,43 +341,69 @@ export default class RequestHumanAssistantPlugin {
     oldThread: ThreadChannel,
     newThread: ThreadChannel
   ) {
+    const at = await this.threads.fetch(newThread.id);
+    if (!at) return;
     if (!oldThread.archived && newThread.archived) {
       // Thread was Archived
-      const at = await this.threads.fetch(newThread.id);
-      if (!at) return;
-      if (!newThread.locked) newThread.setLocked(true);
+      if (!newThread.locked) {
+        await newThread.setArchived(false);
+        await newThread.edit({ archived: true, locked: true });
+      }
       if (at.status !== AThreadStatus.ACTIVE) return;
 
       const user = await app.users.fetch(at.userId);
       const locale = app.locales.get(user.locale);
-      if (at.assistantId) {
-        await at.close(AThreadStatus.SOLVED, {
-          ...locale.origin.plugins.requestHumanAssistant.solvedIssue
-            .interaction,
-          components: [
-            {
-              type: ComponentType.ActionRow,
-              components: [
-                {
-                  type: ComponentType.Button,
-                  label:
-                    locale.origin.plugins.requestHumanAssistant.solvedIssue
-                      .interaction.buttons[0],
-                  customId: "helpdesk:survey",
-                  style: ButtonStyle.Primary,
-                },
-              ],
-            },
-          ],
-        });
-      } else {
-        await at.close(AThreadStatus.CLOSED);
-      }
+      if (at.assistantId) return at.close(AThreadStatus.CLOSED);
+
+      return at.close(AThreadStatus.SOLVED, {
+        ...locale.origin.plugins.requestHumanAssistant.solvedIssue.interaction,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.Button,
+                label:
+                  locale.origin.plugins.requestHumanAssistant.solvedIssue
+                    .interaction.buttons[0],
+                customId: "helpdesk:survey",
+                style: ButtonStyle.Primary,
+              },
+            ],
+          },
+        ],
+      });
     } /* else if (oldThread.archived && !newThread.archived) {
       // Thread was Unarchived
-      const at = await this.threads.fetch(newThread.id);
-      if (!at) return;
+      return this.assistanceThreadValidation(at, true);
     }*/
+  }
+
+  private static async assistanceThreadValidation(
+    at: AssistanceThread,
+    action = true
+  ): Promise<boolean> {
+    if (at.status != AThreadStatus.ACTIVE) {
+      if (at.thread && action) {
+        await at.thread.send({
+          content: "This thread is no longer valid.",
+        });
+        await at.thread.edit({ archived: true, locked: true });
+      }
+      return false;
+    } else if (
+      at.status === AThreadStatus.ACTIVE &&
+      at.createdAt.getTime() <= Date.now() - 21600 * 1000 /* 6 Hours */
+    ) {
+      if (action) {
+        await at.thread?.send({
+          content: "This thread is no longer valid.",
+        });
+        await at.close(AThreadStatus.CLOSED);
+      }
+      return false;
+    }
+    return true;
   }
 
   public static async onMessageInThread(message: Message) {
@@ -387,7 +413,7 @@ export default class RequestHumanAssistantPlugin {
     const thread = message.channel;
     const at = await this.threads.fetch(thread.id);
     if (!at) return;
-
+    if (!(await this.assistanceThreadValidation(at))) return;
     const user = await app.users.fetch(message.author, false);
     const locale = app.locales.get(user.locale);
 
