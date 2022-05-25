@@ -23,6 +23,7 @@ export default class AssistanceThread {
   public thread: ThreadChannel | null;
   public readonly locale: LocaleTag;
   public readonly createdAt: Date = new Date();
+  public closedAt: Date | null = null;
   public status: AThreadStatus = AThreadStatus.ACTIVE;
   public assistantId: string | null = null;
   public spamerUsers = new RatelimitManager<User>(120000, 5);
@@ -45,6 +46,7 @@ export default class AssistanceThread {
   private setStatus(status: AThreadStatus): this {
     if (this.status !== AThreadStatus.ACTIVE)
       throw new Exception("Thread status is unchangeable", Severity.SUSPICIOUS);
+    this.closedAt = new Date();
     this.status = status;
     return this;
   }
@@ -62,11 +64,6 @@ export default class AssistanceThread {
     if (!this.thread) throw new Exception("Thread not exist!", Severity.FAULT);
 
     this.setStatus(status);
-
-    this.thread = (await this.thread.fetch()) ?? this.thread;
-    if (!this.thread.archived) {
-      await this.thread.edit({ archived: true, locked: true });
-    }
 
     const member = await this.thread.guild.members
       .fetch(this.userId)
@@ -87,13 +84,16 @@ export default class AssistanceThread {
       cfx.formats.set("assistant.tag", assistant.tag);
     }
     console.log(followUp);
-    if (followUp) {
-      if (member && !this.isInteractionExpired())
-        this.webhook.send({ ...cfx.resolve(followUp), ephemeral: true });
-    }
+    const survery = followUp && member && !this.isInteractionExpired();
+    if (survery)
+      this.webhook.send({ ...cfx.resolve(followUp), ephemeral: true });
+
+    this.thread = (await this.thread.fetch()) ?? this.thread;
     await this.thread.send({
       content: "**Thread closed.**",
     });
+    await this.thread.edit({ archived: true, locked: true });
+
     /*
      Send Request Assistant Log
     */
@@ -110,9 +110,7 @@ export default class AssistanceThread {
           title: `Thread **\`${this.assistantId ? "Solved" : "Closed"}\`**`,
           description:
             (this.assistantId ? `Assisted By <@${this.assistantId}>` : "") +
-            `(its took ${moment(
-              Math.round(this.createdAt.getTime() / 1000)
-            ).fromNow(true)})`,
+            `(its took ${moment(this.createdAt.getTime()).fromNow(true)})`,
           color: !this.assistantId ? 12235697 /* Silver */ : 4553134 /* Blue */,
           fields: [
             {
@@ -128,6 +126,21 @@ export default class AssistanceThread {
             {
               name: "Created At",
               value: `<t:${Math.round(this.createdAt.getTime() / 1000)}:F>`,
+              inline: true,
+            },
+            {
+              name: "Language",
+              value: `${this.locale}`,
+              inline: true,
+            },
+            {
+              name: "Survery",
+              value: survery ? "True" : "False",
+              inline: true,
+            },
+            {
+              name: "Closed At",
+              value: `<t:${Math.round(Date.now() / 1000)}:F>`,
               inline: true,
             },
           ],
@@ -155,6 +168,6 @@ export default class AssistanceThread {
 export enum AThreadStatus {
   ACTIVE = 1,
   SOLVED, //Summoner issue was solved by assistant
-  INACTIVE, // Summoner was inactive with assistant
   CLOSED, // Summoner left the thread.
+  INACTIVE, // Summoner was inactive with assistant
 }

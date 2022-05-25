@@ -105,6 +105,9 @@ export default class CommandHandler {
     response: Response<AnyResponse>,
     followUp: boolean
   ): Promise<void> {
+    const user = dcm.d instanceof Message ? dcm.d.author : dcm.d.user;
+    dcm.cf.setObject("user", user);
+    dcm.cf.formats.set("user.tag", user.tag);
     const message = dcm.cf.resolve(response);
     if (dcm.d instanceof Message) {
       if (response.message && response.action === Action.REPLY) {

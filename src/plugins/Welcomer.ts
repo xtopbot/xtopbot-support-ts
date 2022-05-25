@@ -2,9 +2,8 @@ import {
   ButtonStyle,
   GuildMember,
   Role,
-  ButtonBuilder,
-  ActionRowBuilder,
-  MessageActionRowComponentBuilder,
+  ComponentType,
+  MessageActionRowComponentData,
 } from "discord.js";
 import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
@@ -53,17 +52,18 @@ export default class WelcomerPlugin {
         {
           content: content,
           components: [
-            new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-              localeRoles
-                .map((localeRole) =>
-                  new ButtonBuilder()
-                    .setCustomId(`locale:${localeRole.locale}:plugin(welcomer)`)
-                    .setStyle(ButtonStyle.Secondary)
-                    .setLabel(localeRole.button[0].label)
-                    .setEmoji(localeRole.button[0].emoji)
-                )
-                .slice(0, 5)
-            ),
+            {
+              type: ComponentType.ActionRow,
+              components: localeRoles
+                .map((localeRole) => ({
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Secondary,
+                  customId: `locale:${localeRole.locale}:plugin(welcomer)`,
+                  label: localeRole.button[0].label,
+                  emoji: localeRole.button[0].emoji,
+                }))
+                .slice(0, 5) as MessageActionRowComponentData[],
+            },
           ],
         }
       );

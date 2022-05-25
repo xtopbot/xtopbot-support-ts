@@ -31,6 +31,9 @@
             ]
         },
         "requestHumanAssistant": {
+            "exceededlimitation": {
+                "content": "You requested an assistant and the thread closed in less than 2 minutes or you exceeded the maximum request for an assistant on this day!"
+            },
             "publicThread": {
                 "notBelongToHim": {
                     "warning": {

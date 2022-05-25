@@ -122,6 +122,32 @@ export default class RequestHumanAssistantPlugin {
         },
         Action.REPLY
       );
+    const startDay = new Date().setUTCHours(0, 0, 0, 0);
+
+    const AThreads = await this.threads.fetchUser(dcm.user);
+    if (AThreads.length) {
+      if (
+        AThreads.find(
+          (AThread) =>
+            AThread.closedAt &&
+            AThread.createdAt.getTime() >=
+              AThread.closedAt.getTime() - 120 * 1000 &&
+            AThread.createdAt.getTime() >= Date.now() - 60 * 60 * 1000 &&
+            AThread.status !=
+              AThreadStatus.SOLVED /*He closed the thread in less than two minutes (He should wait an hour to request an assistant again)*/
+        ) ||
+        AThreads.filter((AThread) => AThread.createdAt.getTime() > startDay)
+          .length > 2
+      )
+        return new Response(
+          ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
+          {
+            ...locale.origin.plugins.requestHumanAssistant.exceededlimitation,
+            ephemeral: true,
+          },
+          Action.REPLY
+        );
+    }
     if (issue === null) return this.openModal();
     //
     await dcm.member.roles.add(guildAssistants.role as Role);
@@ -147,8 +173,15 @@ export default class RequestHumanAssistantPlugin {
       )
     );
     await db.query(
-      "INSERT INTO `Assistance.Threads` (threadId, userId, guildId, interactionToken, locale) values (?, ?, ?, ?, ?)",
-      [thread.id, dcm.d.user.id, thread.guild.id, dcm.d.token, locale.tag]
+      "INSERT INTO `Assistance.Threads` (threadId, userId, guildId, interactionToken, locale, issue) values (?, ?, ?, ?, ?, ?)",
+      [
+        thread.id,
+        dcm.d.user.id,
+        thread.guild.id,
+        dcm.d.token,
+        locale.tag,
+        Util.textEllipsis(issue, 100),
+      ]
     );
     this.threads.cache.set(
       thread.id,
@@ -345,15 +378,16 @@ export default class RequestHumanAssistantPlugin {
     if (!at) return;
     if (!oldThread.archived && newThread.archived) {
       // Thread was Archived
-      if (!newThread.locked) {
-        await newThread.setArchived(false);
-        await newThread.edit({ archived: true, locked: true });
+      if (at.status !== AThreadStatus.ACTIVE) {
+        if (!newThread.locked) {
+          await newThread.setArchived(false);
+          await newThread.edit({ archived: true, locked: true });
+        }
+        return;
       }
-      if (at.status !== AThreadStatus.ACTIVE) return;
-
       const user = await app.users.fetch(at.userId);
       const locale = app.locales.get(user.locale);
-      if (at.assistantId) return at.close(AThreadStatus.CLOSED);
+      if (!at.assistantId) return at.close(AThreadStatus.CLOSED);
 
       return at.close(AThreadStatus.SOLVED, {
         ...locale.origin.plugins.requestHumanAssistant.solvedIssue.interaction,
