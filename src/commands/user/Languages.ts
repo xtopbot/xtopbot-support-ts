@@ -144,6 +144,5 @@ export default class Languages extends BaseCommand {
             }))
       );
     }
-    throw new Exception("Unknown Argument", Severity.FAULT, dcm);
   }
 }

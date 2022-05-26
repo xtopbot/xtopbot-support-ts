@@ -68,8 +68,6 @@ export default class HelpDesk extends BaseCommand {
         dcm,
         dcm.d.guild as Guild
       );
-
-    throw new Exception("Unknown Custom Id", Severity.FAULT, dcm);
   }
 
   public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
@@ -87,7 +85,6 @@ export default class HelpDesk extends BaseCommand {
         );
       }
     }
-    throw new Exception("Unknown Custom Id", Severity.FAULT, dcm);
   }
 
   public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
@@ -102,14 +99,6 @@ export default class HelpDesk extends BaseCommand {
         dcm.d.guild as Guild
       );
     }
-    return new Response(
-      ResponseCodes.SUCCESS,
-      {
-        content: "test",
-        ephemeral: true,
-      },
-      Action.REPLY
-    );
   }
 
   private async getArticle(

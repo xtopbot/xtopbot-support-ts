@@ -14,9 +14,11 @@ import {
 import { UserFlagsPolicy } from "../structures/User";
 import CommandMethod, { CommandMethodTypes, Method } from "./CommandMethod";
 import Response, {
+  AnyResponse,
   AutocompleteResponse,
   MessageResponse,
   ModalResponse,
+  ResponseCodes,
 } from "../utils/Response";
 import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import Exception, { Severity } from "../utils/Exception";
@@ -41,72 +43,103 @@ export abstract class BaseCommand implements BaseCommandType {
       data.messageComponent?.bind(this) ?? this._messageComponent.bind(this);
   }
 
-  public execute(dcm: CommandMethod<CommandMethodTypes>) {
+  public async execute(
+    dcm: CommandMethod<CommandMethodTypes>
+  ): Promise<Response<AnyResponse>> {
+    let response = null;
     if (
       dcm.d instanceof AutocompleteInteraction &&
       this.autoCompleteInteraction
-    )
-      return this.autoCompleteInteraction(
-        dcm as CommandMethod<AutocompleteInteraction>
-      );
-    if (
+    ) {
+      response =
+        (await this.autoCompleteInteraction(
+          dcm as CommandMethod<AutocompleteInteraction>
+        )) ?? null;
+    } else if (
       dcm.d instanceof ChatInputCommandInteraction &&
       this.chatInputCommandInteraction
-    )
-      return this.chatInputCommandInteraction(
-        dcm as CommandMethod<ChatInputCommandInteraction>
-      );
-    if (
+    ) {
+      response =
+        (await this.chatInputCommandInteraction(
+          dcm as CommandMethod<ChatInputCommandInteraction>
+        )) ?? null;
+    } else if (
       dcm.d instanceof UserContextMenuCommandInteraction &&
       this.userContextMenuCommandInteraction
-    )
-      return this.userContextMenuCommandInteraction(
-        dcm as CommandMethod<UserContextMenuCommandInteraction>
-      );
-    if (
+    ) {
+      response =
+        (await this.userContextMenuCommandInteraction(
+          dcm as CommandMethod<UserContextMenuCommandInteraction>
+        )) ?? null;
+    } else if (
       dcm.d instanceof MessageContextMenuCommandInteraction &&
       this.messageContextMenuCommandInteraction
-    )
-      return this.messageContextMenuCommandInteraction(
-        dcm as CommandMethod<MessageContextMenuCommandInteraction>
-      );
-    if (dcm.d instanceof ModalSubmitInteraction && this.modalSubmitInteraction)
-      return this.modalSubmitInteraction(
-        dcm as ComponentMethod<ModalSubmitInteraction>
-      );
-    if (dcm.d instanceof ButtonInteraction && this.buttonInteraction)
-      return this.buttonInteraction(dcm as ComponentMethod<ButtonInteraction>);
-    if (dcm.d instanceof SelectMenuInteraction && this.selectMenuInteraction)
-      return this.selectMenuInteraction(
-        dcm as ComponentMethod<SelectMenuInteraction>
-      );
-    if (dcm.d instanceof Message && this.message)
-      return this.message(dcm as CommandMethod<Message>);
+    ) {
+      response =
+        (await this.messageContextMenuCommandInteraction(
+          dcm as CommandMethod<MessageContextMenuCommandInteraction>
+        )) ?? null;
+    } else if (
+      dcm.d instanceof ModalSubmitInteraction &&
+      this.modalSubmitInteraction
+    ) {
+      response =
+        (await this.modalSubmitInteraction(
+          dcm as ComponentMethod<ModalSubmitInteraction>
+        )) ?? null;
+    } else if (dcm.d instanceof ButtonInteraction && this.buttonInteraction) {
+      response =
+        (await this.buttonInteraction(
+          dcm as ComponentMethod<ButtonInteraction>
+        )) ?? null;
+    } else if (
+      dcm.d instanceof SelectMenuInteraction &&
+      this.selectMenuInteraction
+    ) {
+      response =
+        (await this.selectMenuInteraction(
+          dcm as ComponentMethod<SelectMenuInteraction>
+        )) ?? null;
+    } else if (dcm.d instanceof Message && this.message) {
+      response = (await this.message(dcm as CommandMethod<Message>)) ?? null;
+    } else
+      throw new Exception("This interaction is not recognized", Severity.FAULT);
 
-    throw new Exception("This interaction is not recognized", Severity.FAULT);
+    if (response === null)
+      throw new Exception(
+        dcm.d instanceof ButtonInteraction ||
+        dcm.d instanceof SelectMenuInteraction ||
+        dcm.d instanceof ModalSubmitInteraction
+          ? "Unknown Custom Id"
+          : "Unknown Argument",
+        Severity.FAULT,
+        dcm
+      );
+
+    return response;
   }
 
   public autoCompleteInteraction?(
     dcm: CommandMethod<AutocompleteInteraction>
-  ): Promise<Response<AutocompleteResponse>>;
+  ): Promise<Response<AutocompleteResponse> | void>;
   public chatInputCommandInteraction?(
     dcm: CommandMethod<ChatInputCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   public userContextMenuCommandInteraction?(
     dcm: CommandMethod<UserContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   public messageContextMenuCommandInteraction?(
     dcm: CommandMethod<MessageContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   public modalSubmitInteraction?(
     dcm: CommandMethod<ModalSubmitInteraction>
-  ): Promise<Response<MessageResponse>>;
+  ): Promise<Response<MessageResponse> | void>;
   public buttonInteraction?(
     dcm: CommandMethod<ButtonInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   public selectMenuInteraction?(
     dcm: CommandMethod<SelectMenuInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   public message?(
     dcm: CommandMethod<Message>
   ): Promise<Response<MessageResponse | null>>;
@@ -167,25 +200,25 @@ interface BaseCommandType extends BaseCommandDataType {
   messageComponent: (d: ComponentMethod<AnyComponentInteraction>) => boolean;
   autoCompleteInteraction?(
     dcm: Method<AutocompleteInteraction>
-  ): Promise<Response<AutocompleteResponse>>;
+  ): Promise<Response<AutocompleteResponse> | void>;
   chatInputInteraction?(
     dcm: Method<ChatInputCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   userContextMenuCommandInteraction?(
     dcm: Method<UserContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   messageContextMenuCommandInteraction?(
     dcm: Method<MessageContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   modalSubmitInteraction?(
     dcm: Method<ModalSubmitInteraction>
-  ): Promise<Response<MessageResponse>>;
+  ): Promise<Response<MessageResponse> | void>;
   buttonInteraction?(
     dcm: Method<ButtonInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   selectMenuInteraction?(
     dcm: Method<SelectMenuInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse>>;
+  ): Promise<Response<MessageResponse | ModalResponse> | void>;
   message?(dcm: Method<Message>): Promise<Response<MessageResponse | null>>;
   setDisable(): void;
   setEnable(): void;
