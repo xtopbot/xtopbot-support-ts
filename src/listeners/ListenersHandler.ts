@@ -1,12 +1,13 @@
 import { Client } from "discord.js";
-import MessageCreate from "./MessageCreate";
+import Message from "./Message";
 import InteractionCreate from "./InteractionCreate";
 import GuildMember from "./GuildMember";
 import Ready from "./Ready";
 import Thread from "./Thread";
 export default class ListenersHandler {
   public static handler(client: Client) {
-    client.on("messageCreate", MessageCreate.onMessageCreate.bind(this));
+    client.on("messageCreate", Message.onMessageCreate.bind(this));
+    client.on("messageDelete", Message.onMessageDelete.bind(this));
     client.on(
       "interactionCreate",
       InteractionCreate.onInteractionCreate.bind(this)

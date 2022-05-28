@@ -1,5 +1,6 @@
 import { Message, PartialMessage } from "discord.js";
 import CommandHandler from "../commands/CommandHandler";
+import AuditLog from "../plugins/AuditLog";
 import InteractionOnly from "../plugins/InteractionOnly";
 import RequestHumanAssistant from "../plugins/RequestHumanAssistant";
 import Logger from "../utils/Logger";
@@ -30,6 +31,17 @@ export default class message {
             (err as Error)?.message
           }`
         )
+    );
+  }
+
+  public static async onMessageDelete(message: Message | PartialMessage) {
+    await AuditLog.messageDelete(message).catch((err: unknown) =>
+      Logger.error(
+        err,
+        `[App](Event: MessageDelete (AuditLog)) Error while execute: ${
+          (err as Error)?.message
+        }`
+      )
     );
   }
 }

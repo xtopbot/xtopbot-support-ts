@@ -28,7 +28,12 @@ export default class {
       "MessageContent",
       "GuildMembers",
     ],
-    partials: [Partials.Channel, Partials.GuildMember, Partials.ThreadMember],
+    partials: [
+      Partials.Channel,
+      Partials.GuildMember,
+      Partials.ThreadMember,
+      /*Partials.Message,*/
+    ],
   });
   public static commands: ApplicationCommandsManager =
     new ApplicationCommandsManager();
