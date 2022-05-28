@@ -10,6 +10,7 @@ import {
   AutocompleteInteraction,
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
+  InteractionType,
 } from "discord.js";
 import { UserFlagsPolicy } from "../structures/User";
 import CommandMethod, { CommandMethodTypes, Method } from "./CommandMethod";
@@ -113,7 +114,28 @@ export abstract class BaseCommand implements BaseCommandType {
           ? "Unknown Custom Id"
           : "Unknown Argument",
         Severity.FAULT,
-        dcm
+        {
+          CommandName:
+            dcm.d instanceof ButtonInteraction ||
+            dcm.d instanceof SelectMenuInteraction ||
+            dcm.d instanceof ModalSubmitInteraction
+              ? dcm.d.customId
+              : dcm.d instanceof ChatInputCommandInteraction ||
+                dcm.d instanceof UserContextMenuCommandInteraction ||
+                dcm.d instanceof MessageContextMenuCommandInteraction
+              ? dcm.d.commandName
+              : null,
+          interactionType:
+            dcm.d instanceof Message ? "Message" : InteractionType[dcm.d.type],
+          focused:
+            dcm.d instanceof ChatInputCommandInteraction ||
+            dcm.d instanceof UserContextMenuCommandInteraction ||
+            dcm.d instanceof MessageContextMenuCommandInteraction
+              ? dcm.d.options.resolved
+              : dcm.d instanceof Message
+              ? dcm.d.content
+              : null,
+        }
       );
 
     return response;

@@ -4,6 +4,7 @@ import {
   Role,
   ComponentType,
   MessageActionRowComponentData,
+  PartialGuildMember,
 } from "discord.js";
 import app from "../app";
 import WelcomerManager from "../managers/WelcomerManager";
@@ -72,7 +73,7 @@ export default class WelcomerPlugin {
     }
   }
 
-  public static onMemberLeave(member: GuildMember): void {
+  public static async onMemberLeave(member: GuildMember | PartialGuildMember) {
     const welcomerMessage = this.manager.cache.get(member.id);
     if (welcomerMessage) {
       welcomerMessage.delete();

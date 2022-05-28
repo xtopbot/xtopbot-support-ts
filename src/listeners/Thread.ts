@@ -13,35 +13,34 @@ export default class {
     removedMembers: Collection<Snowflake, ThreadMember | PartialThreadMember>,
     thread: ThreadChannel
   ) {
-    try {
-      await RequestHumanAssistantPlugin.onThreadMembersUpdate(
-        addedMembers,
-        removedMembers,
-        thread
-      );
-    } catch (err) {
+    await RequestHumanAssistantPlugin.onThreadMembersUpdate(
+      addedMembers,
+      removedMembers,
+      thread
+    ).catch((err: unknown) =>
       Logger.error(
-        `[App](Event: ThreadMembersUpdate) Error while execute: ${
-          (err as Error).message
+        err,
+        `[App](Event: onThreadMembersUpdate (RequestHumanAssistantPlugin)) Error while execute: ${
+          (err as Error)?.message
         }`
-      );
-      console.error(err);
-    }
+      )
+    );
   }
 
   public static async onThreadUpdate(
     oldThread: ThreadChannel,
     newThread: ThreadChannel
   ) {
-    try {
-      await RequestHumanAssistantPlugin.onThreadUpdate(oldThread, newThread);
-    } catch (err) {
+    await RequestHumanAssistantPlugin.onThreadUpdate(
+      oldThread,
+      newThread
+    ).catch((err: unknown) =>
       Logger.error(
-        `[App](Event: onThreadUpdate) Error while execute: ${
-          (err as Error).message
+        err,
+        `[App](Event: onThreadUpdate (RequestHumanAssistantPlugin)) Error while execute: ${
+          (err as Error)?.message
         }`
-      );
-      console.error(err);
-    }
+      )
+    );
   }
 }

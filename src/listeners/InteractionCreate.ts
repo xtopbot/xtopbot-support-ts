@@ -22,11 +22,11 @@ export default class InteractionCreate {
       await InteractionHandler.process(interaction);
     } catch (err) {
       Logger.error(
-        `[App](Event: ${this.constructor.name}) Error while execute: ${
-          (err as Exception).reason || (err as Error).message
+        err,
+        `[App](Event: Interaction (InteractionHandler)) Error while execute: ${
+          (err as Error)?.message
         }`
       );
-      console.error(err);
       if (
         err instanceof Exception &&
         err.message &&
