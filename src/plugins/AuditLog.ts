@@ -1,19 +1,17 @@
 import {
   Attachment,
   AuditLogEvent,
-  BufferResolvable,
   ChannelType,
-  FileOptions,
   Guild,
-  GuildAuditLogsEntry,
   GuildMember,
   Message,
+  MessageOptions,
   PartialGuildMember,
   PartialMessage,
+  SnowflakeUtil,
   TextChannel,
   Util,
 } from "discord.js";
-import type { Stream } from "stream";
 import app from "../app";
 
 export default class AuditLogPlugin {
@@ -68,16 +66,17 @@ export default class AuditLogPlugin {
     Message Log
   */
   public static async messageDelete(message: Message | PartialMessage) {
-    if (!message.inGuild() || message.author.bot) return;
+    if (!message.inGuild() || message.author.bot || message.partial) return;
     const user = await app.users.fetch(message.author, false);
     const contentLines = message.content.match(/\n/g);
+
     const isLongerContent =
-      !message.partial &&
-      (message.content.length > 500 ||
-        (contentLines && contentLines.length > 6));
-    const entry = await message.guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete });
-    // removed : MessageOptions cause i need to add many "as" in the code
-    const log = {
+      message.content.length > 500 || (contentLines && contentLines.length > 6);
+    const auditLog = await message.guild.fetchAuditLogs({
+      type: AuditLogEvent.MessageDelete,
+    });
+    const entry = auditLog.entries.first();
+    const log: MessageOptions = {
       embeds: [
         {
           author: {
@@ -88,11 +87,11 @@ export default class AuditLogPlugin {
             }),
           },
           title: "Message Deleted",
-          description: ~message.partial
+          description: message.content
             ? isLongerContent
               ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
               : Util.escapeMarkdown(message.content)
-            : "**`uncached message`**",
+            : "**`No content`**",
           fields: [
             {
               name: "Message Id",
@@ -120,33 +119,27 @@ export default class AuditLogPlugin {
               name: "User Profile",
               value: `<@${user.id}>`,
               inline: true,
-            }
-           // no need for user language field,
+            },
+            {
+              name: "User Language",
+              value: user.locale ? user.locale : "None",
+              inline: true,
+            },
+            (entry?.executor &&
+            SnowflakeUtil.timestampFrom(entry.id) > Date.now() - 3000
+              ? {
+                  name: "Moderator",
+                  value: "<@" + entry.executor.id + ">",
+                  inline: true,
+                }
+              : undefined) as any,
           ],
         },
       ],
       files: [],
     };
-    // created cause the default is [type | undefined]
-    const e: GuildAuditLogsEntry<AuditLogEvent.MessageDelete, "Delete", "Message"> = entry.entries.first() as GuildAuditLogsEntry<AuditLogEvent.MessageDelete, "Delete", "Message">;
-    // add moderator field if exist
-    if (e && new Date().getTime() - new Date(parseInt(e.id) / 4194304 + 1420070400000).getTime() < 3000 && e.executor) {
-      log.embeds[0].fields[6] = {
-        name: "Moderator",
-        value: "<@"+e.executor.id+">",
-        inline: true
-      };
-    }
-    else
-    {
-      log.embeds[0].fields[6] = {
-        name: "User language",
-        value: user.locale ? user.locale : "None",
-        inline: true
-      };
-    }
     if (isLongerContent)
-      (log.files as (FileOptions | BufferResolvable | Stream | Attachment)[]).push(
+      log.files?.push(
         new Attachment(Buffer.from(message.content), "content.txt")
       );
     this.getAuditLogChannels(message.guild).messageLogChannel?.send(log);
