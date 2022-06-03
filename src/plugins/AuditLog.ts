@@ -1,15 +1,19 @@
 import {
   Attachment,
+  AuditLogEvent,
+  BufferResolvable,
   ChannelType,
+  FileOptions,
   Guild,
+  GuildAuditLogsEntry,
   GuildMember,
   Message,
-  MessageOptions,
   PartialGuildMember,
   PartialMessage,
   TextChannel,
   Util,
 } from "discord.js";
+import type { Stream } from "stream";
 import app from "../app";
 
 export default class AuditLogPlugin {
@@ -66,13 +70,14 @@ export default class AuditLogPlugin {
   public static async messageDelete(message: Message | PartialMessage) {
     if (!message.inGuild() || message.author.bot) return;
     const user = await app.users.fetch(message.author, false);
-    const isPartial = message.content === null || message.content === undefined;
     const contentLines = message.content.match(/\n/g);
     const isLongerContent =
-      !isPartial &&
+      !message.partial &&
       (message.content.length > 500 ||
         (contentLines && contentLines.length > 6));
-    const log: MessageOptions = {
+    const entry = await message.guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete });
+    // removed : MessageOptions cause i need to add many "as" in the code
+    const log = {
       embeds: [
         {
           author: {
@@ -83,7 +88,7 @@ export default class AuditLogPlugin {
             }),
           },
           title: "Message Deleted",
-          description: ~isPartial
+          description: ~message.partial
             ? isLongerContent
               ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
               : Util.escapeMarkdown(message.content)
@@ -115,19 +120,33 @@ export default class AuditLogPlugin {
               name: "User Profile",
               value: `<@${user.id}>`,
               inline: true,
-            },
-            {
-              name: "User language",
-              value: user.locale ? user.locale : "None",
-              inline: true,
-            },
+            }
+           // no need for user language field,
           ],
         },
       ],
       files: [],
     };
+    // created cause the default is [type | undefined]
+    const e: GuildAuditLogsEntry<AuditLogEvent.MessageDelete, "Delete", "Message"> = entry.entries.first() as GuildAuditLogsEntry<AuditLogEvent.MessageDelete, "Delete", "Message">;
+    // add moderator field if exist
+    if (e && new Date().getTime() - new Date(parseInt(e.id) / 4194304 + 1420070400000).getTime() < 3000 && e.executor) {
+      log.embeds[0].fields[6] = {
+        name: "Moderator",
+        value: "<@"+e.executor.id+">",
+        inline: true
+      };
+    }
+    else
+    {
+      log.embeds[0].fields[6] = {
+        name: "User language",
+        value: user.locale ? user.locale : "None",
+        inline: true
+      };
+    }
     if (isLongerContent)
-      log.files?.push(
+      (log.files as (FileOptions | BufferResolvable | Stream | Attachment)[]).push(
         new Attachment(Buffer.from(message.content), "content.txt")
       );
     this.getAuditLogChannels(message.guild).messageLogChannel?.send(log);
