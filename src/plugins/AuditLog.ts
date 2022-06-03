@@ -125,8 +125,7 @@ export default class AuditLogPlugin {
               value: user.locale ? user.locale : "None",
               inline: true,
             },
-            (entry?.executor &&
-            SnowflakeUtil.timestampFrom(entry.id) > Date.now() - 3000
+            (entry?.executor && entry.createdTimestamp > Date.now() - 3000
               ? {
                   name: "Moderator",
                   value: "<@" + entry.executor.id + ">",
