@@ -90,12 +90,30 @@ export default class CommandHandler {
       )
         this.commandFollowUp(dcm);
     } catch (err) {
-      Logger.error("Error in handler");
+      Logger.error("Error in command handler");
       console.log(err);
       if (err instanceof Exception) {
         // just reply to requster
+        this.response(
+          dcm,
+          new Response(ResponseCodes.EXCEPTION, err.message),
+          false
+        );
       } else {
         // reply to requester and debugging error
+        if (dcm.d instanceof Message) return;
+        this.response(
+          dcm,
+          new Response(
+            ResponseCodes.UNKNOWN,
+            new Exception(
+              "An unknown error occurred",
+              Severity.FAULT,
+              err
+            ).message
+          ),
+          false
+        );
       }
     }
   }

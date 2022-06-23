@@ -7,6 +7,7 @@ import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
 import { version } from "../package.json";
 import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
+import RequestsAssistantManager from "./managers/RequestsAssistantManager";
 dotenv.config();
 
 export default class {
@@ -35,10 +36,10 @@ export default class {
       /*Partials.Message,*/
     ],
   });
-  public static commands: ApplicationCommandsManager =
-    new ApplicationCommandsManager();
-  public static users: UserManager = new UserManager();
-  public static locales: LocaleManager = new LocaleManager();
+  public static commands = new ApplicationCommandsManager();
+  public static users = new UserManager();
+  public static locales = new LocaleManager();
+  public static requests = new RequestsAssistantManager(); // Request Assistant
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");

@@ -3,29 +3,15 @@ import {
   ApplicationCommandType,
   AutocompleteInteraction,
   ButtonInteraction,
-  ChatInputCommandInteraction,
-  ComponentType,
   Guild,
   ModalSubmitInteraction,
   SelectMenuInteraction,
-  TextInputStyle,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Exception, { Reason, Severity } from "../../utils/Exception";
-import Response, {
-  ResponseCodes,
-  Action,
-  ModalResponse,
-  MessageResponse,
-  AutocompleteResponse,
-} from "../../utils/Response";
-import CommandMethod, {
-  AnyInteraction,
-  AnyMethod,
-  Method,
-} from "../CommandMethod";
+import Response, { ResponseCodes } from "../../utils/Response";
+import CommandMethod, { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
-import ComponentMethod, { AnyComponentInteraction } from "../ComponentMethod";
+import ComponentMethod from "../ComponentMethod";
 import RequestHumanAssistantPlugin from "../../plugins/RequestHumanAssistant";
 import Languages from "../user/Languages";
 import { LocaleTag } from "../../managers/LocaleManager";
@@ -53,52 +39,14 @@ export default class HelpDesk extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("helpdesk")) {
-          if (d.getValue("helpdesk", false) == "requestAssistant") return true;
-        }
+        if (d.matches("helpdesk")) return true;
         return false;
       },
     });
   }
-  //chatInputCommandInteraction(dcm: CommandMethod<>)
-  public async buttonInteraction(dcm: Method<ButtonInteraction>) {
-    if (dcm.getValue("helpdesk", false) === "requestAssistant")
-      return RequestHumanAssistantPlugin.request(
-        null,
-        dcm,
-        dcm.d.guild as Guild
-      );
-  }
-
-  public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
-    if (dcm.getValue("helpdesk", false) === "requestAssistant") {
-      if (dcm.getKey("setLocale")) {
-        const res = await Languages.setLocale(
-          dcm,
-          dcm.d.values[0] as LocaleTag
-        );
-        if (res.code !== ResponseCodes.SUCCESS) return res;
-        return RequestHumanAssistantPlugin.request(
-          null,
-          dcm,
-          dcm.d.guild as Guild
-        );
-      }
-    }
-  }
 
   public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
     return new Response(ResponseCodes.SUCCESS, []);
-  }
-  public async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
-    if (dcm.getValue("helpdesk", false) === "requestAssistant") {
-      await dcm.d.deferReply({ ephemeral: true });
-      return RequestHumanAssistantPlugin.request(
-        dcm.d.fields.getTextInputValue("issue"),
-        dcm,
-        dcm.d.guild as Guild
-      );
-    }
   }
 
   private async getArticle(

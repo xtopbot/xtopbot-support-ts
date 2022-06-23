@@ -1,4 +1,4 @@
-import { Attachment, Message } from "discord.js";
+import { AttachmentBuilder, Message } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
 import Response, {
@@ -62,7 +62,11 @@ export default class Eval extends BaseCommand {
                 res.length >= 1900
                   ? `File Output (Large content) `
                   : `File Output (Flag)`,
-              files: [new Attachment(Buffer.from(res), "output.json")],
+              files: [
+                new AttachmentBuilder(Buffer.from(res), {
+                  name: "output.json",
+                }),
+              ],
             }
           : {
               content: `\`\`\`${res}\`\`\``,

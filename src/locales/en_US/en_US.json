@@ -44,6 +44,32 @@
                     }
                 }
             },
+            "requestCreated": {
+                "embeds": [
+                    {
+                        "title": "Request Created!",
+                        "description": "Looking for an available assistant... **(Maximum 15 minutes)**",
+                        "fields": [
+                            {
+                                "name": "Language",
+                                "value": "{{locale.name}}",
+                                "inline": true
+                            },
+                            {
+                                "name": "Requested At",
+                                "value": "<t:{{request.timestamp}}:f>",
+                                "inline": true
+                            }
+                        ],
+                        "footer": {
+                            "text": "Request Id: {{request.id}}"
+                        }
+                    }
+                ],
+                "buttons": [
+                    "Cancel"
+                ]
+            },
             "threadCreated": {
                 "thread": {
                     "content": "<@&{{support.role.id}}>\n\nHello <@{{user.id}}>, please wait for one of the technical support to contact you in this thread."
@@ -51,6 +77,12 @@
                 "interaction": {
                     "content": "Thread has been created. One of our technical support will contact you in this <#{{thread.id}}> thread."
                 }
+            },
+            "activeThread": {
+                "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
+            },
+            "activeRequset": {
+                "content": "You have active request"
             },
             "solvedIssue": {
                 "interaction": {
@@ -90,13 +122,17 @@
                 "service": {
                     "content": "How satisfied are you with our services?"
                 }
-            },
-            "activeThread": {
-                "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
             }
         }
     },
     "language": {
+        "welcome": {
+            "embeds": [
+                {
+                    "title": "Welcome to the XTOP BOT Support Server!"
+                }
+            ]
+        },
         "set": {
             "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
         }

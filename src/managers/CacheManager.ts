@@ -1,4 +1,5 @@
-import Collection from "@discordjs/collection";
+import { Collection } from "discord.js";
+
 export default class CacheManager<T extends CacheMangerType> {
   public cache: Collection<string, T>;
   protected constructor() {

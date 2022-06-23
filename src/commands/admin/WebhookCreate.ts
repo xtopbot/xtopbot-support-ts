@@ -70,7 +70,7 @@ export default class WebhookCreate extends BaseCommand {
   private async createWebhook(
     channel: TextChannel
   ): Promise<Response<MessageResponse>> {
-    await channel.createWebhook("xToP Support");
+    await channel.createWebhook({ name: "xToP Support" });
     return new Response(
       ResponseCodes.SUCCESS,
       {

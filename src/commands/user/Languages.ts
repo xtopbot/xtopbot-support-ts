@@ -1,21 +1,17 @@
-import { locale } from "dayjs";
 import {
   ApplicationCommandOptionType,
   ApplicationCommandType,
   AutocompleteInteraction,
   ChatInputCommandInteraction,
-  Collection,
   ComponentType,
   Guild,
   GuildMember,
-  Role,
   SelectMenuInteraction,
 } from "discord.js";
 import app from "../../app";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
 import Response, { MessageResponse, ResponseCodes } from "../../utils/Response";
-import Util from "../../utils/Util";
 import { BaseCommand } from "../BaseCommand";
 import { AnyMethod, Method } from "../CommandMethod";
 import Fuse from "fuse.js";

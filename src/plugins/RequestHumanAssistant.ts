@@ -1,235 +1,30 @@
 import {
-  AutocompleteInteraction,
   ButtonStyle,
   ChannelType,
   Collection,
   ComponentType,
   Guild,
-  GuildMember,
   Message,
   PartialThreadMember,
   Role,
   Snowflake,
   TextChannel,
-  TextInputStyle,
   ThreadChannel,
   ThreadMember,
 } from "discord.js";
 import app from "../app";
-import { AnyInteraction, Method } from "../commands/CommandMethod";
-import AssistanceThreadManager from "../managers/AssistanceThreadManager";
 import { LocaleTag } from "../managers/LocaleManager";
-import AssistanceThread, {
-  AThreadStatus,
-} from "../structures/AssistanceThread";
+import RequestAssistant, {
+  RequestAssistantStatus,
+} from "../structures/RequestAssistant";
 import { UserFlagsPolicy } from "../structures/User";
 import Constants from "../utils/Constants";
 import ContextFormats from "../utils/ContextFormats";
-import Response, {
-  Action,
-  MessageResponse,
-  ModalResponse,
-  ResponseCodes,
-} from "../utils/Response";
-import Util, { Diff } from "../utils/Util";
-import db from "../providers/Mysql";
 
 export default class RequestHumanAssistantPlugin {
-  public static readonly threads = new AssistanceThreadManager();
   private static readonly defaultAssistantRoleName = "assistant";
   private static readonly defaultAssistanceRoleName = "assistance";
   private static readonly defaultAssistanceChannelName = "assistance";
-
-  public static async request(
-    issue: null,
-    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
-  ): Promise<Response<MessageResponse | ModalResponse>>;
-  public static async request(
-    issue: string,
-    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
-  ): Promise<Response<MessageResponse>>;
-  public static async request(
-    issue: string | null,
-    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
-  ): Promise<Response<MessageResponse | ModalResponse>> {
-    const guildAssistants = this.getGuildAssistants(guild);
-
-    const locale = app.locales.get(dcm.user.locale);
-    if (!dcm.user.locale || !app.locales.get(dcm.user.locale ?? "", false))
-      return new Response(
-        ResponseCodes.REQUIRED_USER_LOCALE,
-        {
-          ...locale.origin.plugins.pluginRequiredUserLocale,
-          components: app.locales.getMessageWithMenuOfLocales(
-            dcm.user,
-            "helpdesk:requestAssistant:setLocale"
-          ).components,
-          ephemeral: true,
-        },
-        Action.REPLY
-      ); // User must have lang
-    await app.locales.checkUserRoles(
-      dcm.user,
-      dcm.d.guild as Guild,
-      dcm.d.member as GuildMember
-    );
-    if (!guildAssistants.role || !guildAssistants.channel)
-      return new Response(
-        ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
-        {
-          ...locale.origin.plugins.serverNotMeetPluginCriteria,
-          ephemeral: true,
-        },
-        Action.REPLY
-      );
-    const oldAT = this.threads.cache
-      .map((t) => t)
-      .find(
-        (t) => t.userId == dcm.user.id && t.status === AThreadStatus.ACTIVE
-      );
-    if (oldAT) {
-      const thread = ((await oldAT.thread?.fetch(true)) ??
-        null) as ThreadChannel | null;
-      if (thread) {
-        if (thread.archived === false) {
-          dcm.cf.formats.set("thread.id", thread.id);
-          if (!dcm.member.roles.cache.get(guildAssistants.role.id))
-            await dcm.member.roles.add(guildAssistants.role);
-          return new Response(
-            ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
-            {
-              ...locale.origin.plugins.requestHumanAssistant.activeThread,
-              ephemeral: true,
-            },
-            Action.REPLY
-          );
-        } else
-          await oldAT.close(
-            oldAT.assistantId ? AThreadStatus.SOLVED : AThreadStatus.CLOSED
-          );
-      }
-    }
-    const assistant = guildAssistants.assistants.get(dcm.user.locale);
-    if (!assistant)
-      return new Response(
-        ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
-        {
-          content: "Unable to find Assistant for your lang",
-          ephemeral: true,
-        },
-        Action.REPLY
-      );
-    const startDay = new Date().setUTCHours(0, 0, 0, 0);
-
-    const AThreads = await this.threads.fetchUser(dcm.user);
-    if (AThreads.length) {
-      if (
-        AThreads.find(
-          (AThread) =>
-            AThread.closedAt &&
-            AThread.createdAt.getTime() >=
-              AThread.closedAt.getTime() - 120 * 1000 &&
-            AThread.createdAt.getTime() >= Date.now() - 60 * 60 * 1000 &&
-            AThread.status !=
-              AThreadStatus.SOLVED /*He closed the thread in less than two minutes (He should wait an hour to request an assistant again)*/
-        ) ||
-        AThreads.filter((AThread) => AThread.createdAt.getTime() > startDay)
-          .length > 2
-      )
-        return new Response(
-          ResponseCodes.LOCALE_ASSISTANT_NOT_FOUND,
-          {
-            ...locale.origin.plugins.requestHumanAssistant.exceededlimitation,
-            ephemeral: true,
-          },
-          Action.REPLY
-        );
-    }
-    if (issue === null) return this.openModal();
-    //
-    await dcm.member.roles.add(guildAssistants.role as Role);
-    const thread = await (
-      guildAssistants.channel as TextChannel
-    ).threads.create({
-      name: Util.textEllipsis(issue, 100),
-      autoArchiveDuration: 60,
-      type:
-        guild.premiumTier >= 2
-          ? ChannelType.GuildPrivateThread
-          : ChannelType.GuildPublicThread,
-      invitable: false,
-    });
-    await thread.members.add(dcm.d.user.id);
-    dcm.cf.setObject("user", dcm.d.user);
-    dcm.cf.formats.set("user.tag", dcm.d.user.tag);
-    dcm.cf.formats.set("support.role.id", assistant.role.id);
-    dcm.cf.formats.set("thread.id", thread.id);
-    thread.send(
-      dcm.cf.resolve(
-        locale.origin.plugins.requestHumanAssistant.threadCreated.thread
-      )
-    );
-    await db.query(
-      "INSERT INTO `Assistance.Threads` (threadId, userId, guildId, interactionToken, locale, issue) values (?, ?, ?, ?, ?, ?)",
-      [
-        thread.id,
-        dcm.d.user.id,
-        thread.guild.id,
-        dcm.d.token,
-        locale.tag,
-        Util.textEllipsis(issue, 100),
-      ]
-    );
-    this.threads.cache.set(
-      thread.id,
-      new AssistanceThread(
-        thread.id,
-        dcm.d.user.id,
-        dcm.d.webhook,
-        thread,
-        locale.tag
-      )
-    );
-    return new Response(
-      ResponseCodes.PLUGIN_SUCCESS,
-      {
-        ...locale.origin.plugins.requestHumanAssistant.threadCreated
-          .interaction,
-        ephemeral: true,
-      },
-      Action.REPLY
-    );
-  }
-
-  private static openModal(): Response<ModalResponse> {
-    return new Response<ModalResponse>(
-      ResponseCodes.SUCCESS,
-      {
-        customId: "helpdesk:requestAssistant",
-        title: "Request Assistant",
-        components: [
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              {
-                type: ComponentType.TextInput,
-                customId: "issue",
-                label: "issue",
-                required: true,
-                minLength: 5,
-                maxLength: 100,
-                style: TextInputStyle.Paragraph,
-              },
-            ],
-          },
-        ],
-      },
-      Action.MODAL
-    );
-  }
 
   public static getGuildAssistants(guild: Guild): GuildAssistants {
     const assistants: Collection<LocaleTag, { role: Role }> = new Collection();
@@ -274,15 +69,12 @@ export default class RequestHumanAssistantPlugin {
     removedMembers: Collection<Snowflake, ThreadMember | PartialThreadMember>,
     thread: ThreadChannel
   ) {
-    const at = await this.threads.fetch(thread.id, false, true);
-    if (!at) return;
+    const requestAssistant = await app.requests.fetch(thread.id, false);
+    if (!requestAssistant) return;
     //Remove member
-    if (removedMembers.get(at.userId)) {
-      const user = await app.users.fetch(at.userId);
-      const locale = app.locales.get(user.locale);
-      if (at.assistantId) {
-        // Assistant responsed. Means Status will be SOLVED
-        await at.close(AThreadStatus.SOLVED, {
+    if (removedMembers.get(requestAssistant.userId)) {
+      await requestAssistant.closeThread(
+        RequestAssistantStatus.SOLVED /*,{
           ...locale.origin.plugins.requestHumanAssistant.solvedIssue
             .interaction,
           components: [
@@ -300,29 +92,9 @@ export default class RequestHumanAssistantPlugin {
               ],
             },
           ],
-        });
-        /*await at.close(
-          AThreadStatus.SOLVED,
-          {
-            ...locale.origin.plugins.requestHumanAssistant.solvedIssue,
-            components: [
-              {
-                type: ComponentType.ActionRow,
-                components: Array(5)
-                  .fill(null)
-                  .map((_, index) => ({
-                    type: ComponentType.Button,
-                    label: "🌚",
-                    customId: "helpdesk:survey:AssistantRating:" + (index + 1),
-                    style: ButtonStyle.Secondary,
-                  })),
-              },
-            ],
-          } // related to locale system
-        );*/
-      } else {
-        // Left the thread and Assisntant not response yet
-        await at.close(AThreadStatus.CLOSED, {
+        }*/
+      );
+      /* await at.close(AThreadStatus.CLOSED, {
           ...locale.origin.plugins.requestHumanAssistant.summonerLeftTheThread
             .interaction,
           components: [
@@ -365,8 +137,7 @@ export default class RequestHumanAssistantPlugin {
               ],
             },
           ],
-        });
-      }
+        });*/
     }
   }
 
@@ -374,22 +145,21 @@ export default class RequestHumanAssistantPlugin {
     oldThread: ThreadChannel,
     newThread: ThreadChannel
   ) {
-    const at = await this.threads.fetch(newThread.id);
-    if (!at) return;
+    const requestAssistant = await app.requests.fetch(newThread.id);
+    if (!requestAssistant) return;
     if (!oldThread.archived && newThread.archived) {
       // Thread was Archived
-      if (at.status !== AThreadStatus.ACTIVE) {
+      if (requestAssistant.status !== RequestAssistantStatus.ACTIVE) {
         if (!newThread.locked) {
           await newThread.setArchived(false);
           await newThread.edit({ archived: true, locked: true });
         }
         return;
       }
-      const user = await app.users.fetch(at.userId);
+      const user = await app.users.fetch(requestAssistant.userId);
       const locale = app.locales.get(user.locale);
-      if (!at.assistantId) return at.close(AThreadStatus.CLOSED);
 
-      return at.close(AThreadStatus.SOLVED, {
+      return requestAssistant.closeThread(RequestAssistantStatus.SOLVED, {
         ...locale.origin.plugins.requestHumanAssistant.solvedIssue.interaction,
         components: [
           {
@@ -409,31 +179,38 @@ export default class RequestHumanAssistantPlugin {
       });
     } /* else if (oldThread.archived && !newThread.archived) {
       // Thread was Unarchived
-      return this.assistanceThreadValidation(at, true);
+      return this.requestAssistantValidation(at, true);
     }*/
   }
 
-  private static async assistanceThreadValidation(
-    at: AssistanceThread,
+  private static async requestAssistantValidation(
+    requestAssistant: RequestAssistant,
     action = true
   ): Promise<boolean> {
-    if (at.status != AThreadStatus.ACTIVE) {
-      if (at.thread && action) {
-        await at.thread.send({
-          content: "This thread is no longer valid.",
-        });
-        await at.thread.edit({ archived: true, locked: true });
+    if (requestAssistant.status != RequestAssistantStatus.ACTIVE) {
+      if (requestAssistant.threadId && action) {
+        const thread = await requestAssistant.getThread().catch(() => null);
+        await thread
+          ?.send({
+            content: "This thread is no longer valid.",
+          })
+          .catch(() => null);
+        await thread?.edit({ archived: true, locked: true }).catch(() => null);
       }
       return false;
     } else if (
-      at.status === AThreadStatus.ACTIVE &&
-      at.createdAt.getTime() <= Date.now() - 21600 * 1000 /* 6 Hours */
+      requestAssistant.status === RequestAssistantStatus.ACTIVE &&
+      requestAssistant.requestedAt.getTime() <=
+        Date.now() - 21600 * 1000 /* 6 Hours */
     ) {
       if (action) {
-        await at.thread?.send({
-          content: "This thread is no longer valid.",
-        });
-        await at.close(AThreadStatus.CLOSED);
+        const thread = await requestAssistant.getThread();
+        await thread
+          ?.send({
+            content: "This thread is no longer valid.",
+          })
+          .catch(() => null);
+        await requestAssistant.closeThread(RequestAssistantStatus.INACTIVE);
       }
       return false;
     }
@@ -445,60 +222,67 @@ export default class RequestHumanAssistantPlugin {
       return;
 
     const thread = message.channel;
-    const at = await this.threads.fetch(thread.id);
-    if (!at) return;
-    if (!(await this.assistanceThreadValidation(at))) return;
+    const requestAssistant = await app.requests.fetch(thread.id);
+    if (!requestAssistant) return;
+    if (!(await this.requestAssistantValidation(requestAssistant))) return;
     const user = await app.users.fetch(message.author, false);
     const locale = app.locales.get(user.locale);
 
-    if (at.userId === user.id) return;
+    if (requestAssistant.userId === user.id) return;
     if ((user.flags & Constants.StaffBitwise) !== 0) {
       //Staff
-
-      if (!at.assistantId) {
-        // Assistant not assigned.
-        at.setAssistant(user.id); // Assign Assistant
-      } else {
-        if (
-          (user.flags & (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
-          0
-        )
-          return;
-        if (at.assistantId == user.id) return;
-        message.delete();
-      }
+      if (
+        (user.flags & (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+          0 ||
+        requestAssistant.assistantId == user.id
+      )
+        return;
+      message.delete();
     } else {
       //User
 
       message.delete();
       thread.members.remove(user.id);
       const guildAssistants = this.getGuildAssistants(message.guild as Guild);
-      const atSpamer = this.threads.cache
-        .map((t) => t)
-        .find((t) => t.userId == user.id && t.status === AThreadStatus.ACTIVE);
+      const spamerUserActiveThread =
+        app.requests.cache
+          .map((request) => request)
+          .find(
+            (request) =>
+              request.userId == user.id &&
+              request.status === RequestAssistantStatus.ACTIVE
+          ) ||
+        (await app.requests.fetchUser(user))
+          .map((request) => request)
+          .find(
+            (request) =>
+              request.userId == user.id &&
+              request.status === RequestAssistantStatus.ACTIVE
+          );
       if (
         guildAssistants.role &&
         message.member?.roles.cache.get(guildAssistants.role.id) &&
-        !atSpamer
+        !spamerUserActiveThread?.threadId
       )
         return message.member?.roles.remove(guildAssistants.role);
 
       const cfx = new ContextFormats();
-      const spamer = at.spamerUsers.get(user);
+      const spamer = requestAssistant.spamerUsers.get(user);
       cfx.setObject("user", message.author);
       cfx.formats.set("user.tag", message.author.tag);
-      if (atSpamer) cfx.formats.set("active.thread.id", atSpamer.id);
+      if (spamerUserActiveThread && spamerUserActiveThread?.threadId)
+        cfx.formats.set("active.thread.id", spamerUserActiveThread.threadId);
 
       if (spamer.isAllowed()) {
         if (spamer.remaining >= 4)
-          if (atSpamer?.isInteractionExpired() === false)
-            atSpamer.webhook.send({
+          if (spamerUserActiveThread?.isInteractionExpired() === false)
+            spamerUserActiveThread.webhook.send({
               ...locale.origin.plugins.requestHumanAssistant.publicThread
                 .notBelongToHim.warning,
               ephemeral: true,
             });
       } else {
-        atSpamer?.close(AThreadStatus.CLOSED, {
+        spamerUserActiveThread?.closeThread(RequestAssistantStatus.SOLVED, {
           ...locale.origin.plugins.requestHumanAssistant.publicThread
             .notBelongToHim.timeout,
         });

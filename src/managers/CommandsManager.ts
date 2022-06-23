@@ -5,6 +5,7 @@ import WebhookMessage from "../commands/admin/WebhookMessage";
 import WebhookCreate from "../commands/admin/WebhookCreate";
 import HelpDesk from "../commands/help/Helpdesk";
 import Languages from "../commands/user/Languages";
+import RequestAssistant from "../commands/user/RequestAssistant";
 
 export default class CommandsManager implements CommandsManagerTypes {
   private readonly commands: Array<BaseCommand>;
@@ -16,6 +17,7 @@ export default class CommandsManager implements CommandsManagerTypes {
       new WebhookCreate(),
       new HelpDesk(),
       new Languages(),
+      new RequestAssistant(),
     ];
   }
 

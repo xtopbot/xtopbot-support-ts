@@ -1,8 +1,7 @@
 import Response, { Action, MessageResponse, ResponseCodes } from "./Response";
-import { Util } from "discord.js";
+import { escapeMarkdown } from "discord.js";
 import Logger from "./Logger";
 import { v4 as uuidv4 } from "uuid";
-import { CommandMethodTypes } from "../commands/CommandMethod";
 export default class Exception extends Response<MessageResponse> {
   public readonly reason: string | null;
   public readonly severity: Severity;
@@ -11,7 +10,7 @@ export default class Exception extends Response<MessageResponse> {
     super(
       ResponseCodes.EXCEPTION,
       {
-        content: `An error occurred while executing the request.\n\`\`\`${Util.escapeMarkdown(
+        content: `An error occurred while executing the request.\n\`\`\`${escapeMarkdown(
           message
         )}\`\`\`\n \`Request Id:\`**\`${uuidv4()}\`**`,
         ephemeral: true,

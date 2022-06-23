@@ -3,7 +3,7 @@ import {
   InteractionReplyOptions,
   InteractionUpdateOptions,
   MessageOptions,
-  ModalData,
+  ModalComponentData,
 } from "discord.js";
 export default class Response<T extends AnyResponse = AnyResponse> {
   public code: ResponseCodes;
@@ -19,7 +19,7 @@ export default class Response<T extends AnyResponse = AnyResponse> {
     this.action = action ?? Action.REPLY;
   }
 }
-export type ModalResponse = ModalData;
+export type ModalResponse = ModalComponentData;
 export type AutocompleteResponse = ApplicationCommandOptionChoiceData[];
 export type MessageResponse =
   | InteractionReplyOptions
@@ -78,6 +78,7 @@ export enum Action {
 export enum ResponseCodes {
   UNKNOWN = 0,
   UNKNOWN_ARGUMENTS = 1,
+  EXCEPTION = 2,
   SUCCESS = 200,
   AUTOCOMPLETE_EMPTY_RESPONSE = 201,
   PLUGIN_SUCCESS = 202,
@@ -98,8 +99,12 @@ export enum ResponseCodes {
   INVALID_JSON_DATA = 3001,
   DISCORD_API_ERROR = 3002,
   //Plugins
-  LOCALE_ASSISTANT_NOT_FOUND = 4001,
-  ALREADY_REQUESTED_ASSISTANT = 4002,
-  REQUIRED_USER_LOCALE = 4003,
-  EXCEPTION = 5000,
+  SERVER_NOT_MEET_PLUGIN_CRITERIA = 4001,
+  LOCALE_ASSISTANT_NOT_FOUND,
+  ALREADY_REQUESTED_ASSISTANT,
+  REQUIRED_USER_LOCALE,
+  THERE_ACTIVE_THREAD,
+  ACTIVE_ASSISTANT_REQUEST,
+  REQUEST_ASSISTANT_CREATED,
+  EXCEEDED_LIMIT_FOR_REQUEST_ASSISTANT,
 }

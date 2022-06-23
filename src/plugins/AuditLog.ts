@@ -1,16 +1,15 @@
 import {
-  Attachment,
+  AttachmentBuilder,
   AuditLogEvent,
   ChannelType,
+  escapeMarkdown,
   Guild,
   GuildMember,
   Message,
   MessageOptions,
   PartialGuildMember,
   PartialMessage,
-  SnowflakeUtil,
   TextChannel,
-  Util,
 } from "discord.js";
 import app from "../app";
 
@@ -90,7 +89,7 @@ export default class AuditLogPlugin {
           description: message.content
             ? isLongerContent
               ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
-              : Util.escapeMarkdown(message.content)
+              : escapeMarkdown(message.content)
             : "**`No content`**",
           fields: [
             {
@@ -132,14 +131,16 @@ export default class AuditLogPlugin {
                   inline: true,
                 }
               : undefined) as any,
-          ],
+          ].filter((field) => field),
         },
       ],
       files: [],
     };
     if (isLongerContent)
       log.files?.push(
-        new Attachment(Buffer.from(message.content), "content.txt")
+        new AttachmentBuilder(Buffer.from(message.content), {
+          name: "content.json",
+        })
       );
     this.getAuditLogChannels(message.guild).messageLogChannel?.send(log);
   }

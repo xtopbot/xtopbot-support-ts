@@ -13,12 +13,7 @@ import Response, {
   MessageResponse,
   ResponseCodes,
 } from "../../utils/Response";
-import CommandMethod, {
-  AnyInteraction,
-  AnyMethod,
-  CommandMethodTypes,
-  Method,
-} from "../CommandMethod";
+import { AnyInteraction, AnyMethod, Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 
 export default class Notifications extends BaseCommand {

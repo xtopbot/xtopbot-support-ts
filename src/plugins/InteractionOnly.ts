@@ -5,12 +5,11 @@ import {
   Guild,
   Message,
   User as DiscordUser,
-  APIMessageComponentEmoji,
 } from "discord.js";
 import app from "../app";
 import RatelimitManager from "../managers/RatelimitManager";
 import ContextFormats from "../utils/ContextFormats";
-import User, { UserFlagsPolicy } from "../structures/User";
+import { UserFlagsPolicy } from "../structures/User";
 
 export default class InteractionOnly {
   private static readonly ratelimit = new RatelimitManager<DiscordUser>(
@@ -42,7 +41,7 @@ export default class InteractionOnly {
                     emoji: {
                       name: "✋", // ✋ | 🤚
                     },
-                    customId: "helpdesk:requestAssistant",
+                    customId: "requestAssistant:create",
                     style: ButtonStyle.Secondary,
                     label: locale.origin.plugins.interactionOnly.buttons[0],
                   },
