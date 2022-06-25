@@ -42,34 +42,36 @@ export default class RequestAssistant {
     webhook: InteractionWebhook,
     locale: LocaleTag,
     uuid?: string,
-    requestedAt?: Date
+    requestedAt?: number
   ) {
     this.issue = issue;
     this.userId = userId;
     this.webhook = webhook;
     this.guildId = guildId;
     this.locale = locale;
-    this.requestedAt = requestedAt ?? this.requestedAt;
+    this.requestedAt = requestedAt
+      ? new Date(Math.round(requestedAt * 1000))
+      : this.requestedAt;
     this.id = uuid ?? this.id;
     console.log("Request UUID: ", this.id);
   }
 
   get status(): RequestAssistantStatus {
-    if (!this.threadId) {
-      if (this.closedAt) {
-        if (
-          this.closedAt.getTime() -
-            SnowflakeUtil.timestampFrom(this.webhook.id) >
-          Constants.DEFAULT_INTERACTION_EXPIRES
-        ) {
-          return RequestAssistantStatus.EXPIRED;
-        } else return RequestAssistantStatus.CANCEL;
-      }
-    } else if (this.closedAt)
+    if (this.closedAt) {
+      if (!this.threadId) return RequestAssistantStatus.CANCELED;
+
       return this.requesterInactive
         ? RequestAssistantStatus.INACTIVE
         : RequestAssistantStatus.SOLVED;
-    if (!this.threadId) return RequestAssistantStatus.SEARCHING;
+    }
+    if (!this.threadId) {
+      if (
+        Date.now() - this.requestedAt.getTime() >
+        Constants.DEFAULT_INTERACTION_EXPIRES - 15000
+      )
+        return RequestAssistantStatus.EXPIRED;
+      return RequestAssistantStatus.SEARCHING;
+    }
     return RequestAssistantStatus.ACTIVE;
   }
 
@@ -134,6 +136,19 @@ export default class RequestAssistant {
       )
     );
     return thread;
+  }
+
+  public async cancelRequest(): Promise<void> {
+    if (this.status !== RequestAssistantStatus.SEARCHING)
+      throw new Exception(
+        "Only while searching can the request be canceled",
+        Severity.COMMON
+      );
+    this.closedAt = new Date();
+    await db.query(
+      "update `Request.Human.Assistant` set cancelledAt = ? where BIN_TO_UUID(uuid) = ?",
+      [this.closedAt, this.id]
+    );
   }
 
   public async closeThread(
@@ -247,7 +262,7 @@ export enum RequestAssistantStatus {
   INACTIVE, // Summoner was inactive with assistant
   ACTIVE, // Thread is active
   SEARCHING, // Waiting for assistant accept summoner
-  CANCEL, // Summoner cancel when searching for assistant
+  CANCELED, // Summoner cancel when searching for assistant
   EXPIRED, // Take to long to find assistant
   CLOSED,
 }

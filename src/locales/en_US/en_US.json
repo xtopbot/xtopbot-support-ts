@@ -45,30 +45,63 @@
                 }
             },
             "requestCreated": {
-                "embeds": [
-                    {
-                        "title": "Request Created!",
-                        "description": "Looking for an available assistant... **(Maximum 15 minutes)**",
-                        "fields": [
-                            {
-                                "name": "Language",
-                                "value": "{{locale.name}}",
-                                "inline": true
-                            },
-                            {
-                                "name": "Requested At",
-                                "value": "<t:{{request.timestamp}}:f>",
-                                "inline": true
+                "interaction": {
+                    "embeds": [
+                        {
+                            "title": "Request Created!",
+                            "description": "Looking for an available assistant... **(Maximum {{request.expires.in.minutes}} minutes)**",
+                            "fields": [
+                                {
+                                    "name": "Language",
+                                    "value": "{{locale.name}}",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Requested At",
+                                    "value": "<t:{{request.timestamp}}:f>",
+                                    "inline": true
+                                }
+                            ],
+                            "footer": {
+                                "text": "Request UUID: {{request.uuid}}"
                             }
-                        ],
-                        "footer": {
-                            "text": "Request Id: {{request.id}}"
                         }
-                    }
-                ],
-                "buttons": [
-                    "Cancel"
-                ]
+                    ],
+                    "buttons": [
+                        "Cancel"
+                    ]
+                },
+                "admins": {
+                    "embeds": [
+                        {
+                            "title": "Incoming Request Needs Assistance!",
+                            "description": "> {{request.issue}}",
+                            "fields": [
+                                {
+                                    "name": "User",
+                                    "value": "{{user.tag}} (<@{{user.id}}>)",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Language",
+                                    "value": "{{locale.name}}",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Expires In",
+                                    "value": "<t:{{request.expires.timestamp}}:R>",
+                                    "inline": true
+                                }
+                            ],
+                            "footer": {
+                                "text": "Request UUID: {{request.uuid}}"
+                            }
+                        }
+                    ],
+                    "buttons": [
+                        "Accept"
+                    ]
+                }
             },
             "threadCreated": {
                 "thread": {

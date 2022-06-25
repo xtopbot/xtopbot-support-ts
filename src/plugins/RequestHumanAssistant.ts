@@ -20,6 +20,7 @@ import RequestAssistant, {
 import { UserFlagsPolicy } from "../structures/User";
 import Constants from "../utils/Constants";
 import ContextFormats from "../utils/ContextFormats";
+import Exception, { Severity } from "../utils/Exception";
 
 export default class RequestHumanAssistantPlugin {
   private static readonly defaultAssistantRoleName = "assistant";

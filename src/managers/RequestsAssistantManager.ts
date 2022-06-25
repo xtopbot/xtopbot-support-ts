@@ -1,62 +1,140 @@
-import { InteractionWebhook, ThreadChannel } from "discord.js";
+import {
+  ButtonStyle,
+  ChannelType,
+  ComponentType,
+  escapeMarkdown,
+  Guild,
+  InteractionWebhook,
+  TextChannel,
+  User as DiscordUser,
+} from "discord.js";
 import CacheManager from "./CacheManager";
 import db from "../providers/Mysql";
-import AssistanceThread from "../structures/RequestAssistant";
+import RequestAssistant from "../structures/RequestAssistant";
 import app from "../app";
 import User from "../structures/User";
-import { LocaleTag } from "./LocaleManager";
 import Util from "../utils/Util";
-export default class RequestsAssistantManager extends CacheManager<AssistanceThread> {
+import Locale from "../structures/Locale";
+import Exception, { Severity } from "../utils/Exception";
+import ContextFormats from "../utils/ContextFormats";
+import Constants from "../utils/Constants";
+export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
   constructor() {
     super();
   }
 
   public async createRequest(
     issue: string,
-    userId: string,
-    guidId: string,
+    user: DiscordUser,
+    guild: Guild,
     interactionWebhook: InteractionWebhook,
-    locale: LocaleTag
-  ): Promise<AssistanceThread> {
-    const request = new AssistanceThread(
+    locale: Locale
+  ): Promise<RequestAssistant> {
+    const req = new RequestAssistant(
       Util.textEllipsis(issue, 100),
-      userId,
-      guidId,
+      user.id,
+      guild.id,
       interactionWebhook,
-      locale
+      locale.tag
     );
+    await this.sendMessageIntoRequestsChannel(req, guild, user, locale);
     await db.query(
       "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
       [
-        request.id,
-        userId,
-        guidId,
+        req.id,
+        user.id,
+        guild.id,
         interactionWebhook.token,
-        locale,
-        request.issue,
+        locale.tag,
+        req.issue,
       ]
     );
-    return this._add(request);
+    return this._add(req);
+  }
+
+  private async sendMessageIntoRequestsChannel(
+    req: RequestAssistant,
+    guild: Guild,
+    user: DiscordUser,
+    locale: Locale
+  ): Promise<void> {
+    const requestsChannel = guild.channels.cache.find(
+      (channel) =>
+        channel.type === ChannelType.GuildText && channel.name == "rha"
+    );
+    if (!requestsChannel)
+      throw new Exception(
+        "Something was wrong while Sending your request to staff channel",
+        Severity.SUSPICIOUS,
+        "Unable to find Channel for Requests Assistant in cache."
+      );
+
+    const cfx = new ContextFormats();
+    cfx.setObject("user", user);
+    cfx.formats.set(
+      "request.issue",
+      escapeMarkdown(Util.textEllipsis(req.issue, 100))
+    );
+    cfx.formats.set("user.tag", user.tag);
+    cfx.formats.set("request.uuid", req.id);
+    cfx.formats.set(
+      "request.expires.in.minutes",
+      String(Constants.DEFAULT_INTERACTION_EXPIRES / 1000 / 60)
+    );
+    cfx.formats.set(
+      "request.expires.timestamp",
+      String(
+        Math.round(
+          req.requestedAt.getTime() +
+            Constants.DEFAULT_INTERACTION_EXPIRES / 1000
+        )
+      )
+    );
+    cfx.formats.set(
+      "request.timestamp",
+      String(Math.round(req.requestedAt.getTime() / 1000))
+    );
+    cfx.formats.set("locale.name", locale.origin.name);
+    await (requestsChannel as TextChannel).send(
+      cfx.resolve({
+        ...locale.origin.plugins.requestHumanAssistant.requestCreated.admins,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Primary,
+                customId: `requestAssistant:accept:${req.id}`,
+                label:
+                  locale.origin.plugins.requestHumanAssistant.requestCreated
+                    .admins.buttons[0],
+              },
+            ],
+          },
+        ],
+      })
+    );
   }
 
   public async fetch(
     ut: string, // Thread Id or uuid
     force: boolean = false
-  ): Promise<AssistanceThread | null> {
+  ): Promise<RequestAssistant | null> {
     if (!force) {
       const cached =
         this.cache.get(ut) || this.cache.find((r) => r.threadId == ut);
-      if (cached instanceof AssistanceThread) return cached;
+      if (cached instanceof RequestAssistant) return cached;
     }
     const [raw] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, rha.createdAt as requestedAt, rha.cancelledAt, t.threadId, t.assistantId, t.createdAt as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, ts.closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, unix_timestamp(ts.closedAt) as closedAt from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
       left join \`Request.Human.Assistant.Thread.Status\` ts
         on t.uuid = ts.uuid
-      where rha.uuid = ? or t.threadId = ?;
+      where BIN_TO_UUID(rha.uuid) = ? or t.threadId = ?;
      `,
       [ut, ut]
     );
@@ -67,10 +145,10 @@ export default class RequestsAssistantManager extends CacheManager<AssistanceThr
   public async fetchUser(
     user: User,
     limit: number = 5
-  ): Promise<AssistanceThread[]> {
+  ): Promise<RequestAssistant[]> {
     const raw: any[] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, rha.createdAt as requestedAt, rha.cancelledAt, t.threadId, t.assistantId, t.createdAt as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, ts.closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, unix_timestamp(ts.closedAt) as closedAt from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -86,8 +164,8 @@ export default class RequestsAssistantManager extends CacheManager<AssistanceThr
     return resolvedRequests;
   }
 
-  private resolve(raw: any): AssistanceThread {
-    const assistanceThread = new AssistanceThread(
+  private resolve(raw: any): RequestAssistant {
+    const assistanceThread = new RequestAssistant(
       raw.issue,
       raw.userId,
       raw.guildId,
@@ -102,8 +180,14 @@ export default class RequestsAssistantManager extends CacheManager<AssistanceThr
     );
     assistanceThread.assistantId = raw.assistantId ?? null;
     assistanceThread.threadId = raw.threadId ?? null;
-    assistanceThread.threadCreatedAt = raw.threadCreatedAt ?? null;
-    assistanceThread.closedAt = raw.closedAt ?? null;
+    assistanceThread.threadCreatedAt = raw.threadCreatedAt
+      ? new Date(Math.round(raw.threadCreatedAt * 1000))
+      : null;
+    assistanceThread.closedAt = raw.closedAt
+      ? new Date(Math.round(raw.closedAt * 1000))
+      : raw.cancelledAt
+      ? new Date(Math.round(raw.cancelledAt * 1000))
+      : null;
     assistanceThread.requesterInactive = !!raw.requesterInactive;
     return assistanceThread;
   }

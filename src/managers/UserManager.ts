@@ -20,7 +20,7 @@ export default class UserManager extends CacheManager<User> {
       if (cached instanceof User) return cached;
     }
     const [raw] = await db.query(
-      "SELECT userId, SUM(flags) as flags, locale, createdAt FROM `Users` WHERE userId = ?",
+      "SELECT userId, SUM(flags) as flags, locale, unix_timestamp(createdAt) as createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
     if (!raw.userId) {
@@ -63,5 +63,5 @@ export interface UserData {
   userId: string;
   locale: string | null;
   flags: UserFlagsPolicy;
-  createdAt: Date;
+  createdAt: number;
 }

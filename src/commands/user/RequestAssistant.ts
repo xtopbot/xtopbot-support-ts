@@ -18,6 +18,7 @@ import { LocaleTag } from "../../managers/LocaleManager";
 import RequestHumanAssistantPlugin from "../../plugins/RequestHumanAssistant";
 import { RequestAssistantStatus } from "../../structures/RequestAssistant";
 import { UserFlagsPolicy } from "../../structures/User";
+import Constants from "../../utils/Constants";
 import Exception, { Severity } from "../../utils/Exception";
 import Response, {
   Action,
@@ -62,6 +63,33 @@ export default class RequestAssistant extends BaseCommand {
   public async buttonInteraction(dcm: Method<ButtonInteraction>) {
     if (dcm.getValue("requestAssistant", false) === "create")
       return this.request(null, dcm, dcm.d.guild as Guild);
+    if (dcm.getValue("requestAssistant", false) === "cancel") {
+      const cancel = dcm.getValue("cancel", false);
+      if (!cancel)
+        throw new Exception(
+          "uuid `request assistant` not provided",
+          Severity.FAULT
+        );
+      const request = await app.requests.fetch(cancel, false);
+      if (!request || request.status !== RequestAssistantStatus.SEARCHING)
+        return new Response<MessageResponse>(
+          ResponseCodes.REQUEST_COULD_NOT_BE_CANCELED,
+          {
+            content:
+              "Your request was not found or the request could not be canceled",
+            ephemeral: true,
+          }
+        );
+      await request.cancelRequest();
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          content: "CANCELED!", //  :)
+          ephemeral: true,
+        },
+        Action.UPDATE
+      );
+    }
   }
 
   public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
@@ -113,7 +141,7 @@ export default class RequestAssistant extends BaseCommand {
           ...locale.origin.plugins.pluginRequiredUserLocale,
           components: app.locales.getMessageWithMenuOfLocales(
             dcm.user,
-            "helpdesk:requestAssistant:setLocale"
+            "requestAssistant:create:setLocale"
           ).components,
           ephemeral: true,
         },
@@ -231,21 +259,35 @@ export default class RequestAssistant extends BaseCommand {
 
     const request = await app.requests.createRequest(
       issue,
-      dcm.d.user.id,
-      guild.id,
+      dcm.d.user,
+      guild,
       dcm.d.webhook,
-      locale.tag
+      locale
     );
-    dcm.cf.formats.set("request.id", request.id);
+    dcm.cf.formats.set("request.uuid", request.id);
     dcm.cf.formats.set(
       "request.timestamp",
       String(Math.round(request.requestedAt.getTime() / 1000))
+    );
+    dcm.cf.formats.set(
+      "request.expires.in.minutes",
+      String(Constants.DEFAULT_INTERACTION_EXPIRES / 1000 / 60)
+    );
+    dcm.cf.formats.set(
+      "request.expires.timestamp",
+      String(
+        Math.round(
+          request.requestedAt.getTime() +
+            Constants.DEFAULT_INTERACTION_EXPIRES / 1000
+        )
+      )
     );
     dcm.cf.formats.set("locale.name", locale.origin.name);
     return new Response(
       ResponseCodes.SUCCESS,
       {
-        ...locale.origin.plugins.requestHumanAssistant.requestCreated,
+        ...locale.origin.plugins.requestHumanAssistant.requestCreated
+          .interaction,
         components: [
           {
             type: ComponentType.ActionRow,
@@ -253,10 +295,10 @@ export default class RequestAssistant extends BaseCommand {
               {
                 type: ComponentType.Button,
                 customId: `requestAssistant:cancel:${request.id}`,
-                style: ButtonStyle.Danger,
+                style: ButtonStyle.Secondary,
                 label:
                   locale.origin.plugins.requestHumanAssistant.requestCreated
-                    .buttons[0],
+                    .interaction.buttons[0],
               },
             ],
           },

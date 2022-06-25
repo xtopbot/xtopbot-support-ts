@@ -23,7 +23,8 @@ export default class User {
           ? "en_US"
           : null;
     if ("flags" in data) this.flags = Number(data.flags);
-    if ("createdAt" in data) this.createdAt = new Date(data.createdAt);
+    if ("createdAt" in data)
+      this.createdAt = new Date(Math.round(data.createdAt * 1000));
   }
 
   public get lastVotedTimestampAt(): number {
