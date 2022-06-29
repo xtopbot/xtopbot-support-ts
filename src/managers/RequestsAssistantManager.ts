@@ -5,6 +5,7 @@ import {
   escapeMarkdown,
   Guild,
   InteractionWebhook,
+  Message,
   TextChannel,
   User as DiscordUser,
 } from "discord.js";
@@ -37,7 +38,16 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
       interactionWebhook,
       locale.tag
     );
-    await this.sendMessageIntoRequestsChannel(req, guild, user, locale);
+    const assistantMessage = await this.sendMessageIntoRequestsChannel(
+      req,
+      guild,
+      user,
+      locale
+    );
+    req.setControlMessageForAssistant(
+      assistantMessage.channel.id,
+      assistantMessage.id
+    );
     await db.query(
       "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
       [
@@ -51,13 +61,12 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     );
     return this._add(req);
   }
-
   private async sendMessageIntoRequestsChannel(
     req: RequestAssistant,
     guild: Guild,
     user: DiscordUser,
     locale: Locale
-  ): Promise<void> {
+  ): Promise<Message> {
     const requestsChannel = guild.channels.cache.find(
       (channel) =>
         channel.type === ChannelType.GuildText && channel.name == "rha"
@@ -85,8 +94,8 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
       "request.expires.timestamp",
       String(
         Math.round(
-          req.requestedAt.getTime() +
-            Constants.DEFAULT_INTERACTION_EXPIRES / 1000
+          (req.requestedAt.getTime() + Constants.DEFAULT_INTERACTION_EXPIRES) /
+            1000
         )
       )
     );
@@ -95,7 +104,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
       String(Math.round(req.requestedAt.getTime() / 1000))
     );
     cfx.formats.set("locale.name", locale.origin.name);
-    await (requestsChannel as TextChannel).send(
+    return (requestsChannel as TextChannel).send(
       cfx.resolve({
         ...locale.origin.plugins.requestHumanAssistant.requestCreated.admins,
         components: [

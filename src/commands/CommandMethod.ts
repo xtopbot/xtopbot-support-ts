@@ -111,7 +111,7 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   }
 
   public get locale() {
-    return app.locales.get("en_US");
+    return app.locales.get(this.user.locale) || app.locales.get(null);
   }
 
   public isComponentInteraction(): this is ComponentMethod<

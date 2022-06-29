@@ -13,9 +13,9 @@ export default class CommandRequirementsHandler {
   public async checkAll(): Promise<void> {
     if (!this.userFlagPolicy())
       throw new Response(
-        ResponseCodes.UNAUTHORIZED_USER_LEVEL_POLICY,
+        ResponseCodes.INSUFFICIENT_PERMISSION,
         {
-          content: "Unauthorized user level policy", // related to locale system
+          ...this.dcm.locale.origin.requirement.insufficientPermission, // related to locale system
           ephemeral: true,
         },
         Action.REPLY

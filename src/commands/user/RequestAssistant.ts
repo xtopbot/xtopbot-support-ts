@@ -6,6 +6,7 @@ import {
   ButtonStyle,
   ComponentType,
   DiscordAPIError,
+  DiscordjsErrorCodes,
   Guild,
   GuildMember,
   ModalSubmitInteraction,
@@ -20,6 +21,7 @@ import { RequestAssistantStatus } from "../../structures/RequestAssistant";
 import { UserFlagsPolicy } from "../../structures/User";
 import Constants from "../../utils/Constants";
 import Exception, { Severity } from "../../utils/Exception";
+import Logger from "../../utils/Logger";
 import Response, {
   Action,
   MessageResponse,
@@ -64,19 +66,19 @@ export default class RequestAssistant extends BaseCommand {
     if (dcm.getValue("requestAssistant", false) === "create")
       return this.request(null, dcm, dcm.d.guild as Guild);
     if (dcm.getValue("requestAssistant", false) === "cancel") {
-      const cancel = dcm.getValue("cancel", false);
-      if (!cancel)
-        throw new Exception(
-          "uuid `request assistant` not provided",
-          Severity.FAULT
-        );
-      const request = await app.requests.fetch(cancel, false);
-      if (!request || request.status !== RequestAssistantStatus.SEARCHING)
+      const requestId = dcm.getValue("cancel", true);
+      dcm.cf.formats.set("request.uuid", requestId);
+      const request = await app.requests.fetch(requestId, false);
+      if (
+        !request ||
+        request.status !== RequestAssistantStatus.SEARCHING ||
+        request.userId !== dcm.d.user.id
+      )
         return new Response<MessageResponse>(
-          ResponseCodes.REQUEST_COULD_NOT_BE_CANCELED,
+          ResponseCodes.FAILED_TO_CANCEL_ASSISTANT_REQUEST,
           {
             content:
-              "Your request was not found or the request could not be canceled",
+              "Failed to cancel your `{{request.uuid}}` Assistant Request.",
             ephemeral: true,
           }
         );
@@ -84,11 +86,79 @@ export default class RequestAssistant extends BaseCommand {
       return new Response(
         ResponseCodes.SUCCESS,
         {
-          content: "CANCELED!", //  :)
+          ...dcm.locale.origin.plugins.requestHumanAssistant.requestCanceled
+            .userRequested,
+          components: [],
           ephemeral: true,
         },
         Action.UPDATE
       );
+    } else if (dcm.getValue("requestAssistant", false) === "accept") {
+      if ((dcm.user.flags & Constants.StaffBitwise) === 0)
+        return new Response<MessageResponse>(
+          ResponseCodes.INSUFFICIENT_PERMISSION,
+          {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          }
+        );
+      const requestId = dcm.getValue("accept", true);
+      dcm.cf.formats.set("request.uuid", requestId);
+      const request = await app.requests.fetch(requestId, false);
+      if (
+        request?.status !== RequestAssistantStatus.SEARCHING &&
+        request?.status !== RequestAssistantStatus.ACTIVE
+      )
+        dcm.d.message.delete();
+      if (
+        !request ||
+        request.status !== RequestAssistantStatus.SEARCHING ||
+        request.userId === dcm.d.user.id
+      )
+        return new Response<MessageResponse>(
+          ResponseCodes.FAILED_TO_ACCEPT_ASSISTANT_REQUEST,
+          {
+            content: "Failed to Accept `{{request.uuid}}` Assistant Request.",
+            ephemeral: true,
+          }
+        );
+      const requester = dcm.d.guild?.members
+        .fetch({ user: request.userId, force: true })
+        .catch((rejected) => {
+          if (
+            rejected instanceof DiscordAPIError &&
+            (rejected.code === 10007 || rejected.code === 10013)
+          )
+            return null;
+          throw new Exception(
+            "Something was wrong with Discord API",
+            Severity.SUSPICIOUS
+          );
+        });
+      if (!requester) {
+        await request
+          .cancelRequest()
+          .catch((rejected) =>
+            Logger.error(
+              `Cancel Assistant Request Failed Message: ${rejected.message} (Accept Section)`
+            )
+          );
+        return new Response<MessageResponse>(
+          ResponseCodes.REQUSTER_NOT_ON_SERVER_REQUEST_CANCELED,
+          {
+            content:
+              "The Requester is not currently on the server, the assistant request has been canceled",
+            ephemeral: true,
+          }
+        );
+      }
+      const thread = await request.createThread(dcm.d.user.id);
+      dcm.cf.formats.set("thread.id", thread.id);
+      return new Response(ResponseCodes.SUCCESS, {
+        ...dcm.locale.origin.plugins.requestHumanAssistant
+          .assistantAcceptsRequest.followUp,
+        ephemeral: true,
+      });
     }
   }
 
@@ -163,7 +233,7 @@ export default class RequestAssistant extends BaseCommand {
       );
 
     const userRequests = await app.requests.fetchUser(dcm.user);
-
+    console.log(userRequests);
     const activeRequest =
       userRequests.find(
         (request) =>
@@ -221,15 +291,14 @@ export default class RequestAssistant extends BaseCommand {
 
     if (userRequests.length) {
       if (
-        userRequests.find(
+        userRequests.filter(
           (userRequest) =>
             userRequest.threadCreatedAt &&
             userRequest.requestedAt.getTime() >=
               userRequest.threadCreatedAt.getTime() - 120 * 1000 &&
             userRequest.requestedAt.getTime() >= Date.now() - 60 * 60 * 1000 &&
-            userRequest.status !=
-              RequestAssistantStatus.SOLVED /*He closed the thread in less than two minutes (He should wait an hour to request an assistant again)*/
-        ) ||
+            userRequest.status != RequestAssistantStatus.SOLVED
+        ).length > 0 ||
         userRequests.filter(
           (userRequest) => userRequest.requestedAt.getTime() > startDay
         ).length > 2
@@ -264,6 +333,7 @@ export default class RequestAssistant extends BaseCommand {
       dcm.d.webhook,
       locale
     );
+    request.setRequestTimeout();
     dcm.cf.formats.set("request.uuid", request.id);
     dcm.cf.formats.set(
       "request.timestamp",

@@ -6,6 +6,11 @@
         "us-english"
     ],
     "roleName": "English",
+    "requirement": {
+        "insufficientPermission": {
+            "content": "Insufficient permission."
+        }
+    },
     "plugins": {
         "pluginRequiredUserLocale": {
             "content": "This action requires that you select one of the available languages."
@@ -32,7 +37,7 @@
         },
         "requestHumanAssistant": {
             "exceededlimitation": {
-                "content": "You requested an assistant and the thread closed in less than 2 minutes or you exceeded the maximum request for an assistant on this day!"
+                "content": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!"
             },
             "publicThread": {
                 "notBelongToHim": {
@@ -49,7 +54,7 @@
                     "embeds": [
                         {
                             "title": "Request Created!",
-                            "description": "Looking for an available assistant... **(Maximum {{request.expires.in.minutes}} minutes)**",
+                            "description": "Looking for an available assistant... **(Wait time: {{request.expires.in.minutes}} minutes)**",
                             "fields": [
                                 {
                                     "name": "Language",
@@ -63,7 +68,7 @@
                                 }
                             ],
                             "footer": {
-                                "text": "Request UUID: {{request.uuid}}"
+                                "text": "Request Id: {{request.uuid}}"
                             }
                         }
                     ],
@@ -75,7 +80,7 @@
                     "embeds": [
                         {
                             "title": "Incoming Request Needs Assistance!",
-                            "description": "> {{request.issue}}",
+                            "description": "{{request.issue}}",
                             "fields": [
                                 {
                                     "name": "User",
@@ -94,7 +99,7 @@
                                 }
                             ],
                             "footer": {
-                                "text": "Request UUID: {{request.uuid}}"
+                                "text": "Request Id: {{request.uuid}}"
                             }
                         }
                     ],
@@ -103,12 +108,115 @@
                     ]
                 }
             },
-            "threadCreated": {
+            "requestCanceled": {
+                "userRequested": {
+                    "embeds": [
+                        {
+                            "title": "Your request was canceled by you",
+                            "footer": {
+                                "text": "Request Id: {{request.uuid}}"
+                            }
+                        }
+                    ]
+                },
+                "expired": {
+                    "update": {
+                        "embeds": [
+                            {
+                                "title": "Your request was canceled",
+                                "footer": {
+                                    "text": "Request Id: {{request.uuid}}"
+                                }
+                            }
+                        ]
+                    },
+                    "followUp": {
+                        "content": "We're sorry that assistants are not available to help you at this time. Come back another time Thank you for your understanding"
+                    }
+                }
+            },
+            "acceptedRequest": {
                 "thread": {
-                    "content": "<@&{{support.role.id}}>\n\nHello <@{{user.id}}>, please wait for one of the technical support to contact you in this thread."
+                    "content": "<@{{requester.id}}>, <@{{assistant.id}}> has come to help you!"
                 },
                 "interaction": {
-                    "content": "Thread has been created. One of our technical support will contact you in this <#{{thread.id}}> thread."
+                    "update": {
+                        "embeds": [
+                            {
+                                "title": "Request Accepted!",
+                                "description": "<@{{assistant.id}}> came to help you!",
+                                "fields": [
+                                    {
+                                        "name": "Thread",
+                                        "value": "<#{{thread.id}}>",
+                                        "inline": true
+                                    },
+                                    {
+                                        "name": "Language",
+                                        "value": "{{locale.name}}",
+                                        "inline": true
+                                    },
+                                    {
+                                        "name": "Requested At",
+                                        "value": "<t:{{request.timestamp}}:f>",
+                                        "inline": true
+                                    }
+                                ],
+                                "footer": {
+                                    "text": "Request Id: {{request.uuid}}\nWould you mind taking a minute to tell us how we did? (Available when thread is closed)"
+                                }
+                            }
+                        ],
+                        "buttons": [
+                            "Feedback"
+                        ]
+                    },
+                    "followUp": {
+                        "content": "Hey <@{{requester.id}}>, your request has been accepted by <@{{assistant.id}}>, please go to <#{{thread.id}}> thread and start chatting with him!"
+                    }
+                }
+            },
+            "assistantAcceptsRequest": {
+                "update": {
+                    "embeds": [
+                        {
+                            "title": "Request Accepted By {{user.tag}}!",
+                            "description": "{{request.issue}}",
+                            "fields": [
+                                {
+                                    "name": "User",
+                                    "value": "{{user.tag}} (<@{{user.id}}>)",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Language",
+                                    "value": "{{locale.name}}",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Requested At",
+                                    "value": "<t:{{request.timestamp}}:R>",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Assistant",
+                                    "value": "<@{{user.id}}>",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Accepted At",
+                                    "value": "<@{{thread.timestamp}}>",
+                                    "inline": true
+                                }
+                            ],
+                            "footer": {
+                                "text": "Request Id: {{request.uuid}}"
+                            }
+                        }
+                    ]
+                },
+                "followUp": {
+                    "content": "**Request Accepted Successfully.** \nGo to <#{{thread.id}}> thread and assistance the customer!"
                 }
             },
             "activeThread": {
