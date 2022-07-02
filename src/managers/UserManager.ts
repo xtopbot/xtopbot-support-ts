@@ -20,7 +20,7 @@ export default class UserManager extends CacheManager<User> {
       if (cached instanceof User) return cached;
     }
     const [raw] = await db.query(
-      "SELECT userId, SUM(flags) as flags, locale, unix_timestamp(createdAt) as createdAt FROM `Users` WHERE userId = ?",
+      "SELECT userId, (flags + 0) as flags, locale, unix_timestamp(createdAt) as createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
     if (!raw.userId) {

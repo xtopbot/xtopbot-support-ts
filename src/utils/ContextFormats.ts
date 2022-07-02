@@ -1,5 +1,4 @@
 import { Collection } from "discord.js";
-import { CommandMethodTypes } from "../commands/CommandMethod";
 import Response, { AnyResponse } from "./Response";
 
 export default class ContextFormats {

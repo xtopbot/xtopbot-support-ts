@@ -41,8 +41,8 @@ export default class MysqlDatabase {
     try {
       const [raw] = await this.db.query(query, values);
       return raw;
-    } catch (error) {
-      throw new Exception((error as QueryError).message, Severity.FAULT);
+    } catch (err) {
+      throw new Exception((err as QueryError).message, Severity.FAULT, err);
     }
   }
 }

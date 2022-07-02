@@ -63,6 +63,7 @@ export default class RequestAssistant extends BaseCommand {
   }
 
   public async buttonInteraction(dcm: Method<ButtonInteraction>) {
+    console.log("test");
     if (dcm.getValue("requestAssistant", false) === "create")
       return this.request(null, dcm, dcm.d.guild as Guild);
     if (dcm.getValue("requestAssistant", false) === "cancel") {
@@ -71,7 +72,7 @@ export default class RequestAssistant extends BaseCommand {
       const request = await app.requests.fetch(requestId, false);
       if (
         !request ||
-        request.status !== RequestAssistantStatus.SEARCHING ||
+        request.getStatus(false) !== RequestAssistantStatus.SEARCHING ||
         request.userId !== dcm.d.user.id
       )
         return new Response<MessageResponse>(
@@ -93,7 +94,12 @@ export default class RequestAssistant extends BaseCommand {
         },
         Action.UPDATE
       );
-    } else if (dcm.getValue("requestAssistant", false) === "accept") {
+    } else if (
+      dcm.getValue("requestAssistant", false) === "accept" ||
+      dcm.getValue("requestAssistant", false) === "close"
+    ) {
+      await dcm.d.deferReply({ ephemeral: true });
+
       if ((dcm.user.flags & Constants.StaffBitwise) === 0)
         return new Response<MessageResponse>(
           ResponseCodes.INSUFFICIENT_PERMISSION,
@@ -105,20 +111,37 @@ export default class RequestAssistant extends BaseCommand {
       const requestId = dcm.getValue("accept", true);
       dcm.cf.formats.set("request.uuid", requestId);
       const request = await app.requests.fetch(requestId, false);
+      const requestStatus = await request?.getStatus(true);
+      if (!request) {
+        dcm.d.message.delete();
+        return new Response<MessageResponse>(
+          ResponseCodes.ASSISTANT_REQUEST_NOT_FOUND,
+          {
+            content: "`{{request.uuid}}` Assistant Request Not Found.",
+            ephemeral: true,
+          }
+        );
+      }
       if (
-        request?.status !== RequestAssistantStatus.SEARCHING &&
-        request?.status !== RequestAssistantStatus.ACTIVE
+        (requestStatus !== RequestAssistantStatus.SEARCHING &&
+          requestStatus !== RequestAssistantStatus.ACTIVE) ||
+        !request
       )
         dcm.d.message.delete();
-      if (
-        !request ||
-        request.status !== RequestAssistantStatus.SEARCHING ||
-        request.userId === dcm.d.user.id
-      )
+      if (requestStatus !== RequestAssistantStatus.SEARCHING)
         return new Response<MessageResponse>(
-          ResponseCodes.FAILED_TO_ACCEPT_ASSISTANT_REQUEST,
+          ResponseCodes.ASSISTANT_REQUEST_NOT_ON_SEARCHIN_STATUS,
           {
-            content: "Failed to Accept `{{request.uuid}}` Assistant Request.",
+            content:
+              "The request cannot be accepted for one of the following reasons:\n- The request was accepted by you or another assistant\n- The customer canceled the request\n- The request has expired",
+            ephemeral: true,
+          }
+        );
+      if (request.userId === dcm.d.user.id)
+        return new Response<MessageResponse>(
+          ResponseCodes.ASSISTANT_REQUEST_CANNOT_BE_ACCEPTED_BY_SAME_USER,
+          {
+            content: "||      🤨      ||",
             ephemeral: true,
           }
         );
@@ -152,7 +175,7 @@ export default class RequestAssistant extends BaseCommand {
           }
         );
       }
-      const thread = await request.createThread(dcm.d.user.id);
+      const thread = await request.createThread(dcm.d.user);
       dcm.cf.formats.set("thread.id", thread.id);
       return new Response(ResponseCodes.SUCCESS, {
         ...dcm.locale.origin.plugins.requestHumanAssistant
@@ -172,6 +195,69 @@ export default class RequestAssistant extends BaseCommand {
         if (res.code !== ResponseCodes.SUCCESS) return res;
         return this.request(null, dcm, dcm.d.guild as Guild);
       }
+    } else if (dcm.getValue("close", false)) {
+      await dcm.d.deferReply({ ephemeral: true });
+
+      if ((dcm.user.flags & Constants.StaffBitwise) === 0)
+        return new Response<MessageResponse>(
+          ResponseCodes.INSUFFICIENT_PERMISSION,
+          {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          }
+        );
+      const requestId = dcm.getValue("close", true);
+      dcm.cf.formats.set("request.uuid", requestId);
+      const request = await app.requests.fetch(requestId, false);
+      const requestStatus = await request?.getStatus(true);
+      if (!request) {
+        dcm.d.message.delete();
+        return new Response<MessageResponse>(
+          ResponseCodes.ASSISTANT_REQUEST_NOT_FOUND,
+          {
+            content: "`{{request.uuid}}` Assistant Request Not Found.",
+            ephemeral: true,
+          }
+        );
+      }
+      if (
+        requestStatus !== RequestAssistantStatus.ACTIVE &&
+        requestStatus !== RequestAssistantStatus.CLOSED
+      ) {
+        dcm.d.message.delete();
+        return new Response<MessageResponse>(
+          ResponseCodes.ASSISTANT_REQUEST_ALREADY_CLOSED_WITH_REASON,
+          {
+            content: "The Request has been closed with the reason already!",
+            ephemeral: true,
+          }
+        );
+      }
+      if (dcm.d.user.id !== request.assistantId)
+        return new Response<MessageResponse>(
+          ResponseCodes.ONLY_ASSISTANT_WHO_ACCEPT_ASSISTANT_REQUEST_CAN_CLOSED,
+          {
+            content: `Only <@${request.assistantId}> can do this interaction!`,
+            ephemeral: true,
+          }
+        );
+      const reason =
+        dcm.d.values[0] == "solved"
+          ? RequestAssistantStatus.SOLVED
+          : dcm.d.values[0] == "inactive"
+          ? RequestAssistantStatus.REQUESTER_INACTIVE
+          : null;
+      if (!reason)
+        throw new Exception(
+          "Values of this interaction are unacceptable",
+          Severity.FAULT
+        ); // Path of custom id is unreachable
+
+      await request.closeThread(reason);
+      dcm.d.message.delete();
+      return new Response(ResponseCodes.SUCCESS, {
+        content: "**Thread Successfully Closed!**",
+      });
     }
   }
 
@@ -233,17 +319,15 @@ export default class RequestAssistant extends BaseCommand {
       );
 
     const userRequests = await app.requests.fetchUser(dcm.user);
-    console.log(userRequests);
+
     const activeRequest =
       userRequests.find(
         (request) =>
-          request.userId == dcm.user.id &&
-          request.status === RequestAssistantStatus.SEARCHING
+          request.getStatus(false) === RequestAssistantStatus.SEARCHING
       ) &&
       app.requests.cache.find(
         (request) =>
-          request.userId == dcm.user.id &&
-          request.status === RequestAssistantStatus.SEARCHING
+          request.getStatus(false) === RequestAssistantStatus.SEARCHING
       );
 
     if (activeRequest)
@@ -257,34 +341,28 @@ export default class RequestAssistant extends BaseCommand {
       );
 
     const activeThread = userRequests.find(
-      (request) =>
-        request.userId == dcm.user.id &&
-        request.status === RequestAssistantStatus.ACTIVE
+      (request) => request.getStatus(false) === RequestAssistantStatus.ACTIVE
     );
-    if (activeThread) {
-      const thread = ((await activeThread.getThread(true).catch((err) => {
-        if (err instanceof DiscordAPIError && err.code == 500)
-          throw new Exception(
-            "Something was wrong with discord API",
-            Severity.FAULT,
-            err
-          );
-      })) ?? null) as ThreadChannel | null;
-      if (thread) {
-        if (thread.archived === false) {
-          dcm.cf.formats.set("thread.id", thread.id);
-          if (!dcm.member.roles.cache.get(guildAssistants.role.id))
-            await dcm.member.roles.add(guildAssistants.role);
-          return new Response(
-            ResponseCodes.THERE_ACTIVE_THREAD,
-            {
-              ...locale.origin.plugins.requestHumanAssistant.activeThread,
-              ephemeral: true,
-            },
-            Action.REPLY
-          );
-        }
-      }
+    if (
+      activeThread &&
+      (await activeThread.checkStatusThread()) === RequestAssistantStatus.ACTIVE
+    ) {
+      dcm.cf.formats.set("thread.id", activeThread.threadId as string);
+      if (!dcm.member.roles.cache.get(guildAssistants.role.id))
+        await dcm.member.roles.add(guildAssistants.role);
+      const thread = await activeThread.getThread(false);
+      const memberInThread = thread.members
+        .fetch(dcm.d.user.id)
+        .catch(() => null);
+      if (!memberInThread) await thread.members.add(dcm.d.user);
+      return new Response(
+        ResponseCodes.THERE_ACTIVE_THREAD,
+        {
+          ...locale.origin.plugins.requestHumanAssistant.activeThread,
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
     }
 
     const startDay = new Date().setUTCHours(0, 0, 0, 0);
@@ -293,12 +371,18 @@ export default class RequestAssistant extends BaseCommand {
       if (
         userRequests.filter(
           (userRequest) =>
-            userRequest.threadCreatedAt &&
-            userRequest.requestedAt.getTime() >=
-              userRequest.threadCreatedAt.getTime() - 120 * 1000 &&
-            userRequest.requestedAt.getTime() >= Date.now() - 60 * 60 * 1000 &&
-            userRequest.status != RequestAssistantStatus.SOLVED
-        ).length > 0 ||
+            userRequest.getStatus(false) ===
+              RequestAssistantStatus.REQUESTER_INACTIVE &&
+            userRequest.requestedAt.getTime() > startDay
+        ).length > 1 ||
+        userRequests.filter(
+          (userRequest) =>
+            (userRequest.getStatus(false) === RequestAssistantStatus.CLOSED ||
+              userRequest.getStatus(false) === RequestAssistantStatus.SOLVED ||
+              userRequest.getStatus(false) ===
+                RequestAssistantStatus.REQUESTER_INACTIVE) &&
+            userRequest.requestedAt.getTime() > startDay
+        ).length > 2 ||
         userRequests.filter(
           (userRequest) => userRequest.requestedAt.getTime() > startDay
         ).length > 2
@@ -325,6 +409,7 @@ export default class RequestAssistant extends BaseCommand {
       );
 
     if (issue === null) return this.openModal();
+    await dcm.d.deferReply({ ephemeral: true });
 
     const request = await app.requests.createRequest(
       issue,

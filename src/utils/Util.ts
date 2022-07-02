@@ -1,4 +1,6 @@
 import { PermissionsString } from "discord.js";
+import Exception, { Severity } from "./Exception";
+import { MessageResponse } from "./Response";
 
 export default class Util {
   public static permissionsToStringArray(
@@ -28,6 +30,22 @@ export default class Util {
     } catch (err) {
       return null;
     }
+  }
+
+  public static addColorToEmbed(
+    message: MessageResponse,
+    color: number,
+    embedIndex: number
+  ): any {
+    const newMessage = { ...message };
+    const embed = newMessage.embeds?.at(embedIndex);
+    if (!embed)
+      throw new Exception(
+        `Index ${embedIndex} embed not found.`,
+        Severity.SUSPICIOUS
+      );
+    (embed as any).color = color;
+    return newMessage;
   }
 }
 

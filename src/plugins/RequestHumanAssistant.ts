@@ -74,71 +74,6 @@ export default class RequestHumanAssistantPlugin {
     if (!requestAssistant) return;
     //Remove member
     if (removedMembers.get(requestAssistant.userId)) {
-      await requestAssistant.closeThread(
-        RequestAssistantStatus.SOLVED /*,{
-          ...locale.origin.plugins.requestHumanAssistant.solvedIssue
-            .interaction,
-          components: [
-            {
-              type: ComponentType.ActionRow,
-              components: [
-                {
-                  type: ComponentType.Button,
-                  label:
-                    locale.origin.plugins.requestHumanAssistant.solvedIssue
-                      .interaction.buttons[0],
-                  customId: "helpdesk:survey",
-                  style: ButtonStyle.Primary,
-                },
-              ],
-            },
-          ],
-        }*/
-      );
-      /* await at.close(AThreadStatus.CLOSED, {
-          ...locale.origin.plugins.requestHumanAssistant.summonerLeftTheThread
-            .interaction,
-          components: [
-            {
-              type: ComponentType.ActionRow,
-              components: [
-                {
-                  type: ComponentType.SelectMenu,
-                  customId: "helpdesk:survey:summonerleftthread",
-                  maxValues: 1,
-                  minValues: 1,
-                  placeholder:
-                    locale.origin.plugins.requestHumanAssistant
-                      .summonerLeftTheThread.interaction.selectMenu[0]
-                      .placeholder,
-                  options: [
-                    {
-                      label:
-                        locale.origin.plugins.requestHumanAssistant
-                          .summonerLeftTheThread.interaction.selectMenu[0]
-                          .options[0].label,
-                      value: "heSolvedItHimself",
-                    },
-                    {
-                      label:
-                        locale.origin.plugins.requestHumanAssistant
-                          .summonerLeftTheThread.interaction.selectMenu[0]
-                          .options[1].label,
-                      value: "assistantDelayed",
-                    },
-                    {
-                      label:
-                        locale.origin.plugins.requestHumanAssistant
-                          .summonerLeftTheThread.interaction.selectMenu[0]
-                          .options[2].label,
-                      value: "other",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        });*/
     }
   }
 
@@ -150,34 +85,15 @@ export default class RequestHumanAssistantPlugin {
     if (!requestAssistant) return;
     if (!oldThread.archived && newThread.archived) {
       // Thread was Archived
-      if (requestAssistant.status !== RequestAssistantStatus.ACTIVE) {
+      if (requestAssistant.closedAt) {
         if (!newThread.locked) {
           await newThread.setArchived(false);
           await newThread.edit({ archived: true, locked: true });
         }
         return;
+      } else {
+        requestAssistant.closeThread(RequestAssistantStatus.CLOSED);
       }
-      const user = await app.users.fetch(requestAssistant.userId);
-      const locale = app.locales.get(user.locale);
-
-      return requestAssistant.closeThread(RequestAssistantStatus.SOLVED, {
-        ...locale.origin.plugins.requestHumanAssistant.solvedIssue.interaction,
-        components: [
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              {
-                type: ComponentType.Button,
-                label:
-                  locale.origin.plugins.requestHumanAssistant.solvedIssue
-                    .interaction.buttons[0],
-                customId: "helpdesk:survey",
-                style: ButtonStyle.Primary,
-              },
-            ],
-          },
-        ],
-      });
     } /* else if (oldThread.archived && !newThread.archived) {
       // Thread was Unarchived
       return this.requestAssistantValidation(at, true);
@@ -188,7 +104,7 @@ export default class RequestHumanAssistantPlugin {
     requestAssistant: RequestAssistant,
     action = true
   ): Promise<boolean> {
-    if (requestAssistant.status != RequestAssistantStatus.ACTIVE) {
+    if (requestAssistant.closedAt) {
       if (requestAssistant.threadId && action) {
         const thread = await requestAssistant.getThread().catch(() => null);
         await thread
@@ -200,9 +116,8 @@ export default class RequestHumanAssistantPlugin {
       }
       return false;
     } else if (
-      requestAssistant.status === RequestAssistantStatus.ACTIVE &&
       requestAssistant.requestedAt.getTime() <=
-        Date.now() - 21600 * 1000 /* 6 Hours */
+      Date.now() - 21600 * 1000 /* 6 Hours */
     ) {
       if (action) {
         const thread = await requestAssistant.getThread();
@@ -211,7 +126,7 @@ export default class RequestHumanAssistantPlugin {
             content: "This thread is no longer valid.",
           })
           .catch(() => null);
-        await requestAssistant.closeThread(RequestAssistantStatus.INACTIVE);
+        await requestAssistant.closeThread(RequestAssistantStatus.CLOSED);
       }
       return false;
     }
@@ -249,17 +164,18 @@ export default class RequestHumanAssistantPlugin {
         app.requests.cache
           .map((request) => request)
           .find(
-            (request) =>
+            async (request) =>
               request.userId == user.id &&
-              request.status === RequestAssistantStatus.ACTIVE
+              (await request.getStatus(true)) === RequestAssistantStatus.ACTIVE
           ) ||
         (await app.requests.fetchUser(user))
           .map((request) => request)
           .find(
-            (request) =>
+            async (request) =>
               request.userId == user.id &&
-              request.status === RequestAssistantStatus.ACTIVE
+              (await request.getStatus(true)) === RequestAssistantStatus.ACTIVE
           );
+
       if (
         guildAssistants.role &&
         message.member?.roles.cache.get(guildAssistants.role.id) &&
@@ -283,9 +199,11 @@ export default class RequestHumanAssistantPlugin {
               ephemeral: true,
             });
       } else {
-        spamerUserActiveThread?.closeThread(RequestAssistantStatus.SOLVED, {
-          ...locale.origin.plugins.requestHumanAssistant.publicThread
-            .notBelongToHim.timeout,
+        spamerUserActiveThread?.closeThread(RequestAssistantStatus.CLOSED, {
+          messageToThread: {
+            ...locale.origin.plugins.requestHumanAssistant.publicThread
+              .notBelongToHim.timeout,
+          },
         });
         message.member?.disableCommunicationUntil(
           spamer.blockedEndAt?.getTime() ?? Date.now() + 5 * 60 * 1000,

@@ -1,16 +1,15 @@
 import {
   ChannelType,
+  ComponentType,
+  DiscordAPIError,
   Guild,
-  InteractionReplyOptions,
   InteractionWebhook,
   Message,
   Role,
-  SnowflakeUtil,
   TextChannel,
   ThreadChannel,
-  WebhookEditMessageOptions,
+  User as DiscordUser,
 } from "discord.js";
-import moment from "moment";
 import app from "../app";
 import { LocaleTag } from "../managers/LocaleManager";
 import RatelimitManager from "../managers/RatelimitManager";
@@ -23,6 +22,7 @@ import db from "../providers/Mysql";
 import Util from "../utils/Util";
 import { v4 as uuidv4 } from "uuid";
 import Logger from "../utils/Logger";
+import AuditLog from "../plugins/AuditLog";
 
 export default class RequestAssistant {
   public readonly id: string = uuidv4();
@@ -36,7 +36,11 @@ export default class RequestAssistant {
   public closedAt: Date | null = null; // may be thread closed or request cancelled
   public assistantId: string | null = null;
   public spamerUsers = new RatelimitManager<User>(120000, 5);
-  public requesterInactive: boolean = false;
+  public threadStatusClosed:
+    | RequestAssistantStatus.SOLVED
+    | RequestAssistantStatus.REQUESTER_INACTIVE
+    | RequestAssistantStatus.CLOSED
+    | null = null;
   public issue: string;
   private assistantRequestsChannelId: string | null = null;
   private assistantRequestMessageId: string | null = null;
@@ -62,13 +66,15 @@ export default class RequestAssistant {
     console.log("Request UUID: ", this.id);
   }
 
-  get status(): RequestAssistantStatus {
+  public getStatus(fetchThread: false): RequestAssistantStatus;
+  public async getStatus(fetchThread: true): Promise<RequestAssistantStatus>;
+  public getStatus(
+    checkStatusThread: boolean
+  ): Promise<RequestAssistantStatus> | RequestAssistantStatus {
     if (this.closedAt) {
       if (!this.threadId) return RequestAssistantStatus.CANCELED;
 
-      return this.requesterInactive
-        ? RequestAssistantStatus.INACTIVE
-        : RequestAssistantStatus.SOLVED;
+      return this.threadStatusClosed || RequestAssistantStatus.CLOSED;
     }
     if (!this.threadId) {
       if (
@@ -77,6 +83,30 @@ export default class RequestAssistant {
       )
         return RequestAssistantStatus.EXPIRED;
       return RequestAssistantStatus.SEARCHING;
+    } else {
+      if (Date.now() > (this.threadCreatedAt as Date).getTime() + 3_600_000)
+        return RequestAssistantStatus.CLOSED;
+      if (checkStatusThread) return this.checkStatusThread();
+      const thread = this.guild.channels.cache.get(
+        this.threadId
+      ) as ThreadChannel | null;
+      if (!thread || thread.archived) return RequestAssistantStatus.CLOSED;
+      return RequestAssistantStatus.ACTIVE;
+    }
+  }
+
+  public async checkStatusThread(): Promise<
+    RequestAssistantStatus.ACTIVE | RequestAssistantStatus.CLOSED
+  > {
+    if (!this.threadId)
+      throw new Exception("Thread not created yet!", Severity.SUSPICIOUS);
+    const thread = await this.getThread(true).catch(() => null);
+    if (!thread || thread.archived) {
+      await this.closeThread(RequestAssistantStatus.CLOSED, {
+        threadClosedAt: thread?.archivedAt ?? new Date(),
+      });
+
+      return RequestAssistantStatus.CLOSED;
     }
     return RequestAssistantStatus.ACTIVE;
   }
@@ -94,8 +124,8 @@ export default class RequestAssistant {
     if (this.timeoutRequest) clearTimeout(this.timeoutRequest);
     this.timeoutRequest = setTimeout(async () => {
       if (
-        this.status === RequestAssistantStatus.SEARCHING ||
-        this.status === RequestAssistantStatus.EXPIRED
+        this.getStatus(false) === RequestAssistantStatus.SEARCHING ||
+        this.getStatus(false) === RequestAssistantStatus.EXPIRED
       ) {
         const locale = app.locales.get(this.locale) || app.locales.get(null);
         const cfx = new ContextFormats();
@@ -164,23 +194,33 @@ export default class RequestAssistant {
     if (!this.threadId)
       throw new Exception("Thread not created yet!", Severity.SUSPICIOUS);
 
-    const thread = await this.guild.channels.fetch(this.threadId, {
-      force: force,
-    });
+    const thread = await this.guild.channels
+      .fetch(this.threadId, {
+        force: force,
+      })
+      .catch((err) => {
+        Logger.debug("test");
+        if (err instanceof DiscordAPIError && err.code === 10003) return null;
+        throw new Exception(
+          "Something was wrong with Discord API",
+          Severity.SUSPICIOUS,
+          err
+        );
+      });
     if (!thread) throw new Exception("thread not found.", Severity.COMMON);
 
     return thread as unknown as ThreadChannel;
   }
 
-  public async createThread(assistantId: string): Promise<ThreadChannel> {
+  public async createThread(assistant: DiscordUser): Promise<ThreadChannel> {
     if (this.threadId)
       throw new Exception("Thread already created!", Severity.SUSPICIOUS);
-    if (this.status !== RequestAssistantStatus.SEARCHING)
+    if (this.getStatus(false) !== RequestAssistantStatus.SEARCHING)
       throw new Exception(
         "Status of request is unprepared to create a thread",
         Severity.SUSPICIOUS
       );
-    this.assistantId = assistantId;
+    this.assistantId = assistant.id;
     const guildAssistants = RequestHumanAssistant.getGuildAssistants(
       this.guild
     );
@@ -192,7 +232,6 @@ export default class RequestAssistant {
         err
       );
     });
-    this.threadCreatedAt = new Date();
     const thread = await (
       guildAssistants.channel as TextChannel
     ).threads.create({
@@ -208,7 +247,7 @@ export default class RequestAssistant {
     await db
       .query(
         "INSERT INTO `Request.Human.Assistant.Thread` (uuid, threadId, assistantId) values (UUID_TO_BIN(?), ?, ?)",
-        [this.id, thread.id, assistantId]
+        [this.id, thread.id, assistant.id]
       )
       .catch((rejected) => {
         thread.delete();
@@ -218,19 +257,23 @@ export default class RequestAssistant {
           rejected
         );
       });
+    this.threadId = thread.id;
+    this.threadCreatedAt = new Date();
     await member.roles.add(guildAssistants.role as Role);
 
     await thread.members.add(member.user.id);
-    await thread.members.add(assistantId);
+    await thread.members.add(assistant.id);
 
     const locale = app.locales.get(this.locale, true);
     const cfx = new ContextFormats();
     cfx.setObject("requester", member.user);
     cfx.formats.set("requester.tag", member.user.tag);
+    cfx.formats.set("assistant.tag", assistant.tag);
+    cfx.setObject("assistant", assistant);
     cfx.formats.set("request.uuid", this.id);
     cfx.formats.set("thread.id", thread.id);
-    cfx.formats.set("assistant.id", assistantId);
     cfx.formats.set("locale.name", locale.origin.name);
+    cfx.formats.set("request.issue", this.issue);
     cfx.formats.set(
       "request.timestamp",
       String(Math.round(this.requestedAt.getTime() / 1000))
@@ -244,6 +287,7 @@ export default class RequestAssistant {
         locale.origin.plugins.requestHumanAssistant.acceptedRequest.interaction
           .update
       ),
+      components: [],
       ephemeral: true,
     });
     this.webhook.send({
@@ -273,14 +317,55 @@ export default class RequestAssistant {
       )?.messages
         .edit(
           this.assistantRequestMessageId,
-          cfx.resolve(
-            locale.origin.plugins.requestHumanAssistant.assistantAcceptsRequest
-              .update
-          )
+          cfx.resolve({
+            ...Util.addColorToEmbed(
+              locale.origin.plugins.requestHumanAssistant
+                .assistantAcceptsRequest.update,
+              1797288,
+              0
+            ),
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.SelectMenu,
+                    maxValues: 1,
+                    minValues: 1,
+                    customId: `requestAssistant:close:${this.id}`,
+                    placeholder:
+                      locale.origin.plugins.requestHumanAssistant
+                        .assistantAcceptsRequest.update.selectMenu[0]
+                        .placeholder,
+                    options: [
+                      {
+                        ...locale.origin.plugins.requestHumanAssistant
+                          .assistantAcceptsRequest.update.selectMenu[0]
+                          .options[0],
+                        emoji: {
+                          name: "✅",
+                        },
+                        value: "solved",
+                      },
+                      {
+                        ...locale.origin.plugins.requestHumanAssistant
+                          .assistantAcceptsRequest.update.selectMenu[0]
+                          .options[1],
+                        emoji: {
+                          name: "⌛",
+                        },
+                        value: "inactive",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          })
         )
         .catch((rejected) =>
           Logger.error(
-            `Failed to update Assistant Request Message. Error Message: ${rejected.message}`
+            `Failed to update Assistant Request Message (Admin). Error Message: ${rejected.message}`
           )
         );
 
@@ -288,7 +373,7 @@ export default class RequestAssistant {
   }
 
   public async cancelRequest(): Promise<void> {
-    if (this.status !== RequestAssistantStatus.SEARCHING)
+    if (this.getStatus(false) !== RequestAssistantStatus.SEARCHING)
       throw new Exception(
         "Only while searching can the request be canceled",
         Severity.COMMON
@@ -301,15 +386,57 @@ export default class RequestAssistant {
   }
 
   public async closeThread(
-    status: RequestAssistantStatus.SOLVED | RequestAssistantStatus.INACTIVE,
-    followUp?: InteractionReplyOptions,
-    cfx?: ContextFormats
+    status:
+      | RequestAssistantStatus.SOLVED
+      | RequestAssistantStatus.REQUESTER_INACTIVE
+      | RequestAssistantStatus.CLOSED,
+    options?: {
+      threadClosedAt?: Date;
+      messageToThread?: any;
+    }
   ): Promise<this> {
-    const thread = await this.getThread();
+    if (!this.threadId)
+      throw new Exception("Thread not created yet!", Severity.SUSPICIOUS);
+
+    await db.query(
+      "INSERT INTO `Request.Human.Assistant.Thread.Status` (uuid, status, closedAt) values (UUID_TO_BIN(?), ?, ?)",
+      [
+        this.id,
+        status,
+        Math.round((options?.threadClosedAt?.getTime() ?? Date.now()) / 1000),
+      ]
+    );
+
+    this.closedAt = new Date();
+    this.threadStatusClosed = status;
+
+    AuditLog.assistanceThreadClosed(this);
+
+    if (this.assistantRequestsChannelId && this.assistantRequestMessageId)
+      (
+        this.guild.channels.cache.get(this.assistantRequestsChannelId) as
+          | TextChannel
+          | undefined
+      )?.messages
+        .delete(this.assistantRequestMessageId)
+        .catch((rejected) =>
+          Logger.error(
+            `Failed to delete Assistant Request Message (Admin). Error Message: ${rejected.message}`
+          )
+        );
+
+    const thread = await this.getThread().catch((rejected) => {
+      Logger.error(
+        `[Assistance Request Id: ${this.id}] get Thread Error: ${rejected?.message}.`
+      );
+      return null;
+    });
+    if (!thread) return this;
 
     const member = await thread.guild.members
       .fetch(this.userId)
       .catch(() => null);
+
     const guildAssistants = RequestHumanAssistant.getGuildAssistants(
       thread.guild
     );
@@ -319,81 +446,14 @@ export default class RequestAssistant {
       member?.roles.cache.get(guildAssistants.role.id)
     )
       await member.roles.remove(guildAssistants.role);
-    cfx ??= new ContextFormats();
-    if (this.assistantId) {
-      const assistant = await app.client.users.fetch(this.assistantId);
-      cfx.setObject("assistant", assistant);
-      cfx.formats.set("assistant.tag", assistant.tag);
+    if (!thread.archived) {
+      await thread.send(
+        options?.messageToThread ?? {
+          content: "**Thread closed.**",
+        }
+      );
+      await thread.edit({ archived: true, locked: true });
     }
-    console.log(followUp);
-    const survery = followUp && member && !this.isInteractionExpired();
-    if (survery)
-      this.webhook.send({ ...cfx.resolve(followUp), ephemeral: true });
-
-    await thread.send({
-      content: "**Thread closed.**",
-    });
-    await thread.edit({ archived: true, locked: true });
-
-    /*
-     Send Request Assistant Log
-    */
-    (
-      thread.guild.channels.cache.find(
-        (channel) =>
-          channel.name.toLowerCase() ===
-            Constants.DEFAULT_NAME_ASSISATANT_REQUEST_LOG_CHANNEL.toLowerCase() &&
-          channel.type === ChannelType.GuildText
-      ) as TextChannel | undefined
-    )?.send({
-      embeds: [
-        {
-          title: `Thread **\`${RequestAssistantStatus[status]}\`**`,
-          description:
-            (this.assistantId ? `Assisted By <@${this.assistantId}>` : "") +
-            `(its took ${moment(thread.createdTimestamp).fromNow(true)})`,
-          color: !this.assistantId ? 12235697 /* Silver */ : 4553134 /* Blue */,
-          fields: [
-            {
-              name: "Thread",
-              value: `<#${this.threadId}>`,
-              inline: true,
-            },
-            {
-              name: "Summoner",
-              value: `<@${this.userId}> (${member?.user.tag ?? ""})`,
-              inline: true,
-            },
-            {
-              name: "Requested At",
-              value: `<t:${Math.round(this.requestedAt.getTime() / 1000)}:F>`,
-              inline: true,
-            },
-            {
-              name: "Language",
-              value: `${this.locale}`,
-              inline: true,
-            },
-            {
-              name: "Survery",
-              value: survery ? "True" : "False",
-              inline: true,
-            },
-            {
-              name: "Closed At",
-              value: `<t:${Math.round(Date.now() / 1000)}:F>`,
-              inline: true,
-            },
-          ],
-        },
-      ],
-    });
-
-    //Update row in database
-    await db.query(
-      "insert into `Assistance.Threads` set status = ?, assistantId = ? where threadId = ?",
-      [status, this.assistantId ?? null, this.id]
-    );
 
     return this;
   }
@@ -408,10 +468,11 @@ export default class RequestAssistant {
 
 export enum RequestAssistantStatus {
   SOLVED = 1, //Summoner issue was solved by assistant
-  INACTIVE, // Summoner was inactive with assistant
+  REQUESTER_INACTIVE, // Summoner was inactive with assistant
+  CLOSED, // Thread was closed for no reason.
+
   ACTIVE, // Thread is active
   SEARCHING, // Waiting for assistant accept summoner
   CANCELED, // Summoner cancel when searching for assistant
   EXPIRED, // Take to long to find assistant
-  CLOSED,
 }

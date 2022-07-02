@@ -11,7 +11,9 @@ import {
 } from "discord.js";
 import CacheManager from "./CacheManager";
 import db from "../providers/Mysql";
-import RequestAssistant from "../structures/RequestAssistant";
+import RequestAssistant, {
+  RequestAssistantStatus,
+} from "../structures/RequestAssistant";
 import app from "../app";
 import User from "../structures/User";
 import Util from "../utils/Util";
@@ -106,7 +108,11 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     cfx.formats.set("locale.name", locale.origin.name);
     return (requestsChannel as TextChannel).send(
       cfx.resolve({
-        ...locale.origin.plugins.requestHumanAssistant.requestCreated.admins,
+        ...Util.addColorToEmbed(
+          locale.origin.plugins.requestHumanAssistant.requestCreated.admins,
+          15710560,
+          0
+        ),
         components: [
           {
             type: ComponentType.ActionRow,
@@ -137,7 +143,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     }
     const [raw] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, unix_timestamp(ts.closedAt) as closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -157,7 +163,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
   ): Promise<RequestAssistant[]> {
     const raw: any[] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.survery, ts.relatedArticleId, ts.requesterInactive, unix_timestamp(ts.closedAt) as closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -174,6 +180,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
   }
 
   private resolve(raw: any): RequestAssistant {
+    console.log(raw);
     const assistanceThread = new RequestAssistant(
       raw.issue,
       raw.userId,
@@ -192,12 +199,19 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     assistanceThread.threadCreatedAt = raw.threadCreatedAt
       ? new Date(Math.round(raw.threadCreatedAt * 1000))
       : null;
-    assistanceThread.closedAt = raw.closedAt
-      ? new Date(Math.round(raw.closedAt * 1000))
-      : raw.cancelledAt
-      ? new Date(Math.round(raw.cancelledAt * 1000))
-      : null;
-    assistanceThread.requesterInactive = !!raw.requesterInactive;
+    assistanceThread.closedAt =
+      typeof raw.closedAt === "number"
+        ? new Date(Math.round(raw.closedAt * 1000))
+        : typeof raw.cancelledAt === "number"
+        ? new Date(Math.round(raw.cancelledAt * 1000))
+        : null;
+    assistanceThread.threadStatusClosed =
+      typeof raw.status == "number" && raw.status > 0
+        ? (raw.status as
+            | RequestAssistantStatus.SOLVED
+            | RequestAssistantStatus.REQUESTER_INACTIVE
+            | RequestAssistantStatus.CLOSED)
+        : null;
     return assistanceThread;
   }
 }
