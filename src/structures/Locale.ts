@@ -1,4 +1,4 @@
-import en_US from "../locales/en_US/en_US.json";
+import en_US from "../locales/en-US/en-US.json";
 import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Locale {

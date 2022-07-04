@@ -17,10 +17,10 @@ export default class User {
   public _patch(data: UserData): void {
     if ("locale" in data)
       this.locale =
-        data.locale == "ar_SA"
-          ? "ar_SA"
-          : data.locale == "en_US"
-          ? "en_US"
+        data.locale == "ar-SA"
+          ? "ar-SA"
+          : data.locale == "en-US"
+          ? "en-US"
           : null;
     if ("flags" in data) this.flags = Number(data.flags);
     if ("createdAt" in data)

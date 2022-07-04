@@ -13,7 +13,7 @@ import fs from "fs";
 import path from "path";
 import Logger from "../utils/Logger";
 import Constants from "../utils/Constants";
-import en_US from "../locales/en_US/en_US.json";
+import en_US from "../locales/en-US/en-US.json";
 import User from "../structures/User";
 
 export default class LocaleManager extends CacheManager<Locale> {
@@ -233,4 +233,4 @@ export default class LocaleManager extends CacheManager<Locale> {
   }
 }
 
-export type LocaleTag = "ar_SA" | "en_US";
+export type LocaleTag = "ar-SA" | "en-US";
