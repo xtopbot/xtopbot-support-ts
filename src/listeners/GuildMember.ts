@@ -1,6 +1,7 @@
 import { GuildMember, PartialGuildMember } from "Discord.js";
 import Logger from "../utils/Logger";
 import Welcomer from "../plugins/Welcomer";
+import AuditLog from "../plugins/AuditLog";
 export default class {
   public static async onAdd(member: GuildMember) {
     await Welcomer.onMemberJoin(member).catch((err: unknown) =>
@@ -14,6 +15,14 @@ export default class {
   }
 
   public static async onRemove(member: GuildMember | PartialGuildMember) {
+    await AuditLog.memberLeft(member).catch((err) =>
+      Logger.trace(
+        err,
+        `[App](Event: onMemberRemove (AuditLog)) Error while execute: ${
+          (err as Error)?.message
+        }`
+      )
+    );
     await Welcomer.onMemberLeave(member).catch((err: unknown) =>
       Logger.error(
         err,
