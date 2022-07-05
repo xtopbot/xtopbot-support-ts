@@ -158,9 +158,13 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
   }
 
   public async fetchUser(
-    user: User,
-    limit: number = 5
+    user: User | string,
+    options?: {
+      limit: number;
+      extraQuery: string;
+    }
   ): Promise<RequestAssistant[]> {
+    const userId = user instanceof User ? user.id : user;
     const raw: any[] = await db.query(
       `
      select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt from
@@ -169,9 +173,9 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         on t.uuid = rha.uuid
       left join \`Request.Human.Assistant.Thread.Status\` ts
         on t.uuid = ts.uuid
-      where rha.userId = ? limit ?;
+      where rha.userId = ? ${options?.extraQuery ?? ""} limit ?;
      `,
-      [user.id, limit]
+      [userId, options?.limit ?? 5]
     );
     if (!raw.length) return [];
     const resolvedRequests = raw.map((r) => this.resolve(r));
@@ -180,7 +184,6 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
   }
 
   private resolve(raw: any): RequestAssistant {
-    console.log(raw);
     const assistanceThread = new RequestAssistant(
       raw.issue,
       raw.userId,

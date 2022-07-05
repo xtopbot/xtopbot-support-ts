@@ -254,7 +254,6 @@ export default class RequestAssistant extends BaseCommand {
         ); // Path of custom id is unreachable
 
       await request.closeThread(reason);
-      dcm.d.message.delete();
       return new Response(ResponseCodes.SUCCESS, {
         content: "**Thread Successfully Closed!**",
       });

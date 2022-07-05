@@ -35,7 +35,7 @@ export default class RequestAssistant {
   public threadCreatedAt: Date | null = null;
   public closedAt: Date | null = null; // may be thread closed or request cancelled
   public assistantId: string | null = null;
-  public spamerUsers = new RatelimitManager<User>(120000, 5);
+  public spammerUsers = new RatelimitManager<User>(120000, 5);
   public threadStatusClosed:
     | RequestAssistantStatus.SOLVED
     | RequestAssistantStatus.REQUESTER_INACTIVE
@@ -383,6 +383,23 @@ export default class RequestAssistant {
       "update `Request.Human.Assistant` set cancelledAt = ? where BIN_TO_UUID(uuid) = ?",
       [this.closedAt, this.id]
     );
+    AuditLog.assistanceThreadClosed(this);
+    this.deleteAssistantControlMessage();
+  }
+
+  private deleteAssistantControlMessage(): void {
+    if (this.assistantRequestsChannelId && this.assistantRequestMessageId)
+      (
+        this.guild.channels.cache.get(this.assistantRequestsChannelId) as
+          | TextChannel
+          | undefined
+      )?.messages
+        .delete(this.assistantRequestMessageId)
+        .catch((rejected) =>
+          Logger.error(
+            `Failed to delete Assistant Request Message (Admin). Error Message: ${rejected.message}`
+          )
+        );
   }
 
   public async closeThread(
@@ -412,18 +429,7 @@ export default class RequestAssistant {
 
     AuditLog.assistanceThreadClosed(this);
 
-    if (this.assistantRequestsChannelId && this.assistantRequestMessageId)
-      (
-        this.guild.channels.cache.get(this.assistantRequestsChannelId) as
-          | TextChannel
-          | undefined
-      )?.messages
-        .delete(this.assistantRequestMessageId)
-        .catch((rejected) =>
-          Logger.error(
-            `Failed to delete Assistant Request Message (Admin). Error Message: ${rejected.message}`
-          )
-        );
+    this.deleteAssistantControlMessage();
 
     const thread = await this.getThread().catch((rejected) => {
       Logger.error(

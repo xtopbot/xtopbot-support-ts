@@ -184,7 +184,7 @@ export default class RequestHumanAssistantPlugin {
         return message.member?.roles.remove(guildAssistants.role);
 
       const cfx = new ContextFormats();
-      const spamer = requestAssistant.spamerUsers.get(user);
+      const spamer = requestAssistant.spammerUsers.get(user);
       cfx.setObject("user", message.author);
       cfx.formats.set("user.tag", message.author.tag);
       if (spamerUserActiveThread && spamerUserActiveThread?.threadId)
