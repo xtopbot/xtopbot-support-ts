@@ -21,16 +21,117 @@ import Util from "../utils/Util";
 
 export default class AuditLogPlugin {
   public static readonly defaultLogChannelNames = {
-    member: "member-log", // Leave & Join & Timeout
+    timeout: "timeout-log", // Timeout
+    member: "member-log", // Leave & Join
     message: "message-log", // Delete & Edit
     rha: "rha-log", // Request Human Assistant (Status)
   };
 
-  public static async memberLeft(member: GuildMember | PartialGuildMember) {
-    const user = await app.users.fetch(member.user, false);
+  public static async timeoutMember(
+    oldMember: GuildMember,
+    newMember: GuildMember
+  ) {
+    const timeoutType: "Add" | "Remove" | null =
+      oldMember.communicationDisabledUntil == null &&
+      newMember.communicationDisabledUntil !== null
+        ? "Add"
+        : oldMember.communicationDisabledUntil !== null &&
+          newMember.communicationDisabledUntil == null
+        ? "Remove"
+        : null;
 
+    if (!timeoutType) return;
+
+    let moderator = (
+      await newMember.guild.fetchAuditLogs({
+        type: AuditLogEvent.MemberUpdate,
+      })
+    )?.entries.find(
+      (entry) =>
+        entry.createdTimestamp > Date.now() - 3000 &&
+        entry.target?.id === newMember.user.id
+    );
+
+    const user = await app.users.fetch(newMember.user, false);
+
+    const log: MessageOptions = {
+      embeds: [
+        {
+          color: 12008772, // Red Color
+          author: {
+            name: `${newMember.user.tag} (${newMember.user.id})`,
+            icon_url: newMember.user.displayAvatarURL({
+              size: 32,
+              extension: "png",
+            }),
+          },
+          title:
+            timeoutType === "Add"
+              ? "Member Timed Out"
+              : "Member Time Out Removed",
+          fields: [
+            {
+              name: "Date Of Join",
+              value: newMember.joinedTimestamp
+                ? `<t:${Math.round(
+                    newMember.joinedTimestamp / 1000
+                  )}:f> (<t:${Math.round(newMember.joinedTimestamp / 1000)}:R>)`
+                : "uncached",
+              inline: true,
+            },
+            {
+              name: "User Account Age",
+              value: `<t:${Math.round(
+                newMember.user.createdTimestamp / 1000
+              )}:f> (<t:${Math.round(
+                newMember.user.createdTimestamp / 1000
+              )}:R>)`,
+              inline: true,
+            },
+            {
+              name: "User Preferred Language",
+              value: user.locale ? user.locale : "None",
+              inline: true,
+            },
+          ],
+        },
+      ],
+    };
+
+    if (timeoutType === "Add") {
+      // @ts-ignore
+      log.embeds[0].fields.push({
+        name: "Duration",
+        value: moment(newMember.communicationDisabledUntil).fromNow(true),
+        inline: true,
+      });
+    }
+
+    if (moderator && moderator.executor) {
+      // @ts-ignore
+      log.embeds[0].fields.push(
+        {
+          name: "Moderator",
+          value: `${moderator.executor.tag} <@${moderator.executor.id}>`,
+          inline: true,
+        },
+        {
+          name: "Reason",
+          value: moderator.reason ?? "",
+          inline: true,
+        }
+      );
+    }
+
+    this.getAuditLogChannels(
+      AuditLogChannelsName.MemberTimeout,
+      newMember.guild
+    )?.send(log);
+  }
+
+  public static async memberLeft(member: GuildMember | PartialGuildMember) {
     (
-      await app.requests.fetchUser(user, {
+      await app.requests.fetchUser(member.user.id, {
         extraQuery: `and rha.guildId = ${member.guild.id}`,
         limit: 5,
       })
@@ -39,7 +140,23 @@ export default class AuditLogPlugin {
         request.cancelRequest();
     }); // Cancel Active Request When the member left the server
 
-    this.getAuditLogChannels(member.guild).memberLogChannel?.send({
+    const user = await app.users.fetch(member.user, false);
+
+    let moderator = (
+      await member.guild.fetchAuditLogs<
+        AuditLogEvent.MemberKick | AuditLogEvent.MemberBanAdd
+      >()
+    )?.entries.find(
+      (entry) =>
+        entry.createdTimestamp > Date.now() - 3000 &&
+        entry.target?.id === member.user.id &&
+        [
+          AuditLogEvent[AuditLogEvent.MemberKick],
+          AuditLogEvent[AuditLogEvent.MemberBanAdd],
+        ].includes(entry.actionType)
+    );
+
+    const log: MessageOptions = {
       embeds: [
         {
           color: 12008772, // Red Color
@@ -62,21 +179,52 @@ export default class AuditLogPlugin {
               inline: true,
             },
             {
-              name: "Account Age",
+              name: "User Account Age",
               value: `<t:${Math.round(
                 member.user.createdTimestamp / 1000
               )}:f> (<t:${Math.round(member.user.createdTimestamp / 1000)}:R>)`,
               inline: true,
             },
             {
-              name: "User Language",
+              name: "User Preferred Language",
               value: user.locale ? user.locale : "None",
               inline: true,
             },
           ],
         },
       ],
-    });
+    };
+
+    if (moderator && moderator.executor) {
+      // @ts-ignore
+      log.embeds[0].fields.push(
+        {
+          name: "Type",
+          value:
+            moderator.actionType === AuditLogEvent[AuditLogEvent.MemberKick]
+              ? "Member Kick"
+              : moderator.actionType ===
+                AuditLogEvent[AuditLogEvent.MemberBanAdd]
+              ? "Member Banned"
+              : "Unknown",
+          inline: true,
+        },
+        {
+          name: "Moderator",
+          value: `${moderator.executor.tag} <@${moderator.executor.id}>`,
+          inline: true,
+        },
+        {
+          name: "Reason",
+          value: moderator.reason ?? "",
+          inline: true,
+        }
+      );
+    }
+
+    this.getAuditLogChannels(AuditLogChannelsName.Member, member.guild)?.send(
+      log
+    );
   }
 
   /*
@@ -89,14 +237,16 @@ export default class AuditLogPlugin {
 
     const isLongerContent =
       message.content.length > 500 || (contentLines && contentLines.length > 6);
-    const auditLog = await message.guild.fetchAuditLogs({
-      type: AuditLogEvent.MessageDelete,
-    });
-    const moderator = auditLog.entries.find(
+
+    const moderator = (
+      await message.guild.fetchAuditLogs({
+        type: AuditLogEvent.MessageDelete,
+      })
+    )?.entries.find(
       (entry) =>
         entry.createdTimestamp > Date.now() - 3000 &&
         entry.target.id === message.author.id
-    )?.executor;
+    );
 
     const log: MessageOptions = {
       embeds: [
@@ -114,7 +264,7 @@ export default class AuditLogPlugin {
               inline: true,
             },
             {
-              name: "User Language",
+              name: "User Preferred Language",
               value: user.locale ? user.locale : "None",
               inline: true,
             },
@@ -132,55 +282,42 @@ export default class AuditLogPlugin {
             },
             {
               name: "Attachments",
-              value: message.attachments.size ?? "None",
+              value:
+                message.attachments.size > 0
+                  ? String(message.attachments.size)
+                  : "None",
               inline: true,
             },
-            (moderator
-              ? {
-                  name: "Moderator",
-                  value: "<@" + moderator.id + ">",
-                  inline: true,
-                }
-              : undefined) as any,
-          ].filter((field) => field),
+          ],
           timestamp: message.createdAt.toISOString(),
         },
       ],
       files: [],
     };
+    if (moderator && moderator.executor) {
+      // @ts-ignore
+      log.embeds[0].fields.push(
+        {
+          name: "Moderator",
+          value: `${moderator.executor.tag} <@${moderator.executor.id}>`,
+          inline: true,
+        },
+        {
+          name: "Reason",
+          value: moderator.reason ?? "",
+          inline: true,
+        }
+      );
+    }
     if (isLongerContent)
       log.files?.push(
         new AttachmentBuilder(Buffer.from(message.content), {
           name: "content.txt",
         })
       );
-    this.getAuditLogChannels(message.guild).messageLogChannel?.send(log);
-  }
-
-  public static getAuditLogChannels(guild: Guild) {
-    return {
-      memberLogChannel:
-        (guild.channels.cache.find(
-          (channel) =>
-            channel.name.toLowerCase() ==
-              this.defaultLogChannelNames.member.toLowerCase() &&
-            channel.type === ChannelType.GuildText
-        ) as TextChannel) ?? null,
-      messageLogChannel:
-        (guild.channels.cache.find(
-          (channel) =>
-            channel.name.toLowerCase() ==
-              this.defaultLogChannelNames.message.toLowerCase() &&
-            channel.type === ChannelType.GuildText
-        ) as TextChannel) ?? null,
-      rhaLogChannel:
-        (guild.channels.cache.find(
-          (channel) =>
-            channel.name.toLowerCase() ==
-              this.defaultLogChannelNames.rha.toLowerCase() &&
-            channel.type === ChannelType.GuildText
-        ) as TextChannel) ?? null,
-    };
+    this.getAuditLogChannels(AuditLogChannelsName.Message, message.guild)?.send(
+      log
+    );
   }
 
   public static async assistanceThreadClosed(
@@ -287,6 +424,26 @@ export default class AuditLogPlugin {
         }
       );
     }
-    this.getAuditLogChannels(guild).rhaLogChannel?.send(message);
+    this.getAuditLogChannels(AuditLogChannelsName.RHA, guild)?.send(message);
   }
+
+  private static getAuditLogChannels(
+    type: AuditLogChannelsName,
+    guild: Guild
+  ): TextChannel | null {
+    return (
+      (guild.channels.cache.find(
+        (channel) =>
+          channel.name.toLowerCase() == type.toLowerCase() &&
+          channel.type === ChannelType.GuildText
+      ) as TextChannel) ?? null
+    );
+  }
+}
+
+enum AuditLogChannelsName {
+  Member = "member-log",
+  MemberTimeout = "timeout-log",
+  Message = "message-log",
+  RHA = "rha-log",
 }
