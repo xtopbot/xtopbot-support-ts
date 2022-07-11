@@ -14,6 +14,7 @@ export default class ListenersHandler {
     );
     client.on("guildMemberAdd", GuildMember.onAdd.bind(this));
     client.on("guildMemberRemove", GuildMember.onRemove.bind(this));
+    client.on("guildMemberUpdate", GuildMember.onUpdate.bind(this));
     client.on("threadMembersUpdate", Thread.onThreadMembersUpdate.bind(this));
     client.on("threadUpdate", Thread.onThreadUpdate.bind(this));
     client.on("ready", () => Ready.onReady(client));

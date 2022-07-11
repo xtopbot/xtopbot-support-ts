@@ -32,4 +32,18 @@ export default class {
       )
     );
   }
+
+  public static async onUpdate(
+    oldMember: GuildMember | PartialGuildMember,
+    newMember: GuildMember
+  ) {
+    await AuditLog.timeoutMember(oldMember, newMember).catch((err) =>
+      Logger.trace(
+        err,
+        `[App](Event: onMemberRemove (AuditLog)) Error while execute: ${
+          (err as Error)?.message
+        }`
+      )
+    );
+  }
 }
