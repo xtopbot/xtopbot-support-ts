@@ -20,15 +20,8 @@ import Logger from "../utils/Logger";
 import Util from "../utils/Util";
 
 export default class AuditLogPlugin {
-  public static readonly defaultLogChannelNames = {
-    timeout: "timeout-log", // Timeout
-    member: "member-log", // Leave & Join
-    message: "message-log", // Delete & Edit
-    rha: "rha-log", // Request Human Assistant (Status)
-  };
-
   public static async timeoutMember(
-    oldMember: GuildMember,
+    oldMember: GuildMember | PartialGuildMember,
     newMember: GuildMember
   ) {
     const timeoutType: "Add" | "Remove" | null =
@@ -57,7 +50,7 @@ export default class AuditLogPlugin {
     const log: MessageOptions = {
       embeds: [
         {
-          color: 12008772, // Red Color
+          color: timeoutType == "Add" ? 12008772 : 15382153,
           author: {
             name: `${newMember.user.tag} (${newMember.user.id})`,
             icon_url: newMember.user.displayAvatarURL({
@@ -71,6 +64,11 @@ export default class AuditLogPlugin {
               : "Member Time Out Removed",
           fields: [
             {
+              name: "User",
+              value: `${newMember.user.tag} <@${newMember.id}>`,
+              inline: true,
+            },
+            {
               name: "Date Of Join",
               value: newMember.joinedTimestamp
                 ? `<t:${Math.round(
@@ -80,17 +78,17 @@ export default class AuditLogPlugin {
               inline: true,
             },
             {
+              name: "User Preferred Language",
+              value: user.locale ? user.locale : "None",
+              inline: true,
+            },
+            {
               name: "User Account Age",
               value: `<t:${Math.round(
                 newMember.user.createdTimestamp / 1000
               )}:f> (<t:${Math.round(
                 newMember.user.createdTimestamp / 1000
               )}:R>)`,
-              inline: true,
-            },
-            {
-              name: "User Preferred Language",
-              value: user.locale ? user.locale : "None",
               inline: true,
             },
           ],
@@ -109,20 +107,17 @@ export default class AuditLogPlugin {
 
     if (moderator && moderator.executor) {
       // @ts-ignore
-      log.embeds[0].fields.push(
-        {
-          name: "Moderator",
-          value: `${moderator.executor.tag} <@${moderator.executor.id}>`,
-          inline: true,
-        },
-        {
-          name: "Reason",
-          value: moderator.reason ?? "",
-          inline: true,
-        }
-      );
+      log.embeds[0].description = moderator.reason ?? "";
+      // @ts-ignore
+      log.embeds[0].fields.push({
+        name: "Moderator",
+        value: `${moderator.executor.tag} <@${moderator.executor.id}>`,
+        inline: true,
+      });
     }
 
+    // @ts-ignore
+    console.log(log.embeds[0]);
     this.getAuditLogChannels(
       AuditLogChannelsName.MemberTimeout,
       newMember.guild
@@ -216,7 +211,7 @@ export default class AuditLogPlugin {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "",
+          value: moderator.reason ?? "\n",
           inline: true,
         }
       );
@@ -304,7 +299,7 @@ export default class AuditLogPlugin {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "",
+          value: moderator.reason ?? "\n",
           inline: true,
         }
       );

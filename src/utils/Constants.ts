@@ -3,7 +3,7 @@ import { LocaleTag } from "../managers/LocaleManager";
 import { UserFlagsPolicy } from "../structures/User";
 
 export default class Constants {
-  public static readonly DEFAULT_LOCALE: LocaleTag = "en_US";
+  public static readonly DEFAULT_LOCALE: LocaleTag = "en-US";
   public static readonly DEFAULT_COMMAND_DISABLEABLE_VALUE: boolean = true;
   public static readonly DEFAULT_COMMAND_DISABLED_VALUE: boolean = false;
   public static readonly REGEX_SNOWFLAKE = /^\d{17,18}$/;
@@ -20,8 +20,7 @@ export default class Constants {
     UserFlagsPolicy.DEVELOPER;
 
   public static readonly DEFAULT_PREFIX: string = "!";
-  public static readonly DEFAULT_NAME_ASSISATANT_REQUEST_LOG_CHANNEL: string =
-    "RHA-Log";
+
   public static readonly CHANNEL_PERMISSIONS: Array<PermissionsString> = [
     "ManageChannels",
     "ViewChannel",
