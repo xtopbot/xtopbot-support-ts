@@ -161,7 +161,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     user: User | string,
     options?: {
       limit: number;
-      extraQuery: string;
+      where: string;
     }
   ): Promise<RequestAssistant[]> {
     const userId = user instanceof User ? user.id : user;
@@ -173,7 +173,9 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         on t.uuid = rha.uuid
       left join \`Request.Human.Assistant.Thread.Status\` ts
         on t.uuid = ts.uuid
-      where rha.userId = ? ${options?.extraQuery ?? ""} limit ?;
+      where rha.userId = ? ${
+        options?.where ? "and " + options.where : ""
+      } limit ?;
      `,
       [userId, options?.limit ?? 5]
     );

@@ -116,8 +116,6 @@ export default class AuditLogPlugin {
       });
     }
 
-    // @ts-ignore
-    console.log(log.embeds[0]);
     this.getAuditLogChannels(
       AuditLogChannelsName.MemberTimeout,
       newMember.guild
@@ -127,7 +125,7 @@ export default class AuditLogPlugin {
   public static async memberLeft(member: GuildMember | PartialGuildMember) {
     (
       await app.requests.fetchUser(member.user.id, {
-        extraQuery: `and rha.guildId = ${member.guild.id}`,
+        where: `rha.guildId = ${member.guild.id}`,
         limit: 5,
       })
     ).map((request) => {
@@ -333,7 +331,7 @@ export default class AuditLogPlugin {
     const endOfThisMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     const requests = await app.requests.fetchUser(requestAssistant.userId, {
       limit: 1000,
-      extraQuery: `time between unix_timestamp(${startOfThisMonth.toISOString()}) and unix_timestamp(${endOfThisMonth.toISOString()})`,
+      where: `unix_timestamp(rha.createdAt) between unix_timestamp("${startOfThisMonth.toISOString()}") and unix_timestamp("${endOfThisMonth.toISOString()}")`,
     });
 
     const message: MessageOptions = {
