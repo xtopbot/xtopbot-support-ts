@@ -8,6 +8,7 @@ import Logger from "./utils/Logger";
 import { version } from "../package.json";
 import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
 import RequestsAssistantManager from "./managers/RequestsAssistantManager";
+import ArticlesManager from "./managers/ArticlesManager";
 dotenv.config();
 
 export default class {
@@ -40,6 +41,7 @@ export default class {
   public static users = new UserManager();
   public static locales = new LocaleManager();
   public static requests = new RequestsAssistantManager(); // Request Assistant
+  public static articles = new ArticlesManager();
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
