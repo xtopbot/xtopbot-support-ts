@@ -4,14 +4,21 @@ import CacheManager from "./CacheManager";
 import Article from "../structures/Article";
 import ArticleLocalization from "../structures/ArticleLocalization";
 import { v4 as uuidv4 } from "uuid";
+import MessageBuilderManager from "./MessageBuilderManager";
 
 export default class ArticlesManager extends CacheManager<Article> {
+  public readonly messages: MessageBuilderManager = new MessageBuilderManager();
   constructor() {
     super();
   }
-
-  public async fetch(id: string, force: boolean): Promise<Article | null> {
-    if (!force) {
+  public async fetch(): Promise<Article[]>;
+  public async fetch(id: string, force: boolean): Promise<Article | null>;
+  public async fetch(
+    id?: string,
+    force?: boolean
+  ): Promise<Article[] | Article | null> {
+    const fetchSingleArticle = !!id;
+    if (fetchSingleArticle && !force) {
       const cachedArticle = this.cache.get(id);
       if (
         cachedArticle &&
@@ -23,48 +30,57 @@ export default class ArticlesManager extends CacheManager<Article> {
     const resolved = this.resolve(
       await db.query(
         `
-    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, al.id as localizationId, al.translatorId, al.title, al.locale, al.messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, alt.articleLocalizationId as tagReferenceLocalizationId
+    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, al.id as localizationId, al.translatorId, al.title, al.locale, al.messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, unix_timestamp(al.updatedAt) as localizationUpdatedTimestampAt, al.published, al.editable, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, alt.articleLocalizationId as tagReferenceLocalizationId
     from \`Article\` a
     left join \`Article.Localization\` al on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
-    where a.id = ?;
+    ${fetchSingleArticle ? "where a.id = UUID_TO_BIN(?);" : ""}
       `,
         [id]
       )
     );
-    if (!resolved.id) return null;
 
-    const article = new Article(
-      resolved.id,
-      resolved.creatorId,
-      resolved.note,
-      resolved.createdAt,
-      "ALL_ARTICLE_LOCALIZATIONS"
-    );
-    resolved.localizations.map((localization) =>
-      article.localizations.set(
-        localization.id,
-        new ArticleLocalization(
-          article,
+    const articles = resolved.map((r) => {
+      let article = new Article(
+        r.id,
+        r.creatorId,
+        r.note,
+        r.createdAt,
+        "ALL_ARTICLE_LOCALIZATIONS"
+      );
+      r.localizations.map((localization) =>
+        article.localizations.set(
           localization.id,
-          localization.translatorId,
-          localization.title,
-          localization.locale as LocaleTag,
-          localization.messageId,
-          localization.createdAt
+          new ArticleLocalization(
+            article,
+            localization.id,
+            localization.translatorId,
+            localization.title,
+            localization.locale as LocaleTag,
+            localization.messageId,
+            localization.createdAt
+          )
         )
-      )
-    );
+      );
+      this._add(article);
+      return article;
+    });
 
-    return this._add(article);
+    if (fetchSingleArticle) {
+      if (!articles.length) return null;
+      return articles[0];
+    }
+
+    return articles;
   }
+
   public async fetchLocalization(
     id: string
   ): Promise<ArticleLocalization | null> {
     const resolved = this.resolve(
       await db.query(
         `
-    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, al.id as localizationId, al.translatorId, al.title, al.locale, al.messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, alt.articleLocalizationId as tagReferenceLocalizationId
+    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, al.id as localizationId, al.translatorId, al.title, al.locale, al.messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, unix_timestamp(al.updatedAt) as localizationUpdatedTimestampAt, al.published, al.editable, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, alt.articleLocalizationId as tagReferenceLocalizationId
     from \`Article.Localization\` al
     right join \`Article\` a on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
@@ -73,10 +89,10 @@ export default class ArticlesManager extends CacheManager<Article> {
         [id]
       )
     );
-    const localization = resolved?.localizations?.at(0);
-    if (!resolved.id || !localization) return null;
+    if (!resolved.length) return null;
+    const localization = resolved[0].localizations[0];
 
-    const cachedArticle = this.cache.get(resolved.id);
+    const cachedArticle = this.cache.get(resolved[0].id);
     if (cachedArticle) {
       const articleLocalization = new ArticleLocalization(
         cachedArticle,
@@ -97,10 +113,10 @@ export default class ArticlesManager extends CacheManager<Article> {
     }
 
     const article = new Article(
-      resolved.id,
-      resolved.creatorId,
-      resolved.note,
-      resolved.createdAt,
+      resolved[0].id,
+      resolved[0].creatorId,
+      resolved[0].note,
+      resolved[0].createdAt,
       "SINGLE_ARTICLE_LOCALIZATIONS"
     );
     const articleLocalization = new ArticleLocalization(
@@ -135,40 +151,55 @@ export default class ArticlesManager extends CacheManager<Article> {
   }
 
   private resolve(raws: any[]) {
-    return {
-      id: raws?.at(0)?.id,
-      note: raws?.at(0)?.note,
-      creatorId: raws?.at(0)?.creatorId,
-      createdAt: new Date(Math.round(raws?.at(0)?.createdTimestampAt * 1000)),
-      localizations: raws
-        ?.filter(
-          (raw, index) =>
-            raws
-              .map((raw) => raw.localizationId)
-              .indexOf(raw.localizationId) === index
-        )
-        .map((raw) => ({
-          id: raw.localizationId,
-          translatorId: raw.translatorId,
-          title: raw.title,
-          locale: raw.locale,
-          messageId: raw.messageId,
-          /*updatedAt: new Date(
-            Math.round(raw.localizationUpdatedTimestampAt * 1000)
-          ),*/
-          createdAt: new Date(
-            Math.round(raw.localizationCreatedTimestampAt * 1000)
-          ),
-          tags: raws
-            .filter((raw2) => raw2.tagReferenceLocalizationId === raw.id)
-            .map((raw2) => ({
-              name: raw2.localizationTagName,
-              creatorId: raw2.localizationTagCreatorId,
-              createdAt: new Date(
-                Math.round(raw2.localizationTagCreatedTimestampAt * 1000)
-              ),
-            })),
-        })),
-    };
+    return raws
+      ?.filter(
+        (raw, index) =>
+          raws.map((raw) => raw.id).indexOf(raw.id) === index && raw.id
+      )
+      .map((article) => ({
+        id: article.id,
+        note: article.note,
+        creatorId: article.creatorId,
+        createdAt: new Date(Math.round(article.createdTimestampAt * 1000)),
+        localizations: raws
+          ?.filter(
+            (raw, index) =>
+              raws
+                .map((raw) => raw.localizationId)
+                .indexOf(raw.localizationId) === index
+          )
+          .map((localization) => ({
+            id: localization.localizationId,
+            translatorId: localization.translatorId,
+            title: localization.title,
+            locale: localization.locale,
+            messageId: localization.messageId,
+            published:
+              typeof localization.published === "boolean"
+                ? localization.published
+                : null,
+            editable:
+              typeof localization.editable === "boolean"
+                ? localization.editable
+                : null,
+            updatedAt: new Date(
+              Math.round(localization.localizationUpdatedTimestampAt * 1000)
+            ),
+            createdAt: new Date(
+              Math.round(localization.localizationCreatedTimestampAt * 1000)
+            ),
+            tags: raws
+              .filter(
+                (tag) => tag.tagReferenceLocalizationId === localization.id
+              )
+              .map((tag) => ({
+                name: tag.localizationTagName,
+                creatorId: tag.localizationTagCreatorId,
+                createdAt: new Date(
+                  Math.round(tag.localizationTagCreatedTimestampAt * 1000)
+                ),
+              })),
+          })),
+      }));
   }
 }

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node ./dist/launch.js",
-    "dev": "nodemon ./src/launch.ts",
+    "dev": "ts-node ./src/launch.ts",
     "build": "tsc -p ."
   },
   "dependencies": {
