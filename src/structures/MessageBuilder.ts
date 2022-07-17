@@ -1,15 +1,22 @@
 import { v4 as uuidv4 } from "uuid";
+import db from "../providers/Mysql";
+import app from "../app";
+import Exception, { Severity } from "../utils/Exception";
 
 export default class MessageBuilder {
   public readonly id: string;
   public content: string | null = null;
   public embeds: AppEmbed<"VIEW">[] = [];
+  public createdAt: Date = new Date();
+  public updatedAt: Date = new Date();
   constructor(
     content: string | null,
     embeds: AppEmbed<"VIEW" | "CREATE">[],
-    id?: string
+    options?: { id: string; createdAt: Date; updatedAt: Date }
   ) {
-    this.id = id ?? uuidv4();
+    this.id = options?.id ?? uuidv4();
+    this.createdAt = options?.createdAt ?? this.createdAt;
+    this.updatedAt = options?.updatedAt ?? this.updatedAt;
     this.embeds.map((embed) => embed.author?.url);
     this._patch({ content, embeds });
   }
@@ -111,8 +118,164 @@ export default class MessageBuilder {
     }));
   }
 
+  public async fetch() {
+    const messageBuilder = await app.articles.messages.fetch(this.id, true);
+    if (!messageBuilder)
+      throw new Exception(
+        "Article Message no longer exists!",
+        Severity.SUSPICIOUS
+      );
+    return app.articles.messages.fetch(this.id, true);
+  }
+
+  public async edit(
+    content: string | null,
+    embeds?: AppEmbed<"EDIT">[]
+  ): Promise<this> {
+    this._patch({ content, embeds: embeds ?? [] });
+
+    await db.query(`update \`Message\` set content = ? where BIN_TO_UUID(?)`, [
+      content,
+      this.id,
+    ]);
+
+    /**
+     * When Message updated old embeds will be deleted. if want to add embeds just need to check if there embed to add or not.
+     */
+    if (embeds && embeds.length > 1) await this.addEmbeds(embeds);
+
+    return this;
+  }
+
+  public async addEmbeds(embeds: AppEmbed<"CREATE" | "EDIT">[]) {
+    await db.query(
+      `insert into \`Message.Embed\` (id, messageId, title, description, url, timestamp, color) values ${embeds.map(
+        (_embed) => `(UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?, ?, ?)`
+      )}`,
+      this.embeds
+        .map((embed) => [
+          embed.id,
+          this.id,
+          embed.title,
+          embed.description,
+          embed.url,
+          embed.timestamp,
+          embed.color,
+        ])
+        .flat()
+    );
+    const authorData = this.embeds
+      .filter((embed) => embed.author !== null)
+      .map((embed) => [
+        embed.id,
+        embed.author?.name ?? null,
+        embed.author?.url ?? null,
+        embed.author?.icon_url ?? null,
+      ])
+      .flat();
+    if (authorData.length)
+      await db.query(
+        `insert into \`Message.Embed.Author\` (embedId, name, url, icon_url) values ${authorData.map(
+          (_embed) => `(UUID_TO_BIN(?), ?, ?, ?)`
+        )}`,
+        authorData
+      );
+
+    const footerData = this.embeds
+      .filter((embed) => embed.footer !== null)
+      .map((embed) => [
+        embed.id,
+        embed.footer?.text ?? null,
+        embed.footer?.icon_url ?? null,
+      ])
+      .flat();
+    if (footerData.length)
+      await db.query(
+        `insert into \`Message.Embed.Footer\` (embedId, text, icon_url) values ${footerData.map(
+          (_embed) => `(UUID_TO_BIN(?), ?, ?)`
+        )}`,
+        footerData
+      );
+
+    const thumbnailData = this.embeds
+      .filter((embed) => embed.thumbnail !== null)
+      .map((embed) => [
+        embed.id,
+        embed.thumbnail?.url ?? null,
+        embed.thumbnail?.height ?? null,
+        embed.thumbnail?.width ?? null,
+      ])
+      .flat();
+    if (thumbnailData.length)
+      await db.query(
+        `insert into \`Message.Embed.Thumbnail\` (embedId, url, height, width) values ${thumbnailData.map(
+          (_embed) => `(UUID_TO_BIN(?), ?, ?, ?)`
+        )}`,
+        thumbnailData
+      );
+
+    const imageData = this.embeds
+      .filter((embed) => embed.image !== null)
+      .map((embed) => [
+        embed.id,
+        embed.image?.url ?? null,
+        embed.image?.height ?? null,
+        embed.image?.width ?? null,
+      ])
+      .flat();
+    if (imageData.length)
+      await db.query(
+        `insert into \`Message.Embed.Image\` (embedId, url, height, width) values ${imageData.map(
+          (_embed) => `(UUID_TO_BIN(?), ?, ?, ?)`
+        )}`,
+        imageData
+      );
+
+    const fieldsData = this.embeds
+      .map((embed) =>
+        embed.fields.map((field) => [
+          embed.id,
+          field.name,
+          field.value,
+          field.inline,
+        ])
+      )
+      .flat(2);
+    if (fieldsData.length)
+      await db.query(
+        `insert into \`Message.Embed.Fields\` (embedId, name, value, inline) values ${fieldsData.map(
+          (_embed) => `(UUID_TO_BIN(?), ?, ?, ?)`
+        )}`,
+        fieldsData
+      );
+  }
+
   public isSendable(): boolean {
-    return true;
+    let sendable = false;
+    if (typeof this.content === "string") sendable = true;
+
+    this.embeds.map((embed) => {
+      if (typeof embed.title === "string" || embed.description === "string")
+        sendable = true;
+
+      if (embed.author?.name === null && typeof embed.author.url === "string")
+        sendable = false;
+      if (
+        embed.footer?.text === null &&
+        typeof embed.footer.icon_url === "string"
+      )
+        sendable = false;
+
+      embed.fields.map((field) => {
+        if (
+          typeof field.name !== "string" ||
+          field.name.length < 1 ||
+          field.name === "\n"
+        )
+          sendable = false;
+      });
+    });
+    return sendable;
   }
 }
 
@@ -159,7 +322,6 @@ type AppEmbedType<T extends "VIEW" | "EDIT" | "CREATE"> = {
     }
   >;
   fields: {
-    id: string;
     name: TypeAppEmbedField<T, string>;
     value: TypeAppEmbedField<T, string>;
     inline: TypeAppEmbedField<T, boolean>;
