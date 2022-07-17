@@ -34,7 +34,7 @@ export default class ArticlesManager extends CacheManager<Article> {
     from \`Article\` a
     left join \`Article.Localization\` al on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
-    ${fetchSingleArticle ? "where a.id = UUID_TO_BIN(?);" : ""}
+    ${fetchSingleArticle ? "where BIN_TO_UUID(a.id) = ?;" : ""}
       `,
         [id]
       )
@@ -84,7 +84,7 @@ export default class ArticlesManager extends CacheManager<Article> {
     from \`Article.Localization\` al
     right join \`Article\` a on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
-    where al.id = UUID_TO_BIN(?);
+    where BIN_TO_UUID(al.id) = ?;
     `,
         [id]
       )
