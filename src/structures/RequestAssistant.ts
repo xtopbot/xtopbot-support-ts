@@ -63,7 +63,6 @@ export default class RequestAssistant {
       ? new Date(Math.round(requestedAt * 1000))
       : this.requestedAt;
     this.id = uuid ?? this.id;
-    console.log("Request UUID: ", this.id);
   }
 
   public getStatus(fetchThread: false): RequestAssistantStatus;
@@ -237,6 +236,7 @@ export default class RequestAssistant {
     ).threads.create({
       name: Util.textEllipsis(this.issue, 100),
       autoArchiveDuration: 60,
+      reason: `Request Assistant Id: ${this.id}`,
       type:
         this.guild.premiumTier >= 2
           ? ChannelType.GuildPrivateThread
@@ -318,11 +318,12 @@ export default class RequestAssistant {
         .edit(
           this.assistantRequestMessageId,
           cfx.resolve({
-            ...Util.addColorToEmbed(
+            ...Util.addFieldToEmbed(
               locale.origin.plugins.requestHumanAssistant
                 .assistantAcceptsRequest.update,
-              1797288,
-              0
+              0,
+              "color",
+              1797288
             ),
             components: [
               {
@@ -369,13 +370,17 @@ export default class RequestAssistant {
           )
         );
 
+    Logger.info(
+      `[RHA: ${this.id} (${this.userId})] Thread Created, ID: ${thread.id}. Accepted By: ${assistant.tag} (${assistant.id})`
+    );
+
     return thread;
   }
 
   public async cancelRequest(): Promise<void> {
     if (this.getStatus(false) !== RequestAssistantStatus.SEARCHING)
       throw new Exception(
-        "Only while searching can the request be canceled",
+        "This request cannot be cancel due to status",
         Severity.COMMON
       );
     this.closedAt = new Date();
@@ -385,6 +390,7 @@ export default class RequestAssistant {
     );
     AuditLog.assistanceThreadClosed(this);
     this.deleteAssistantControlMessage();
+    Logger.info(`[RHA: ${this.id} (${this.userId})] Canceled`);
   }
 
   private deleteAssistantControlMessage(): void {
@@ -412,8 +418,14 @@ export default class RequestAssistant {
       messageToThread?: any;
     }
   ): Promise<this> {
-    if (!this.threadId)
-      throw new Exception("Thread not created yet!", Severity.SUSPICIOUS);
+    if (
+      this.getStatus(false) !== RequestAssistantStatus.CLOSED &&
+      this.getStatus(false) !== RequestAssistantStatus.ACTIVE
+    )
+      throw new Exception(
+        "This request cannot be closed due to status",
+        Severity.SUSPICIOUS
+      );
 
     await db.query(
       "INSERT INTO `Request.Human.Assistant.Thread.Status` (uuid, status, closedAt) values (UUID_TO_BIN(?), ?, ?)",
@@ -430,6 +442,10 @@ export default class RequestAssistant {
     AuditLog.assistanceThreadClosed(this);
 
     this.deleteAssistantControlMessage();
+
+    Logger.info(
+      `[RHA: ${this.id} (${this.userId})] Closed With Reason ${RequestAssistantStatus[status]}`
+    );
 
     const thread = await this.getThread().catch((rejected) => {
       Logger.error(

@@ -8,7 +8,7 @@ import Languages from "../commands/user/Languages";
 import RequestAssistant from "../commands/user/RequestAssistant";
 
 export default class CommandsManager implements CommandsManagerTypes {
-  private readonly commands: Array<BaseCommand>;
+  private declare readonly commands: Array<BaseCommand>;
   constructor() {
     this.commands = [
       new Eval(),

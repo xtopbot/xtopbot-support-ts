@@ -9,9 +9,10 @@ import { version } from "../package.json";
 import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
 import RequestsAssistantManager from "./managers/RequestsAssistantManager";
 import ArticlesManager from "./managers/ArticlesManager";
+import MessageBuilderManager from "./managers/MessageBuilderManager";
 dotenv.config();
 
-export default class {
+export default class App {
   public static version: string = version;
   public static client: Client = new Client({
     intents: [
@@ -37,11 +38,13 @@ export default class {
       /*Partials.Message,*/
     ],
   });
-  public static commands = new ApplicationCommandsManager();
-  public static users = new UserManager();
-  public static locales = new LocaleManager();
-  public static requests = new RequestsAssistantManager(); // Request Assistant
-  public static articles = new ArticlesManager();
+  public static readonly commands = new ApplicationCommandsManager();
+  public static readonly users = new UserManager();
+  public static readonly locales = new LocaleManager();
+  public static readonly requests = new RequestsAssistantManager();
+  public static readonly articles = new ArticlesManager();
+  public static readonly messages = new MessageBuilderManager();
+
   private static _initialize = false;
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
@@ -52,7 +55,7 @@ export default class {
     await mysql.connect();
     this.initialize();
     Logger.info("[Discord] <>Bot connecting...");
-    this.client.login(process.env.DISCORD_BOT_TOKEN);
+    this.client.login(process.env.DISCORD_TEST_BOT_TOKEN);
   }
   public static shutdown(): void {
     this.client.destroy();

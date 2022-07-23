@@ -86,7 +86,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
     );
   }
 
-  public deploy(global: boolean = false): any {
+  public deploy(guildId?: string): any {
     const _acd: Array<ApplicationCommandData> = this.values
       .map((command) => command.applicationCommandData)
       .flat();
@@ -115,10 +115,7 @@ export default class ApplicationCommandsManager extends CommandsManager {
         return _b;
       });
 
-    if (!global)
-      return app.client.guilds.cache
-        .get("884642692980690975")
-        ?.commands.set(acd);
+    if (guildId) return app.client.guilds.cache.get(guildId)?.commands.set(acd);
     return app.client.application?.commands.set(acd);
   }
 }

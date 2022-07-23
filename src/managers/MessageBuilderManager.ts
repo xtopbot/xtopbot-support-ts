@@ -68,7 +68,8 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
       [messageBuilder.id, content ?? null]
     );
 
-    if (embeds && embeds.length > 1) await messageBuilder.addEmbeds(embeds);
+    if (messageBuilder.embeds.length > 1)
+      await messageBuilder.addEmbeds(messageBuilder.embeds);
 
     return messageBuilder;
   }

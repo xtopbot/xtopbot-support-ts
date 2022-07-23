@@ -32,19 +32,20 @@ export default class Util {
     }
   }
 
-  public static addColorToEmbed(
+  public static addFieldToEmbed(
     message: MessageResponse,
-    color: number,
-    embedIndex: number
+    embedIndex: number,
+    name: string,
+    value: any
   ): any {
     const newMessage = { ...message };
-    const embed = newMessage.embeds?.at(embedIndex);
+    const embed = newMessage.embeds?.[embedIndex];
     if (!embed)
       throw new Exception(
         `Index ${embedIndex} embed not found.`,
         Severity.SUSPICIOUS
       );
-    (embed as any).color = color;
+    (embed as any)[name] = value;
     return newMessage;
   }
 }

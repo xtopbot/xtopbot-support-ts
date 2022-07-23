@@ -119,13 +119,13 @@ export default class MessageBuilder {
   }
 
   public async fetch() {
-    const messageBuilder = await app.articles.messages.fetch(this.id, true);
+    const messageBuilder = await app.messages.fetch(this.id, true);
     if (!messageBuilder)
       throw new Exception(
         "Article Message no longer exists!",
         Severity.SUSPICIOUS
       );
-    return app.articles.messages.fetch(this.id, true);
+    return app.messages.fetch(this.id, true);
   }
 
   public async edit(
