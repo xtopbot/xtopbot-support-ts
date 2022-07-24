@@ -6,6 +6,8 @@ import WebhookCreate from "../commands/admin/WebhookCreate";
 import HelpDesk from "../commands/help/Helpdesk";
 import Languages from "../commands/user/Languages";
 import RequestAssistant from "../commands/user/RequestAssistant";
+import ArticleCreate from "../commands/admin/ArticleCreate";
+import ArticleManage from "../commands/admin/ArticleManage";
 
 export default class CommandsManager implements CommandsManagerTypes {
   private declare readonly commands: Array<BaseCommand>;
@@ -18,6 +20,8 @@ export default class CommandsManager implements CommandsManagerTypes {
       new HelpDesk(),
       new Languages(),
       new RequestAssistant(),
+      new ArticleCreate(),
+      new ArticleManage(),
     ];
   }
 

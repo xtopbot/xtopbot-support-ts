@@ -4,10 +4,8 @@ import CacheManager from "./CacheManager";
 import Article from "../structures/Article";
 import ArticleLocalization from "../structures/ArticleLocalization";
 import { v4 as uuidv4 } from "uuid";
-import MessageBuilderManager from "./MessageBuilderManager";
 
 export default class ArticlesManager extends CacheManager<Article> {
-  public readonly messages: MessageBuilderManager = new MessageBuilderManager();
   constructor() {
     super();
   }
@@ -58,7 +56,11 @@ export default class ArticlesManager extends CacheManager<Article> {
             localization.title,
             localization.locale as LocaleTag,
             localization.messageId,
-            localization.createdAt
+            {
+              published: localization.published,
+              editable: localization.editable,
+              createdAt: localization.createdAt,
+            }
           )
         )
       );
@@ -101,7 +103,11 @@ export default class ArticlesManager extends CacheManager<Article> {
         localization.title,
         localization.locale as LocaleTag,
         localization.messageId,
-        localization.createdAt
+        {
+          published: localization.published,
+          editable: localization.editable,
+          createdAt: localization.createdAt,
+        }
       );
       cachedArticle.localizations.delete(articleLocalization.id);
       cachedArticle.localizations.set(
@@ -126,7 +132,11 @@ export default class ArticlesManager extends CacheManager<Article> {
       localization.title,
       localization.locale as LocaleTag,
       localization.messageId,
-      localization.createdAt
+      {
+        published: localization.published,
+        editable: localization.editable,
+        createdAt: localization.createdAt,
+      }
     );
     article.localizations.set(articleLocalization.id, articleLocalization);
 

@@ -115,7 +115,8 @@ export default class ApplicationCommandsManager extends CommandsManager {
         return _b;
       });
 
-    if (guildId) return app.client.guilds.cache.get(guildId)?.commands.set(acd);
+    if (guildId)
+      return app.client.guilds.cache.get(String(guildId))?.commands.set(acd);
     return app.client.application?.commands.set(acd);
   }
 }

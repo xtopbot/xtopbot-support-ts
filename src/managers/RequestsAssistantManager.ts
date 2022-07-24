@@ -108,10 +108,11 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     cfx.formats.set("locale.name", locale.origin.name);
     return (requestsChannel as TextChannel).send(
       cfx.resolve({
-        ...Util.addColorToEmbed(
+        ...Util.addFieldToEmbed(
           locale.origin.plugins.requestHumanAssistant.requestCreated.admins,
-          15710560,
-          0
+          0,
+          "color",
+          15710560
         ),
         components: [
           {

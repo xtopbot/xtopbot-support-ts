@@ -130,7 +130,7 @@ export default class RequestAssistant extends BaseCommand {
         dcm.d.message.delete();
       if (requestStatus !== RequestAssistantStatus.SEARCHING)
         return new Response<MessageResponse>(
-          ResponseCodes.ASSISTANT_REQUEST_NOT_ON_SEARCHIN_STATUS,
+          ResponseCodes.ASSISTANT_REQUEST_NOT_ON_SEARCHING_STATUS,
           {
             content:
               "The request cannot be accepted for one of the following reasons:\n- The request was accepted by you or another assistant\n- The customer canceled the request\n- The request has expired",
@@ -167,7 +167,7 @@ export default class RequestAssistant extends BaseCommand {
             )
           );
         return new Response<MessageResponse>(
-          ResponseCodes.REQUSTER_NOT_ON_SERVER_REQUEST_CANCELED,
+          ResponseCodes.REQUESTER_NOT_ON_SERVER_REQUEST_CANCELED,
           {
             content:
               "The Requester is not currently on the server, the assistant request has been canceled",
@@ -389,7 +389,7 @@ export default class RequestAssistant extends BaseCommand {
         return new Response(
           ResponseCodes.EXCEEDED_LIMIT_FOR_REQUEST_ASSISTANT,
           {
-            ...locale.origin.plugins.requestHumanAssistant.exceededlimitation,
+            ...locale.origin.plugins.requestHumanAssistant.exceededLimitation,
             ephemeral: true,
           },
           Action.REPLY

@@ -24,12 +24,7 @@ export default class Util {
   }
 
   public static stringToJson(value: string): JSON | null {
-    try {
-      const json = JSON.parse(value);
-      return json;
-    } catch (err) {
-      return null;
-    }
+    return JSON.parse(value).catch(() => null);
   }
 
   public static addFieldToEmbed(
@@ -47,6 +42,10 @@ export default class Util {
       );
     (embed as any)[name] = value;
     return newMessage;
+  }
+
+  public static isUUID(value: any): boolean {
+    return typeof value === "string" && value.length === 36;
   }
 }
 

@@ -1,5 +1,6 @@
 {
     "name": "English",
+    "flag": "\uD83C\uDDFA\uD83C\uDDF8",
     "tags": [
         "en",
         "english",
@@ -10,6 +11,72 @@
         "insufficientPermission": {
             "content": "Insufficient permission."
         }
+    },
+    "commands": {
+      "article": {
+          "notFound": {
+              "content": "Article not found."
+          },
+          "manage": {
+            "main": {
+                "embeds": [
+                    {
+                        "title": "Manage Article",
+                        "description": "{{article.note}}",
+                        "fields": [
+                            {
+                                "name": "Available Localizations",
+                                "value": "{{article.localizations}}",
+                                "inline": true
+                            },
+                            {
+                                "name": "Creator",
+                                "value": "<@{{article.creator.id}}>",
+                                "inline": true
+                            },
+                            {
+                                "name": "Created At",
+                                "value": "<t:{{article.createdTimestampAt}}:f>",
+                                "inline": true
+                            },
+                            {
+                                "name": "Info",
+                                "value": "Staff can create localization of your article!"
+                            }
+                        ],
+                        "footer": {
+                            "text": "{{article.id}}"
+                        }
+                    }
+                ],
+                "selectMenu": [
+                    {
+                        "placeholder": "Create/Manage Localizations"
+                    }
+                ],
+                "buttons": ["Edit Note", "Refresh", "Delete"]
+            },
+              "localizations": {
+                  "embeds": [
+                      {
+                          "title": "Manage Article"
+                      }
+                  ]
+              }
+          },
+          "created": {
+              "embeds": [
+                  {
+                      "title": "Article Successfully Created!",
+                      "description": "You can create as many localizations of this article as is available. It is not recommended to create articles with a pre-existing topic.!",
+                      "footer": {
+                          "text": "{{article.id}}"
+                      }
+                  }
+              ],
+              "button": ["Manage"]
+          }
+      }
     },
     "plugins": {
         "pluginRequiredUserLocale": {
@@ -36,7 +103,7 @@
             ]
         },
         "requestHumanAssistant": {
-            "exceededlimitation": {
+            "exceededLimitation": {
                 "content": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!"
             },
             "publicThread": {
@@ -283,6 +350,11 @@
                 "service": {
                     "content": "How satisfied are you with our services?"
                 }
+            }
+        },
+        "article": {
+            "noLongerExists": {
+
             }
         }
     },

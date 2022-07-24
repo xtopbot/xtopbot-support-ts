@@ -11,7 +11,7 @@ export default class Article {
   public readonly creatorId: string;
   public note: string;
   public readonly createdAt: Date;
-  public fetchedType:
+  public declare fetchedType:
     | "SINGLE_ARTICLE_LOCALIZATIONS"
     | "ALL_ARTICLE_LOCALIZATIONS";
   public readonly localizations: Collection<string, ArticleLocalization> =
@@ -58,8 +58,7 @@ export default class Article {
       translatorId,
       title,
       locale,
-      messageId ?? null,
-      new Date()
+      messageId ?? null
     );
 
     this.localizations.set(localization.id, localization);
