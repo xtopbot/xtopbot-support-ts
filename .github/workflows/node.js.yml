@@ -19,7 +19,7 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - name: Run Application
-    - run: npm run dev
+      run: npm run dev
       env:
         DISCORD_TEST_BOT_TOKEN: ${{ secrets.DISCORD_TEST_BOT_TOKEN }}
         MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
