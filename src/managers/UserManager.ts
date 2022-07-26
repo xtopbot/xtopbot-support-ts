@@ -23,7 +23,7 @@ export default class UserManager extends CacheManager<User> {
       "SELECT userId, (flags + 0) as flags, locale, unix_timestamp(createdAt) as createdAt FROM `Users` WHERE userId = ?",
       [user.id]
     );
-    if (!raw.userId) {
+    if (!raw?.userId) {
       await this.create(user);
       return this.fetch(user, true);
     }
