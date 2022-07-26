@@ -52,6 +52,7 @@ export default class App {
     ListenersHandler.handler(this.client);
   }
   public static async launch(): Promise<void> {
+    if (process.argv.find((arg) => arg === "--test")) return this.shutdown();
     await mysql.connect();
     this.initialize();
     Logger.info("[Discord] <>Bot connecting...");
