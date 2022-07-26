@@ -3,7 +3,7 @@
         "incremental": false,
         "target": "es2020",
         "module": "commonjs",
-        "rootDir": "./",
+        "rootDir": "./src",
         "sourceMap": false,
         "outDir": "./dist",
         "removeComments": false,

@@ -4,7 +4,7 @@ import {
   Snowflake,
   ThreadChannel,
   ThreadMember,
-} from "Discord.js";
+} from "discord.js";
 import Logger from "../utils/Logger";
 import RequestHumanAssistantPlugin from "../plugins/RequestHumanAssistant";
 export default class {
