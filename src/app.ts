@@ -11,10 +11,16 @@ import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
 import RequestsAssistantManager from "./managers/RequestsAssistantManager";
 import ArticlesManager from "./managers/ArticlesManager";
 import MessageBuilderManager from "./managers/MessageBuilderManager";
+import childProcess from "child_process";
 dotenv.config();
 
 export default class App {
   public static version: string = version;
+  public static hash: string = childProcess
+    .execSync("git rev-parse HEAD")
+    .toString()
+    .trim();
+  public static safe: boolean = !!process.argv.find((arg) => arg === "--safe");
   public static client: Client = new Client({
     intents: [
       "Guilds",
@@ -63,6 +69,7 @@ export default class App {
         : process.env.DISCORD_BOT_TOKEN
     );
   }
+
   public static shutdown(): void {
     this.client.destroy();
     process.exit();
