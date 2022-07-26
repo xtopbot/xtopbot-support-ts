@@ -5,6 +5,7 @@ import LocaleManager from "./managers/LocaleManager";
 import UserManager from "./managers/UserManager";
 import mysql from "./providers/Mysql";
 import Logger from "./utils/Logger";
+// @ts-ignore
 import { version } from "../package.json";
 import ApplicationCommandsManager from "./managers/ApplicationCommandsManager";
 import RequestsAssistantManager from "./managers/RequestsAssistantManager";
