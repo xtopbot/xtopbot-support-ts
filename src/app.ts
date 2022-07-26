@@ -55,7 +55,11 @@ export default class App {
     await mysql.connect();
     this.initialize();
     Logger.info("[Discord] <>Bot connecting...");
-    this.client.login(process.env.DISCORD_TEST_BOT_TOKEN);
+    this.client.login(
+      process.argv.find((arg) => arg === "--dev")
+        ? process.env.DISCORD_TEST_BOT_TOKEN
+        : process.env.DISCORD_BOT_TOKEN
+    );
   }
   public static shutdown(): void {
     this.client.destroy();
