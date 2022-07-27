@@ -67,6 +67,7 @@ export default class ArticleCreate extends BaseCommand {
 
     return new Response(ResponseCodes.SUCCESS, {
       ...dcm.locale.origin.commands.article.created,
+      ephemeral: true,
       components: [
         {
           type: ComponentType.ActionRow,
@@ -75,7 +76,7 @@ export default class ArticleCreate extends BaseCommand {
               type: ComponentType.Button,
               style: ButtonStyle.Secondary,
               label: dcm.locale.origin.commands.article.created.button[0],
-              customId: `articleManage:${article.id}`,
+              customId: `articleManage:${article.id}:manage`,
             },
           ],
         },

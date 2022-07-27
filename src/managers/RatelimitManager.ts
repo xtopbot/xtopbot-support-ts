@@ -5,6 +5,7 @@ export default class RatelimitManager<T extends { id: string }> {
   public readonly timeWindowInMilliSeconds: number;
   public readonly capacityRate: number;
   private readonly cache: Collection<string, Ratelimit<T>> = new Collection();
+
   constructor(timeWindowInMilliSeconds: number, capacityRate: number) {
     this.timeWindowInMilliSeconds = timeWindowInMilliSeconds;
     this.capacityRate = capacityRate;

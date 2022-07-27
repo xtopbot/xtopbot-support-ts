@@ -12,6 +12,7 @@ export default class ComponentMethod<
 > extends CommandMethod<T> {
   public readonly customIds: string[];
   public path: string = "";
+
   constructor(d: T, command: BaseCommand) {
     super(d, command);
     this.customIds = this.d.customId.split(":");
@@ -23,6 +24,7 @@ export default class ComponentMethod<
       return true;
     return false;
   }
+
   public getValue(value: string, required?: true): string;
   public getValue(value: string, required: false): string | null;
   public getValue(value: string, required: boolean = true): string | null {

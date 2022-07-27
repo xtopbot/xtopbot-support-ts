@@ -5,10 +5,12 @@ import {
   MessageOptions,
   ModalComponentData,
 } from "discord.js";
+
 export default class Response<T extends AnyResponse = AnyResponse> {
   public code: ResponseCodes;
   public message: T;
   public action: ActionResponse<T> | Action;
+
   public constructor(
     code: ResponseCodes,
     message: T,
@@ -37,6 +39,7 @@ type ActionResponse<T extends AnyResponse> = T extends MessageResponse
   : T extends AutocompleteResponse
   ? Action.REPLY
   : never;
+
 /*
 type MessageResponse<T extends CommandMethodTypes> = T extends Message
   ? MessageOptions | null
@@ -75,6 +78,7 @@ export enum Action {
   UPDATE,
   MODAL,
 }
+
 export enum ResponseCodes {
   UNKNOWN = 0,
   UNKNOWN_ARGUMENTS = 1,
@@ -117,4 +121,5 @@ export enum ResponseCodes {
   ONLY_ASSISTANT_WHO_ACCEPT_ASSISTANT_REQUEST_CAN_CLOSED,
   EXCEEDED_LIMIT_FOR_REQUEST_ASSISTANT,
   ARTICLE_NOT_FOUND,
+  NO_ARTICLES_FOUND,
 }

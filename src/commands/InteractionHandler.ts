@@ -15,6 +15,7 @@ import Exception, { Reason, Severity } from "../utils/Exception";
 import CommandHandler from "./CommandHandler";
 import ComponentMethod from "./ComponentMethod";
 import CommandMethod from "./CommandMethod";
+
 export default class InteractionHandler {
   public static process(d: Interaction) {
     const command: BaseCommand | null = this.getCommand(d);

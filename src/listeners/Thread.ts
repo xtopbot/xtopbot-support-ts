@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import Logger from "../utils/Logger";
 import RequestHumanAssistantPlugin from "../plugins/RequestHumanAssistant";
+
 export default class {
   public static async onThreadMembersUpdate(
     addedMembers: Collection<Snowflake, ThreadMember>,

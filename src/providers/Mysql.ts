@@ -2,6 +2,7 @@ import mysql2, { Connection, QueryError } from "mysql2/promise";
 import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
 import * as dotenv from "dotenv";
+
 dotenv.config();
 
 export default class MysqlDatabase {
@@ -14,6 +15,7 @@ export default class MysqlDatabase {
   };
   public static state: MysqlConnectionState;
   private static connection: Connection;
+
   public static async connect(): Promise<void> {
     try {
       this.state = MysqlConnectionState.CONNECTING;
@@ -27,6 +29,7 @@ export default class MysqlDatabase {
       throw console.log(err);
     }
   }
+
   public static get db(): Connection {
     if (this.state !== MysqlConnectionState.CONNECTED)
       throw Error("Cannot use db while not connected.");

@@ -4,20 +4,35 @@ import CacheManager from "./CacheManager";
 import Article from "../structures/Article";
 import ArticleLocalization from "../structures/ArticleLocalization";
 import { v4 as uuidv4 } from "uuid";
+import Util from "../utils/Util";
 
 export default class ArticlesManager extends CacheManager<Article> {
   constructor() {
     super();
   }
+
   public async fetch(): Promise<Article[]>;
-  public async fetch(id: string, force: boolean): Promise<Article | null>;
   public async fetch(
-    id?: string,
+    options?: { userId: string },
+    force?: boolean
+  ): Promise<Article[]>;
+  public async fetch(
+    options?: { id?: string },
+    force?: boolean
+  ): Promise<Article | null>;
+  public async fetch(
+    options?: { id?: string; userId: string },
     force?: boolean
   ): Promise<Article[] | Article | null> {
-    const fetchSingleArticle = !!id;
-    if (fetchSingleArticle && !force) {
-      const cachedArticle = this.cache.get(id);
+    const fetchType: "UserArticles" | "SingleArticle" | "AllArticles" =
+      typeof options?.id === "string"
+        ? "SingleArticle"
+        : typeof options?.userId === "string"
+        ? "UserArticles"
+        : "AllArticles";
+
+    if (fetchType === "SingleArticle" && !force) {
+      const cachedArticle = this.cache.get(options?.id as string);
       if (
         cachedArticle &&
         cachedArticle.fetchedType !== "SINGLE_ARTICLE_LOCALIZATIONS"
@@ -32,9 +47,15 @@ export default class ArticlesManager extends CacheManager<Article> {
     from \`Article\` a
     left join \`Article.Localization\` al on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
-    ${fetchSingleArticle ? "where BIN_TO_UUID(a.id) = ?;" : ""}
+    ${
+      fetchType === "SingleArticle"
+        ? "where BIN_TO_UUID(a.id) = ?;"
+        : fetchType === "UserArticles"
+        ? "where a.creatorId = ?"
+        : ""
+    }
       `,
-        [id]
+        [options?.id ?? options?.userId]
       )
     );
 
@@ -68,7 +89,7 @@ export default class ArticlesManager extends CacheManager<Article> {
       return article;
     });
 
-    if (fetchSingleArticle) {
+    if (fetchType === "SingleArticle") {
       if (!articles.length) return null;
       return articles[0];
     }
@@ -164,7 +185,8 @@ export default class ArticlesManager extends CacheManager<Article> {
     return raws
       ?.filter(
         (raw, index) =>
-          raws.map((raw) => raw.id).indexOf(raw.id) === index && raw.id
+          Util.isUUID(raw.id) &&
+          raws.map((raw) => raw.id).indexOf(raw.id) === index
       )
       .map((article) => ({
         id: article.id,
@@ -174,6 +196,7 @@ export default class ArticlesManager extends CacheManager<Article> {
         localizations: raws
           ?.filter(
             (raw, index) =>
+              Util.isUUID(raw.localizationId) &&
               raws
                 .map((raw) => raw.localizationId)
                 .indexOf(raw.localizationId) === index

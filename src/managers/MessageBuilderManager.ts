@@ -1,6 +1,7 @@
 import db from "../providers/Mysql";
 import CacheManager from "./CacheManager";
 import MessageBuilder, { AppEmbed } from "../structures/MessageBuilder";
+import Util from "../utils/Util";
 
 export default class MessageBuilderManager extends CacheManager<MessageBuilder> {
   constructor() {
@@ -78,7 +79,8 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
     return raws
       ?.filter(
         (raw, index) =>
-          raws.map((raw) => raw.id).indexOf(raw.id) === index && raw.id
+          Util.isUUID(raw.id) &&
+          raws.map((raw) => raw.id).indexOf(raw.id) === index
       )
       .map((message) => ({
         id: message.id,
@@ -88,6 +90,7 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
         embeds: raws
           ?.filter(
             (embed, index) =>
+              Util.isUUID(embed.embedId) &&
               raws.map((raw) => raw.embedId).indexOf(embed.embedId) === index
           )
           .map((embed) => ({

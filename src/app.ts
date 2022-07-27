@@ -12,6 +12,7 @@ import RequestsAssistantManager from "./managers/RequestsAssistantManager";
 import ArticlesManager from "./managers/ArticlesManager";
 import MessageBuilderManager from "./managers/MessageBuilderManager";
 import childProcess from "child_process";
+
 dotenv.config();
 
 export default class App {
@@ -53,11 +54,13 @@ export default class App {
   public static readonly messages = new MessageBuilderManager();
 
   private static _initialize = false;
+
   private static initialize(): void {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
     this._initialize = true;
     ListenersHandler.handler(this.client);
   }
+
   public static async launch(): Promise<void> {
     if (process.argv.find((arg) => arg === "--test")) return this.shutdown();
     await mysql.connect();

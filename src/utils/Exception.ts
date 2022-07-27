@@ -2,10 +2,12 @@ import Response, { Action, MessageResponse, ResponseCodes } from "./Response";
 import { escapeMarkdown } from "discord.js";
 import Logger from "./Logger";
 import { v4 as uuidv4 } from "uuid";
+
 export default class Exception extends Response<MessageResponse> {
   public readonly reason: string | null;
   public readonly severity: Severity;
   public readonly cause?: Error | unknown | null = null;
+
   constructor(message: string, severity: Severity, cause?: Error | unknown) {
     super(
       ResponseCodes.EXCEPTION,

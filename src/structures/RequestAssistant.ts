@@ -45,6 +45,7 @@ export default class RequestAssistant {
   private assistantRequestsChannelId: string | null = null;
   private assistantRequestMessageId: string | null = null;
   private timeoutRequest: NodeJS.Timeout | null = null;
+
   constructor(
     issue: string,
     userId: string,

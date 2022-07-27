@@ -34,9 +34,9 @@ export default class Languages extends BaseCommand {
               type: ApplicationCommandOptionType.String,
               description: "...",
               /*choices: app.locales.cache.map((locale) => ({
-                name: locale.tag,
-                value: locale.tag,
-              })),*/
+                              name: locale.tag,
+                              value: locale.tag,
+                            })),*/
               autocomplete: true,
               required: true,
             },

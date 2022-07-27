@@ -184,6 +184,9 @@ export default class AuditLogPlugin {
               inline: true,
             },
           ],
+          footer: {
+            text: `Member count: ${member.guild.memberCount}`,
+          },
         },
       ],
     };
@@ -221,8 +224,8 @@ export default class AuditLogPlugin {
   }
 
   /*
-    Message Log
-  */
+      Message Log
+    */
   public static async messageDelete(message: Message | PartialMessage) {
     if (!message.inGuild() || message.author.bot || message.partial) return;
     const user = await app.users.fetch(message.author, false);

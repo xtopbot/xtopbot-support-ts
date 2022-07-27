@@ -9,6 +9,7 @@ export default class MessageBuilder {
   public embeds: AppEmbed<"VIEW">[] = [];
   public createdAt: Date = new Date();
   public updatedAt: Date = new Date();
+
   constructor(
     content: string | null,
     embeds: AppEmbed<"VIEW" | "CREATE">[],

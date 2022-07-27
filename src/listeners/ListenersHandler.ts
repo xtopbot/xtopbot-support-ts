@@ -4,6 +4,7 @@ import InteractionCreate from "./InteractionCreate";
 import GuildMember from "./GuildMember";
 import Ready from "./Ready";
 import Thread from "./Thread";
+
 export default class ListenersHandler {
   public static handler(client: Client) {
     client.on("messageCreate", Message.onMessageCreate.bind(this));

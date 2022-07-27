@@ -14,6 +14,7 @@ export default class ArticleLocalization {
   public published: boolean = false; // Default value = false;
   public editable: boolean = true; // Default value = true;
   public readonly createdAt: Date = new Date();
+
   constructor(
     article: Article,
     id: string,

@@ -22,6 +22,7 @@ import { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import Util from "../../utils/Util";
+
 export default class WebhookMessage extends BaseCommand {
   constructor() {
     super({

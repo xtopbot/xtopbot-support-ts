@@ -28,6 +28,7 @@ export default class CommandMethod<T extends CommandMethodTypes> {
   private _user: User | null = null;
   private _member: GuildMember | null = null;
   private _channel: TextChannel | NewsChannel | ThreadChannel | null = null;
+
   constructor(d: T, command: BaseCommand) {
     this.d = d;
     this.command = command;

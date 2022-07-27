@@ -8,6 +8,7 @@ export default class Ratelimit<T extends { id: string }> {
   public rateLimitReached: Date | null = null;
   public blockedEndAt: Date | null = null;
   public blockedCount: number = 0;
+
   constructor(data: T, manager: RatelimitManager<T>) {
     this.data = data;
     this.manager = manager;

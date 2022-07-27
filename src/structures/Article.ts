@@ -16,6 +16,7 @@ export default class Article {
     | "ALL_ARTICLE_LOCALIZATIONS";
   public readonly localizations: Collection<string, ArticleLocalization> =
     new Collection();
+
   constructor(
     id: string,
     creatorId: string,
@@ -66,8 +67,16 @@ export default class Article {
     return localization;
   }
 
+  public async edit(options: { note: string }) {
+    await db.query("update `Article` set note = ? where BIN_TO_UUID(id) = ?", [
+      options.note,
+      this.id,
+    ]);
+    this.note = options.note;
+  }
+
   public async fetch(): Promise<Article> {
-    const article = await app.articles.fetch(this.id, true);
+    const article = await app.articles.fetch({ id: this.id }, true);
     if (!article)
       throw new Exception(
         `\`${this.id}\` Article no longer exists!`,

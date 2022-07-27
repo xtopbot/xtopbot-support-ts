@@ -18,6 +18,7 @@ import User from "../structures/User";
 
 export default class LocaleManager extends CacheManager<Locale> {
   public readonly defaultLocale: string;
+
   constructor(defaultLocale: LocaleTag = Constants.DEFAULT_LOCALE) {
     super();
     this.defaultLocale = defaultLocale;
