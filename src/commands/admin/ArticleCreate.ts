@@ -4,6 +4,8 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   ComponentType,
+  SelectMenuInteraction,
+  TextInputStyle,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Response, {
@@ -12,9 +14,9 @@ import Response, {
   ResponseCodes,
 } from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import CommandMethod from "../CommandMethod";
+import CommandMethod, { AnyMethod } from "../CommandMethod";
 import app from "../../app";
-import ArticleManage from "./ArticleManage";
+import ComponentMethod from "../ComponentMethod";
 
 export default class ArticleCreate extends BaseCommand {
   constructor() {
@@ -53,13 +55,54 @@ export default class ArticleCreate extends BaseCommand {
           ],
         },
       ],
+      messageComponent: (d) => {
+        if (
+          d.matches("articleManage") &&
+          d.d instanceof SelectMenuInteraction &&
+          d.d.values[0] === "create"
+        )
+          return true;
+        return d.matches("articleCreate");
+      },
     });
   }
 
   public async chatInputCommandInteraction(
     dcm: CommandMethod<ChatInputCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void> {
+  ) {
     const note = dcm.d.options.getString("note", true);
+
+    return ArticleCreate.createArticle(dcm, note);
+  }
+
+  public async selectMenuInteraction(
+    dcm: ComponentMethod<SelectMenuInteraction>
+  ) {
+    if (dcm.getKey("manageAll") && dcm.d.values[0] === "create")
+      return ArticleCreate.createArticle(dcm);
+  }
+
+  private static async createArticle(dcm: AnyMethod, note?: string) {
+    if (!note)
+      return new Response(ResponseCodes.ARTICLE_NEED_TO_FILL_NOTE_FIELD, {
+        ...dcm.locale.origin.commands.article.create,
+        customId: "articleCreate:create",
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.TextInput,
+                ...dcm.locale.origin.commands.article.create.textInput[0],
+                style: TextInputStyle.Short,
+                minLength: 3,
+                maxLength: 100,
+                customId: "note",
+              },
+            ],
+          },
+        ],
+      });
 
     const article = await app.articles.create(dcm.user.id, note);
 
@@ -76,7 +119,7 @@ export default class ArticleCreate extends BaseCommand {
               type: ComponentType.Button,
               style: ButtonStyle.Secondary,
               label: dcm.locale.origin.commands.article.created.button[0],
-              customId: `articleManage:${article.id}:manage`,
+              customId: `articleManage:manageSingle:${article.id}`,
             },
           ],
         },

@@ -13,29 +13,43 @@
       "notFound": {
         "single": {
           "content": "Article not found."
-        },
-        "multiple": {
-          "content": "No articles found."
-        },
-        "userArticles": {
-          "content": "No articles of yours were found."
-        },
-        "buttons": ["Create one!"]
+        }
       },
       "manage": {
         "all": {
-          "embed": [
+          "embeds": [
             {
-              "title": "Manage Articles"
+              "title": "Manage Articles",
+              "description": "From here, you can manage all the articles created."
             }
           ],
           "selectMenu": [
             {
-              "placeholder": "Select article to manage it",
-              "options": ["Not localized yet", "Last update"]
+              "placeholder": "Create/Manage article",
+              "options": [
+                {
+                  "label": "{{note}}",
+                  "description": "Not localized yet"
+                },
+                {
+                  "label": "{{note}}",
+                  "description": "Last update {{article.lastUpdate}}"
+                },
+                {
+                  "label": "Create a new article"
+                },
+                {
+                  "label": "Go to previous options",
+                  "description": "{{articles.previous.length}} articles in the previous options"
+                },
+                {
+                  "label": "Go to next options",
+                  "description": "{{articles.next.length}} articles in the next options"
+                }
+              ]
             }
           ],
-          "buttons": ["Back", "Next", "Refresh"]
+          "buttons": ["Refresh", "My Only"]
         },
         "single": {
           "embeds": [
@@ -70,7 +84,7 @@
           ],
           "selectMenu": [
             {
-              "placeholder": "Create/Manage Localizations",
+              "placeholder": "Create/Manage localizations",
               "options": ["Not localized yet", "Last update"]
             }
           ],
@@ -80,7 +94,7 @@
           "title": "{{article.id}} Article Edit Note",
           "textInput": [
             {
-              "name": "Note",
+              "label": "Note",
               "placeholder": "Tell the staff what they need to know about your article"
             }
           ]
@@ -104,6 +118,15 @@
           }
         ],
         "button": ["Manage"]
+      },
+      "create": {
+        "title": "Create Article",
+        "textInput": [
+          {
+            "label": "Note",
+            "placeholder": "Tell the staff what they need to know about your article"
+          }
+        ]
       }
     }
   },
