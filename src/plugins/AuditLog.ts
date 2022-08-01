@@ -209,7 +209,7 @@ export default class AuditLogPlugin {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "\n",
+          value: moderator.reason ?? "None",
           inline: true,
         }
       );
@@ -297,7 +297,7 @@ export default class AuditLogPlugin {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "\n",
+          value: moderator.reason ?? "None",
           inline: true,
         }
       );
