@@ -259,6 +259,8 @@ export default class AuditLog {
     const log: MessageOptions = {
       embeds: [
         {
+          color: 15790320,
+
           title: `Message Updated (${oldMessage.id})`,
           description: `__Old Content__\n ${
             oldMessage.content
@@ -371,6 +373,7 @@ export default class AuditLog {
     const log: MessageOptions = {
       embeds: [
         {
+          color: 1710103,
           title: `Message Deleted (${message.id})`,
           description: message.content
             ? isLongContent
