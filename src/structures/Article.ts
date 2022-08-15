@@ -49,14 +49,22 @@ export default class Article {
 
     const id = uuidv4();
     await db.query(
-      `insert into \`Article.Localization\` (id, articleId, translatorId, title, locale, messageId) values (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?, ?)`,
-      [id, this.id, translatorId, title, locale, messageId ?? null]
+      `insert into \`Article.Localization\` (id, articleId, title, locale, messageId) values (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, ?)`,
+      [id, this.id, title, locale, messageId ?? null]
+    );
+
+    let actions = 1 >> 0; //Create
+    if (title) actions |= 1 >> 1; // Edit title
+    if (messageId) actions |= 1 >> 2; // Edit Message
+
+    await db.query(
+      `replace into \`Article.Localization.Contributor\` (userId, articleLocalizationId, actions) values (?, UUID_TO_BIN(?), ?)`,
+      [translatorId, id, actions]
     );
 
     const localization = new ArticleLocalization(
       this,
       id,
-      translatorId,
       title,
       locale,
       messageId ?? null

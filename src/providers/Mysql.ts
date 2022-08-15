@@ -38,7 +38,7 @@ export default class MysqlDatabase {
 
   public static async query(
     query: string,
-    values?: Array<any>
+    values?: Array<any> | object
   ): Promise<any | Exception> {
     Logger.info(`[Mysql<Query>] ${query} [${values?.toString() ?? ""}]`);
     try {

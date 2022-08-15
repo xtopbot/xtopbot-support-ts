@@ -3,11 +3,12 @@ import Article from "./Article";
 import Exception, { Severity } from "../utils/Exception";
 import app from "../app";
 import db from "../providers/Mysql";
+import mysql2 from "mysql2/promise";
+import Logger from "../utils/Logger";
 
 export default class ArticleLocalization {
   public declare readonly article: Article;
   public readonly id: string;
-  public readonly translatorId: string;
   public readonly locale: LocaleTag;
   public title: string;
   public messageId: string | null;
@@ -18,7 +19,6 @@ export default class ArticleLocalization {
   constructor(
     article: Article,
     id: string,
-    translatorId: string,
     title: string,
     locale: LocaleTag,
     messageId: string | null,
@@ -30,7 +30,6 @@ export default class ArticleLocalization {
   ) {
     this.article = article;
     this.id = id;
-    this.translatorId = translatorId;
     this.title = title;
     this.locale = locale;
     this.messageId = messageId;
@@ -53,32 +52,110 @@ export default class ArticleLocalization {
     return app.messages.fetch(this.messageId, force);
   }
 
-  public async edit(options: {
-    title?: string;
-    published?: boolean;
-    editable?: boolean;
-  }): Promise<this> {
+  public async edit(
+    contributorId: string,
+    options: {
+      title?: string;
+      messageId?: string | null;
+      published?: boolean;
+      editable?: boolean;
+    }
+  ): Promise<this> {
+    let actions = 0;
     if (typeof options.title !== "string") delete options.title;
+    else actions |= ContributorActions.EDIT_TITLE;
+    if (typeof options.messageId !== "string" && options.messageId !== null)
+      delete options.messageId;
+    else actions |= ContributorActions.EDIT_MESSAGE;
     if (typeof options.published !== "boolean") delete options.published;
+    else
+      actions |= options.published
+        ? ContributorActions.PUBLISHED
+        : ContributorActions.UNPUBLISHED;
     if (typeof options.editable !== "boolean") delete options.editable;
 
-    if (!options.title && !options.published && !options.editable)
+    if (
+      typeof options.title === "undefined" &&
+      typeof options.published === "undefined" &&
+      typeof options.editable === "undefined" &&
+      typeof options.messageId === "undefined"
+    )
       throw new Exception(
         "Must have one param to edit Article Localization",
         Severity.SUSPICIOUS
       );
 
-    await db.query(`update \`Article.Localization\` set ? where id = ?`, [
-      options,
-      this.id,
-    ]);
+    const keys = [];
+    const values = [];
+    for (const [key, value] of Object.entries(options)) {
+      keys.push(`${key} = ${key === "messageId" ? "UUID_TO_BIN(?)" : "?"}`);
+      values.push(value);
+    }
+    values.push(this.id);
+
+    await db.query(
+      `update \`Article.Localization\` set ${keys.join(
+        ", "
+      )} where BIN_TO_UUID(id) = ?`,
+      values
+    );
+
+    await this.contributor(contributorId, actions);
 
     if (options.title) this.title = options.title;
+    if (options.messageId) this.title = options.messageId;
     if (options.published) this.published = options.published;
     if (options.editable) this.editable = options.editable;
 
     return this;
   }
 
+  public async contributor(userId: string, actions: number) {
+    await db.query(
+      `insert into \`Article.Localization.Contributor\` (userId, articleLocalizationId, actions) values (?, UUID_TO_BIN(?), ?)`,
+      [userId, this.id, actions]
+    );
+  }
+
+  public async revoke(contributorId: string) {
+    await db.query(
+      "delete from `Article.Localization` where BIN_TO_UUID(id) = ?",
+      [this.id]
+    );
+    await this.contributor(contributorId, ContributorActions.REVOKE);
+
+    if (this.messageId)
+      await db
+        .query("delete from `Message` where BIN_TO_UUID(id) = ?", [
+          this.messageId,
+        ])
+        .catch((err) =>
+          Logger.info(
+            `Trying to delete ${this.messageId} Message but there exception ${err?.message}`
+          )
+        );
+  }
+
+  public async fetchContributors(actions = false): Promise<string[]> {
+    const raws: any[] = await db.query(
+      `select userId from \`Article.Localization.Contributor\` where BIN_TO_UUID(articleLocalizationId) = ? group by userId`,
+      [this.id]
+    );
+    return (
+      raws
+        ?.filter((raw: any) => typeof raw?.userId === "string")
+        .map((raw: any) => raw.userId) ?? []
+    );
+  }
+
   public feedback(userId: string, helpful: boolean) {}
+}
+export enum ContributorActions {
+  NONE = 0,
+  CREATE = 1 << 0,
+  EDIT_TITLE = 1 << 1,
+  EDIT_MESSAGE = 1 << 2,
+  REVOKE = 1 << 3,
+  PUBLISHED = 1 << 4,
+  UNPUBLISHED = 1 << 5,
 }

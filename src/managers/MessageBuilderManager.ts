@@ -27,7 +27,7 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
     const resolved = this.resolve(
       await db.query(
         `
-    select BIN_TO_UUID(m.id) as id, m.content, unix_timestamp(m.createdAt) as createdTimestampAt, unix_timestamp(m.updatedAt) as updatedTimestampAt, me.id as embedId, me.title, me.description, me.timestamp, me.url, mea.name as authorName, mea.url as authorUrl, mea.icon_url as authorIconUrl, met.url as thumbnailUrl, met.height as thumbnailHeight, met.width as thumbnailWidth, mef.text as footerText, mef.icon_url as footerIconUrl, mei.url as imageUrl, mei.height as imageHeight, mei.width as imageWidth, mefs.name as fieldName, mefs.value as fieldValue, mefs.inline as fieldInline
+    select BIN_TO_UUID(m.id) as id, m.content, unix_timestamp(m.createdAt) as createdTimestampAt, unix_timestamp(m.updatedAt) as updatedTimestampAt, BIN_TO_UUID(me.id) as embedId, me.title, me.description, me.timestamp, me.url, mea.name as authorName, mea.url as authorUrl, mea.icon_url as authorIconUrl, met.url as thumbnailUrl, met.height as thumbnailHeight, met.width as thumbnailWidth, mef.text as footerText, mef.icon_url as footerIconUrl, mei.url as imageUrl, mei.height as imageHeight, mei.width as imageWidth, mefs.name as fieldName, mefs.value as fieldValue, mefs.inline as fieldInline
     from \`Message\` m
     left join \`Message.Embed\` me on me.messageId = m.id
     left join \`Message.Embed.Author\` mea on mea.embedId = me.id
@@ -69,7 +69,7 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
       [messageBuilder.id, content ?? null]
     );
 
-    if (messageBuilder.embeds.length > 1)
+    if (messageBuilder.embeds.length >= 1)
       await messageBuilder.addEmbeds(messageBuilder.embeds);
 
     return messageBuilder;

@@ -8,14 +8,110 @@
       "content": "Insufficient permission."
     }
   },
+  "article": {
+    "embeds": [
+      {
+        "title": "{{article.localization.title}}",
+        "description": "{{article.localization.description}}"
+      }
+    ],
+    "buttons": ["Did this article resolve the issue?", "Yes", "No"]
+  },
   "commands": {
     "article": {
       "notFound": {
         "single": {
           "content": "Article not found."
+        },
+        "localization": {
+          "content": "Sorry, I could not find the article localization of `{{article.localization.id}}`"
         }
       },
       "manage": {
+        "localization": {
+          "revoke": {
+            "embeds": [
+              {
+                "title": "Article {{article.localization.tag}} Localization Revoked",
+                "description": "This article localization related to {{article.id}} article",
+                "footer": {
+                  "text": "{{article.localization.id}}"
+                }
+              }
+            ]
+          },
+          "embeds": [
+            {
+              "title": "Manage localization for {{article.localization.tag}} article",
+              "fields": [
+                {
+                  "name": "Locale",
+                  "value": "{{article.localization.tag}}",
+                  "inline": true
+                },
+                {
+                  "name": "Contributors",
+                  "value": "{{article.localization.contributors.mention}}",
+                  "inline": true
+                },
+                {
+                  "name": "Last Updated",
+                  "value": "<t:{{article.localization.lastUpdatedTimestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "Related to",
+                  "value": "{{article.note}} ({{article.id}})",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "{{article.localization.id}}"
+              }
+            }
+          ],
+          "buttons": [
+            "Back to main article",
+            "Edit message",
+            "Revoke",
+            "Publish",
+            "Published"
+          ],
+          "extra": ["(Preview Mode)"],
+          "modal": [
+            {
+              "title": "Edit localization message for {{article.localization.tag}} article",
+              "textInput": [
+                {
+                  "label": "Title",
+                  "placeholder": "What is this article about?"
+                },
+                {
+                  "label": "Description",
+                  "placeholder": "What should customers know about this article?"
+                }
+              ]
+            },
+            {
+              "title": "Add a tag to localization for {{article.localization.tag}} article",
+              "textInput": [
+                {
+                  "label": "Tag",
+                  "placeholder": "What tags are appropriate for this article to help customers find the article faster?"
+                }
+              ]
+            },
+            {
+              "title": "Create a localization for {{locale.tag}} article",
+              "textInput": [
+                {
+                  "label": "Title",
+                  "placeholder": "What is this article about?"
+                }
+              ]
+            }
+          ]
+        },
         "all": {
           "embeds": [
             {
@@ -96,13 +192,6 @@
             {
               "label": "Note",
               "placeholder": "Tell the staff what they need to know about your article"
-            }
-          ]
-        },
-        "localizations": {
-          "embeds": [
-            {
-              "title": "Manage Article"
             }
           ]
         }
