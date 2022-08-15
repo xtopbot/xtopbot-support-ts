@@ -9,6 +9,7 @@ export default class ListenersHandler {
   public static handler(client: Client) {
     client.on("messageCreate", Message.onMessageCreate.bind(this));
     client.on("messageDelete", Message.onMessageDelete.bind(this));
+    client.on("messageUpdate", Message.onMessageUpdate.bind(this));
     client.on(
       "interactionCreate",
       InteractionCreate.onInteractionCreate.bind(this)

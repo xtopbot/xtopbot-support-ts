@@ -19,7 +19,7 @@ import RequestAssistant, {
 import Logger from "../utils/Logger";
 import Util from "../utils/Util";
 
-export default class AuditLogPlugin {
+export default class AuditLog {
   public static async timeoutMember(
     oldMember: GuildMember | PartialGuildMember,
     newMember: GuildMember
@@ -226,13 +226,127 @@ export default class AuditLogPlugin {
   /*
       Message Log
     */
+  public static async onMessageUpdate(
+    oldMessage: Message | PartialMessage,
+    newMessage: Message | PartialMessage
+  ) {
+    if (
+      !oldMessage.inGuild() ||
+      oldMessage.author.bot ||
+      oldMessage.partial ||
+      newMessage.partial
+    )
+      return;
+    const user = await app.users.fetch(oldMessage.author, false);
+
+    const isOldContentLong = AuditLog.checkContentCondition(oldMessage.content);
+    const isNewContentLong = AuditLog.checkContentCondition(newMessage.content);
+
+    const removedAttachments = oldMessage.attachments.difference(
+      newMessage.attachments
+    );
+
+    const embedRemovedAttachments =
+      removedAttachments
+        .map((attach) => `[${attach.name ?? "Unknown"}](${attach.url})`)
+        .join(", ") + " (Usually media links expire within 24 hours)";
+    const isTxtRemovedAttachments = embedRemovedAttachments.length > 1024;
+    const txtRemovedAttachments =
+      removedAttachments
+        .map((attach) => `${attach.name ?? "Unknown"} | ${attach.url}`)
+        .join("\n") + `\n  (Usually media links expire within 24 hours)`;
+
+    const log: MessageOptions = {
+      embeds: [
+        {
+          title: `Message Updated (${oldMessage.id})`,
+          description: `__Old Content__\n ${
+            oldMessage.content
+              ? isOldContentLong
+                ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
+                : escapeMarkdown(oldMessage.content)
+              : "**`No content`**"
+          }\n\n __New Content__\n${
+            newMessage.content
+              ? isOldContentLong
+                ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
+                : escapeMarkdown(newMessage.content)
+              : "**`No content`**"
+          }`,
+          fields: [
+            {
+              name: "User",
+              value: `${oldMessage.author.tag} <@${user.id}>`,
+              inline: true,
+            },
+            {
+              name: "User Preferred Language",
+              value: user.locale ? user.locale : "None",
+              inline: true,
+            },
+            {
+              name: "User Account Age",
+              value: `<t:${Math.round(
+                oldMessage.author.createdTimestamp / 1000
+              )}:f>`,
+              inline: true,
+            },
+            {
+              name: "Channel",
+              value: `<#${oldMessage.channel.id}>`,
+              inline: true,
+            },
+            {
+              name: `Removed Attachments \`${removedAttachments.size}\``,
+              value:
+                embedRemovedAttachments.length > 1
+                  ? isTxtRemovedAttachments
+                    ? "`Attached in txt format`"
+                    : embedRemovedAttachments
+                  : "None",
+              inline: true,
+            },
+          ],
+          timestamp: oldMessage.createdAt.toISOString(),
+        },
+      ],
+      files: [],
+    };
+    if (isOldContentLong)
+      log.files?.push(
+        new AttachmentBuilder(Buffer.from(oldMessage.content), {
+          name: "old.txt",
+        })
+      );
+    if (isNewContentLong)
+      log.files?.push(
+        new AttachmentBuilder(Buffer.from(newMessage.content), {
+          name: "new.txt",
+        })
+      );
+    if (isTxtRemovedAttachments)
+      log.files?.push(
+        new AttachmentBuilder(Buffer.from(txtRemovedAttachments), {
+          name: "removedAttachments.txt",
+        })
+      );
+    this.getAuditLogChannels(
+      AuditLogChannelsName.Message,
+      oldMessage.guild
+    )?.send(log);
+  }
+
+  public static checkContentCondition(content: string) {
+    const contentLines = content.match(/\n/g);
+
+    return content.length > 500 || (contentLines && contentLines.length > 6);
+  }
+
   public static async messageDelete(message: Message | PartialMessage) {
     if (!message.inGuild() || message.author.bot || message.partial) return;
     const user = await app.users.fetch(message.author, false);
-    const contentLines = message.content.match(/\n/g);
 
-    const isLongerContent =
-      message.content.length > 500 || (contentLines && contentLines.length > 6);
+    const isLongContent = AuditLog.checkContentCondition(message.content);
 
     const moderator = (
       await message.guild.fetchAuditLogs({
@@ -244,12 +358,22 @@ export default class AuditLogPlugin {
         entry.target.id === message.author.id
     );
 
+    const embedAttachments =
+      message.attachments
+        .map((attach) => `[${attach.name ?? "Unknown"}](${attach.url})`)
+        .join(", ") + " (Usually media links expire within 24 hours)";
+    const isTxtAttachments = embedAttachments.length > 1024;
+    const txtAttachments =
+      message.attachments
+        .map((attach) => `${attach.name ?? "Unknown"} | ${attach.url}`)
+        .join("\n") + `\n  (Usually media links expire within 24 hours)`;
+
     const log: MessageOptions = {
       embeds: [
         {
           title: `Message Deleted (${message.id})`,
           description: message.content
-            ? isLongerContent
+            ? isLongContent
               ? "**`Message content length > 500 or lines > 6, was attached in txt format`**"
               : escapeMarkdown(message.content)
             : "**`No content`**",
@@ -277,10 +401,12 @@ export default class AuditLogPlugin {
               inline: true,
             },
             {
-              name: "Attachments",
+              name: `Attachments \`${message.attachments.size}\``,
               value:
-                message.attachments.size > 0
-                  ? String(message.attachments.size)
+                embedAttachments.length > 1
+                  ? isTxtAttachments
+                    ? "`Attached in txt format`"
+                    : embedAttachments
                   : "None",
               inline: true,
             },
@@ -305,7 +431,7 @@ export default class AuditLogPlugin {
         }
       );
     }
-    if (isLongerContent)
+    if (isLongContent)
       log.files?.push(
         new AttachmentBuilder(Buffer.from(message.content), {
           name: "content.txt",
