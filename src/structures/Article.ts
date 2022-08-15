@@ -67,6 +67,7 @@ export default class Article {
       id,
       title,
       locale,
+      [],
       messageId ?? null
     );
 
