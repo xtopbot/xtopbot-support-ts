@@ -216,8 +216,6 @@ export default class ArticleManage extends BaseCommand {
         const message = articleLocalization.messageId
           ? await app.messages.fetch(articleLocalization.messageId, true)
           : null;
-        console.log("Message Id", articleLocalization.messageId);
-        console.log("Message Data", message);
         return new Response(
           ResponseCodes.SUCCESS,
           {
@@ -392,7 +390,6 @@ export default class ArticleManage extends BaseCommand {
           ]);
         }
 
-        console.log("Message created: ", message);
         await articleLocalization.edit(dcm.user.id, {
           title: title,
           messageId: message?.id ?? null,
@@ -440,12 +437,28 @@ export default class ArticleManage extends BaseCommand {
         )
       )
     );
+    console.log(articleLocalization);
     dcm.cf.formats.set("article.note", articleLocalization.article.note);
     dcm.cf.formats.set("article.id", articleLocalization.article.id);
+    dcm.cf.formats.set("article.localization.title", articleLocalization.title);
+    dcm.cf.formats.set(
+      "article.localization.description",
+      message?.embeds[0].description ?? ""
+    );
     return new Response(
       ResponseCodes.SUCCESS,
       {
         ...dcm.locale.origin.commands.article.manage.localization,
+        embeds:
+          dcm.locale.origin.commands.article.manage.localization.embeds.concat([
+            {
+              author: {
+                name: dcm.locale.origin.commands.article.manage.localization
+                  .extra[0],
+              },
+              ...dcm.locale.origin.article.embeds[0],
+            } as any,
+          ]),
         components: [
           {
             type: ComponentType.ActionRow,
@@ -508,7 +521,6 @@ export default class ArticleManage extends BaseCommand {
       ? await app.articles.fetch({ userId: dcm.user.id }, false)
       : await app.articles.fetch();
 
-    console.log(articles);
     const selectMenuOptions = [];
 
     const selectedPage =
@@ -579,7 +591,6 @@ export default class ArticleManage extends BaseCommand {
       },
       value: "create",
     }); // Create Article Option
-    console.log(selectMenuOptions);
 
     return new Response(
       ResponseCodes.SUCCESS,
