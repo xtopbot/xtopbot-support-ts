@@ -4,17 +4,17 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   ComponentType,
+  ModalSubmitInteraction,
+  SelectMenuInteraction,
+  TextInputStyle,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
-import Response, {
-  MessageResponse,
-  ModalResponse,
-  ResponseCodes,
-} from "../../utils/Response";
+import Response, { Action, ResponseCodes } from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import CommandMethod from "../CommandMethod";
+import CommandMethod, { AnyMethod } from "../CommandMethod";
 import app from "../../app";
-import ArticleManage from "./ArticleManage";
+import ComponentMethod from "../ComponentMethod";
+import Exception, { Severity } from "../../utils/Exception";
 
 export default class ArticleCreate extends BaseCommand {
   constructor() {
@@ -53,13 +53,68 @@ export default class ArticleCreate extends BaseCommand {
           ],
         },
       ],
+      messageComponent: (d) => {
+        if (
+          d.matches("articleManage") &&
+          d.d instanceof SelectMenuInteraction &&
+          d.d.values[0] === "create"
+        )
+          return true;
+        return d.matches("articleCreate");
+      },
     });
   }
 
   public async chatInputCommandInteraction(
     dcm: CommandMethod<ChatInputCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void> {
+  ) {
     const note = dcm.d.options.getString("note", true);
+
+    return ArticleCreate.createArticle(dcm, note);
+  }
+
+  public async selectMenuInteraction(
+    dcm: ComponentMethod<SelectMenuInteraction>
+  ) {
+    console.log(dcm.d.values);
+    if (dcm.getKey("manageAll") && dcm.d.values[0] === "create")
+      return new Response(
+        ResponseCodes.ARTICLE_NEED_TO_FILL_NOTE_FIELD,
+        {
+          ...dcm.locale.origin.commands.article.create,
+          customId: "articleCreate:create",
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.TextInput,
+                  ...dcm.locale.origin.commands.article.create.textInput[0],
+                  style: TextInputStyle.Short,
+                  minLength: 3,
+                  maxLength: 100,
+                  customId: "note",
+                },
+              ],
+            },
+          ],
+        },
+        Action.MODAL
+      );
+  }
+
+  public async modalSubmitInteraction(
+    dcm: ComponentMethod<ModalSubmitInteraction>
+  ) {
+    if (dcm.getKey("create")) {
+      const note = dcm.d.fields.getTextInputValue("note");
+      return ArticleCreate.createArticle(dcm, note);
+    }
+  }
+
+  private static async createArticle(dcm: AnyMethod, note: string) {
+    if (typeof note !== "string" || note.length <= 3)
+      throw new Exception("Note must be String and length > 3", Severity.FAULT);
 
     const article = await app.articles.create(dcm.user.id, note);
 
@@ -67,6 +122,7 @@ export default class ArticleCreate extends BaseCommand {
 
     return new Response(ResponseCodes.SUCCESS, {
       ...dcm.locale.origin.commands.article.created,
+      ephemeral: true,
       components: [
         {
           type: ComponentType.ActionRow,
@@ -75,7 +131,7 @@ export default class ArticleCreate extends BaseCommand {
               type: ComponentType.Button,
               style: ButtonStyle.Secondary,
               label: dcm.locale.origin.commands.article.created.button[0],
-              customId: `articleManage:${article.id}`,
+              customId: `articleManage:manageSingle:${article.id}`,
             },
           ],
         },

@@ -3,6 +3,7 @@ import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Locale {
   public _data;
+
   constructor(data: any) {
     this._data = data;
   }

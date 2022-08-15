@@ -2,6 +2,7 @@ import { GuildMember, PartialGuildMember } from "discord.js";
 import Logger from "../utils/Logger";
 import Welcomer from "../plugins/Welcomer";
 import AuditLog from "../plugins/AuditLog";
+
 export default class {
   public static async onAdd(member: GuildMember) {
     await Welcomer.onMemberJoin(member).catch((err: unknown) =>

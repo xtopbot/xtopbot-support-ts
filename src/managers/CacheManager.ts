@@ -2,6 +2,7 @@ import { Collection } from "discord.js";
 
 export default class CacheManager<T extends CacheMangerType> {
   public cache: Collection<string, T>;
+
   protected constructor() {
     this.cache = new Collection();
     //setInterval(() => this._cache.clear(), 60 * 60 * 1000); // 1hour;
@@ -17,7 +18,9 @@ export default class CacheManager<T extends CacheMangerType> {
     return data;
   }
 }
+
 interface CacheMangerType {
   id: string;
+
   _patch?(data: any): void;
 }

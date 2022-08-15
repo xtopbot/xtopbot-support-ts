@@ -21,6 +21,7 @@ import Locale from "../structures/Locale";
 import Exception, { Severity } from "../utils/Exception";
 import ContextFormats from "../utils/ContextFormats";
 import Constants from "../utils/Constants";
+
 export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
   constructor() {
     super();
@@ -63,6 +64,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     );
     return this._add(req);
   }
+
   private async sendMessageIntoRequestsChannel(
     req: RequestAssistant,
     guild: Guild,

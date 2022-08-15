@@ -11,7 +11,7 @@ export default class ComponentMethod<
   T extends AnyComponentInteraction
 > extends CommandMethod<T> {
   public readonly customIds: string[];
-  public path: string = "";
+
   constructor(d: T, command: BaseCommand) {
     super(d, command);
     this.customIds = this.d.customId.split(":");
@@ -19,10 +19,9 @@ export default class ComponentMethod<
 
   public matches(value: string): boolean {
     const customIdAt0 = this.customIds?.at(0);
-    if (customIdAt0 === value || customIdAt0 === value.substring(0, 4))
-      return true;
-    return false;
+    return customIdAt0 === value || customIdAt0 === value.substring(0, 4);
   }
+
   public getValue(value: string, required?: true): string;
   public getValue(value: string, required: false): string | null;
   public getValue(value: string, required: boolean = true): string | null {

@@ -54,9 +54,9 @@ export default class HelpDesk extends BaseCommand {
     id: number
   ) {
     /*const article = dcm.locale.origin.helpdesk.articles.find(
-      (article) => article.id == id
-    );
-    if (!article) throw new Exception("Article not found", Severity.FAULT);
-    return article;*/
+          (article) => article.id == id
+        );
+        if (!article) throw new Exception("Article not found", Severity.FAULT);
+        return article;*/
   }
 }

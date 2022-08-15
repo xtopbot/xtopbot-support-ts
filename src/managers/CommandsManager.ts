@@ -11,6 +11,7 @@ import ArticleManage from "../commands/admin/ArticleManage";
 
 export default class CommandsManager implements CommandsManagerTypes {
   private declare readonly commands: Array<BaseCommand>;
+
   constructor() {
     this.commands = [
       new Eval(),

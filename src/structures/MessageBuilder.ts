@@ -9,6 +9,7 @@ export default class MessageBuilder {
   public embeds: AppEmbed<"VIEW">[] = [];
   public createdAt: Date = new Date();
   public updatedAt: Date = new Date();
+
   constructor(
     content: string | null,
     embeds: AppEmbed<"VIEW" | "CREATE">[],
@@ -134,15 +135,19 @@ export default class MessageBuilder {
   ): Promise<this> {
     this._patch({ content, embeds: embeds ?? [] });
 
-    await db.query(`update \`Message\` set content = ? where BIN_TO_UUID(?)`, [
-      content,
-      this.id,
-    ]);
+    await db.query(
+      `update \`Message\` set content = ? where BIN_TO_UUID(id) = ?`,
+      [content, this.id]
+    );
 
     /**
-     * When Message updated old embeds will be deleted. if want to add embeds just need to check if there embed to add or not.
+     * When Message updated old embeds will be deleted. if you want to add embeds just need to check if there embed to add or not.
      */
-    if (embeds && embeds.length > 1) await this.addEmbeds(embeds);
+    await db.query(
+      `delete from \`Message.Embed\` where BIN_TO_UUID(messageId) = ?`,
+      [this.id]
+    );
+    if (embeds && embeds.length >= 1) await this.addEmbeds(embeds);
 
     return this;
   }
@@ -280,6 +285,8 @@ export default class MessageBuilder {
 }
 
 export type AppEmbed<T extends "VIEW" | "EDIT" | "CREATE"> = T extends "CREATE"
+  ? Partial<AppEmbedType<T>>
+  : T extends "EDIT"
   ? Partial<AppEmbedType<T>>
   : AppEmbedType<T>;
 

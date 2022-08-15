@@ -6,6 +6,7 @@ import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
 
 export default class CommandRequirementsHandler {
   private readonly dcm: CommandMethod<CommandMethodTypes>;
+
   public constructor(dcm: CommandMethod<CommandMethodTypes>) {
     this.dcm = dcm;
   }

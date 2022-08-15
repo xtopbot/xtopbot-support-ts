@@ -1,390 +1,519 @@
 {
-    "name": "English",
-    "flag": "\uD83C\uDDFA\uD83C\uDDF8",
-    "tags": [
-        "en",
-        "english",
-        "us-english"
+  "name": "English",
+  "flag": "\uD83C\uDDFA\uD83C\uDDF8",
+  "tags": ["en", "english", "us-english"],
+  "roleName": "English",
+  "requirement": {
+    "insufficientPermission": {
+      "content": "Insufficient permission."
+    }
+  },
+  "article": {
+    "embeds": [
+      {
+        "title": "{{article.localization.title}}",
+        "description": "{{article.localization.description}}"
+      }
     ],
-    "roleName": "English",
-    "requirement": {
-        "insufficientPermission": {
-            "content": "Insufficient permission."
+    "buttons": ["Did this article resolve the issue?", "Yes", "No"]
+  },
+  "commands": {
+    "article": {
+      "notFound": {
+        "single": {
+          "content": "Article not found."
+        },
+        "localization": {
+          "content": "Sorry, I could not find the article localization of `{{article.localization.id}}`"
         }
-    },
-    "commands": {
-      "article": {
-          "notFound": {
-              "content": "Article not found."
-          },
-          "manage": {
-            "main": {
-                "embeds": [
-                    {
-                        "title": "Manage Article",
-                        "description": "{{article.note}}",
-                        "fields": [
-                            {
-                                "name": "Available Localizations",
-                                "value": "{{article.localizations}}",
-                                "inline": true
-                            },
-                            {
-                                "name": "Creator",
-                                "value": "<@{{article.creator.id}}>",
-                                "inline": true
-                            },
-                            {
-                                "name": "Created At",
-                                "value": "<t:{{article.createdTimestampAt}}:f>",
-                                "inline": true
-                            },
-                            {
-                                "name": "Info",
-                                "value": "Staff can create localization of your article!"
-                            }
-                        ],
-                        "footer": {
-                            "text": "{{article.id}}"
-                        }
-                    }
-                ],
-                "selectMenu": [
-                    {
-                        "placeholder": "Create/Manage Localizations"
-                    }
-                ],
-                "buttons": ["Edit Note", "Refresh", "Delete"]
-            },
-              "localizations": {
-                  "embeds": [
-                      {
-                          "title": "Manage Article"
-                      }
-                  ]
+      },
+      "manage": {
+        "localization": {
+          "revoke": {
+            "embeds": [
+              {
+                "title": "Article {{article.localization.tag}} Localization Revoked",
+                "description": "This article localization related to {{article.id}} article",
+                "footer": {
+                  "text": "{{article.localization.id}}"
+                }
               }
+            ]
           },
-          "created": {
-              "embeds": [
-                  {
-                      "title": "Article Successfully Created!",
-                      "description": "You can create as many localizations of this article as is available. It is not recommended to create articles with a pre-existing topic.!",
-                      "footer": {
-                          "text": "{{article.id}}"
-                      }
-                  }
+          "embeds": [
+            {
+              "title": "Manage localization for {{article.localization.tag}} article",
+              "fields": [
+                {
+                  "name": "Locale",
+                  "value": "{{article.localization.tag}}",
+                  "inline": true
+                },
+                {
+                  "name": "Contributors",
+                  "value": "{{article.localization.contributors.mention}}",
+                  "inline": true
+                },
+                {
+                  "name": "Last Updated",
+                  "value": "<t:{{article.localization.lastUpdatedTimestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "Related to",
+                  "value": "{{article.note}} ({{article.id}})",
+                  "inline": true
+                }
               ],
-              "button": ["Manage"]
+              "footer": {
+                "text": "{{article.localization.id}}"
+              }
+            }
+          ],
+          "buttons": [
+            "Back to main article",
+            "Edit message",
+            "Revoke",
+            "Publish",
+            "Published"
+          ],
+          "extra": ["(Preview Mode)"],
+          "modal": [
+            {
+              "title": "Edit localization message for {{article.localization.tag}} article",
+              "textInput": [
+                {
+                  "label": "Title",
+                  "placeholder": "What is this article about?"
+                },
+                {
+                  "label": "Description",
+                  "placeholder": "What should customers know about this article?"
+                }
+              ]
+            },
+            {
+              "title": "Add a tag to localization for {{article.localization.tag}} article",
+              "textInput": [
+                {
+                  "label": "Tag",
+                  "placeholder": "What tags are appropriate for this article to help customers find the article faster?"
+                }
+              ]
+            },
+            {
+              "title": "Create a localization for {{locale.tag}} article",
+              "textInput": [
+                {
+                  "label": "Title",
+                  "placeholder": "What is this article about?"
+                }
+              ]
+            }
+          ]
+        },
+        "all": {
+          "embeds": [
+            {
+              "title": "Manage Articles",
+              "description": "From here, you can manage all the articles created."
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "Create/Manage article",
+              "options": [
+                {
+                  "label": "{{note}}",
+                  "description": "Not localized yet"
+                },
+                {
+                  "label": "{{note}}",
+                  "description": "Last update {{article.lastUpdate}}"
+                },
+                {
+                  "label": "Create a new article"
+                },
+                {
+                  "label": "Go to previous options",
+                  "description": "{{articles.previous.length}} articles in the previous options"
+                },
+                {
+                  "label": "Go to next options",
+                  "description": "{{articles.next.length}} articles in the next options"
+                }
+              ]
+            }
+          ],
+          "buttons": ["Refresh", "My Only"]
+        },
+        "single": {
+          "embeds": [
+            {
+              "title": "Manage Article",
+              "description": "{{article.note}}",
+              "fields": [
+                {
+                  "name": "Available Localizations",
+                  "value": "{{article.localizations}}",
+                  "inline": true
+                },
+                {
+                  "name": "Creator",
+                  "value": "<@{{article.creator.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "Created At",
+                  "value": "<t:{{article.createdTimestampAt}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "Info",
+                  "value": "Staff can create localization of your article!"
+                }
+              ],
+              "footer": {
+                "text": "{{article.id}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "Create/Manage localizations",
+              "options": ["Not localized yet", "Last update"]
+            }
+          ],
+          "buttons": ["Edit Note", "Refresh", "Delete"]
+        },
+        "editNote": {
+          "title": "{{article.id}} Article Edit Note",
+          "textInput": [
+            {
+              "label": "Note",
+              "placeholder": "Tell the staff what they need to know about your article"
+            }
+          ]
+        }
+      },
+      "created": {
+        "embeds": [
+          {
+            "title": "Article Successfully Created!",
+            "description": "You can create as many localizations of this article as is available. It is not recommended to create articles with a pre-existing topic!",
+            "footer": {
+              "text": "{{article.id}}"
+            }
           }
+        ],
+        "button": ["Manage"]
+      },
+      "create": {
+        "title": "Create Article",
+        "textInput": [
+          {
+            "label": "Note",
+            "placeholder": "Tell the staff what they need to know about your article"
+          }
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "pluginRequiredUserLocale": {
+      "content": "This action requires that you select one of the available languages."
+    },
+    "serverNotMeetPluginCriteria": {
+      "content": "This server does not meet the criteria for this plugin. Please contact the bot developer"
+    },
+    "welcomer": {
+      "memberJoin": {
+        "content": "Hey {{user.tag}}, Welcome!",
+        "button": [
+          {
+            "label": "English",
+            "emoji": ""
+          }
+        ]
       }
     },
-    "plugins": {
-        "pluginRequiredUserLocale": {
-            "content": "This action requires that you select one of the available languages."
-        },
-        "serverNotMeetPluginCriteria": {
-            "content": "This server does not meet the criteria for this plugin. Please contact the bot developer"
-        },
-        "welcomer": {
-            "memberJoin": {
-                "content": "Hey {{user.tag}}, Welcome!",
-                "button": [
-                    {
-                        "label": "English",
-                        "emoji": ""
-                    }
-                ]
-            }
-        },
-        "interactionOnly": {
-            "content": "Hey {{user.tag}}, This channel is for **Slash Command** only, you cannot use regular command or start conversation.",
-            "buttons": [
-                "I need assistance"
-            ]
-        },
-        "requestHumanAssistant": {
-            "exceededLimitation": {
-                "content": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!"
-            },
-            "publicThread": {
-                "notBelongToHim": {
-                    "warning": {
-                        "content": "Hey <@{{user.id}}>,\nYou seems are sending message in the wrong thread. Head to your thread <#{{active.thread.id}}> and start sending message there!"
-                    },
-                    "timeout": {
-                        "content": "Hey <@{{user.id}}>,\nYou have sent a lot of messages on thread that is not yours! I had to timeout you for a while. (Your thread has been closed due to your bad behavior)"
-                    }
-                }
-            },
-            "requestCreated": {
-                "interaction": {
-                    "embeds": [
-                        {
-                            "title": "Assistant Request Created!",
-                            "description": "Looking for an available assistant... **(Wait time: {{request.expires.in.minutes}} minutes)**",
-                            "fields": [
-                                {
-                                    "name": "Language",
-                                    "value": "{{locale.name}}",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Requested At",
-                                    "value": "<t:{{request.timestamp}}:f>",
-                                    "inline": true
-                                }
-                            ],
-                            "footer": {
-                                "text": "Request Id: {{request.uuid}}"
-                            }
-                        }
-                    ],
-                    "buttons": [
-                        "Cancel"
-                    ]
-                },
-                "admins": {
-                    "embeds": [
-                        {
-                            "title": "Incoming Request Needs Assistance!",
-                            "description": "{{request.issue}}",
-                            "fields": [
-                                {
-                                    "name": "User",
-                                    "value": "{{user.tag}} (<@{{user.id}}>)",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Language",
-                                    "value": "{{locale.name}}",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Expires In",
-                                    "value": "<t:{{request.expires.timestamp}}:R>",
-                                    "inline": true
-                                }
-                            ],
-                            "footer": {
-                                "text": "Request Id: {{request.uuid}}"
-                            }
-                        }
-                    ],
-                    "buttons": [
-                        "Accept"
-                    ]
-                }
-            },
-            "requestCanceled": {
-                "userRequested": {
-                    "embeds": [
-                        {
-                            "title": "Assistant Request Was Canceled By You",
-                            "footer": {
-                                "text": "Request Id: {{request.uuid}}"
-                            }
-                        }
-                    ]
-                },
-                "expired": {
-                    "update": {
-                        "embeds": [
-                            {
-                                "title": "Assistant Request Was Canceled",
-                                "footer": {
-                                    "text": "Request Id: {{request.uuid}}"
-                                }
-                            }
-                        ]
-                    },
-                    "followUp": {
-                        "content": "We're sorry that assistants are not available to help you at this time. Come back another time Thank you for your understanding"
-                    }
-                }
-            },
-            "acceptedRequest": {
-                "thread": {
-                    "content": "<@{{requester.id}}>, <@{{assistant.id}}> has come to help you!"
-                },
-                "interaction": {
-                    "update": {
-                        "embeds": [
-                            {
-                                "title": "Assistant Request Accepted!",
-                                "description": "<@{{assistant.id}}> came to help you!",
-                                "fields": [
-                                    {
-                                        "name": "Thread",
-                                        "value": "<#{{thread.id}}>",
-                                        "inline": true
-                                    },
-                                    {
-                                        "name": "Language",
-                                        "value": "{{locale.name}}",
-                                        "inline": true
-                                    },
-                                    {
-                                        "name": "Requested At",
-                                        "value": "<t:{{request.timestamp}}:f>",
-                                        "inline": true
-                                    }
-                                ],
-                                "footer": {
-                                    "text": "Request Id: {{request.uuid}}\nWould you mind taking a minute to tell us how we did? (Available when thread is closed)"
-                                }
-                            }
-                        ],
-                        "buttons": [
-                            "Feedback"
-                        ]
-                    },
-                    "followUp": {
-                        "content": "Hey <@{{requester.id}}>, your request has been accepted by <@{{assistant.id}}>, please go to <#{{thread.id}}> thread and specify your issue in detail.!"
-                    }
-                }
-            },
-            "assistantAcceptsRequest": {
-                "update": {
-                    "embeds": [
-                        {
-                            "title": "Assistant Request Accepted By {{assistant.tag}}!",
-                            "description": "{{request.issue}}",
-                            "fields": [
-                                {
-                                    "name": "User",
-                                    "value": "{{requester.tag}} (<@{{requester.id}}>)",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Language",
-                                    "value": "{{locale.name}}",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Requested At",
-                                    "value": "<t:{{request.timestamp}}:f>",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Assistant",
-                                    "value": "<@{{assistant.id}}>",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Thread",
-                                    "value": "<#{{thread.id}}>",
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Accepted At",
-                                    "value": "<t:{{thread.timestamp}}:f>",
-                                    "inline": true
-                                }
-                            ],
-                            "footer": {
-                                "text": "Request Id: {{request.uuid}}"
-                            }
-                        }
-                    ],
-                    "selectMenu": [
-                        {
-                            "placeholder": "Close thread with reason..",
-                            "options": [
-                                {
-                                    "label": "Solved",
-                                    "description": "Customer issue solved"
-                                },
-                                {
-                                    "label": "Inactive",
-                                    "description": "Customer was inactive for over a minute"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "followUp": {
-                    "content": "**Request Accepted Successfully.** \nGo to <#{{thread.id}}> thread and assistance the customer!"
-                }
-            },
-            "activeThread": {
-                "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
-            },
-            "activeRequset": {
-                "content": "You have active request"
-            },
-            "solvedIssue": {
-                "interaction": {
-                    "content": "**Would you mind taking a minute to tell us how we did?**\njust two quick questions if you don't mind.",
-                    "buttons": [
-                        "Give Feedback"
-                    ]
-                },
-                "thread": {}
-            },
-            "summonerLeftTheThread": {
-                "interaction": {
-                    "content": "You left the thread and no assistant came to help you with your issue. Can you provide a reason for leaving the thread?",
-                    "selectMenu": [
-                        {
-                            "placeholder": "The reason for leaving thread",
-                            "options": [
-                                {
-                                    "label": "I solved the issue"
-                                },
-                                {
-                                    "label": "Assistant delayed"
-                                },
-                                {
-                                    "label": "Other"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "thread": {}
-            },
-            "survey": {
-                "thread": {
-                    "content": "How would you rate your overall thread experience with **{{assistant.tag}}**?"
-                },
-                "service": {
-                    "content": "How satisfied are you with our services?"
-                }
-            }
-        },
-        "article": {
-            "noLongerExists": {
-
-            }
-        }
+    "interactionOnly": {
+      "content": "Hey {{user.tag}}, This channel is for **Slash Command** only, you cannot use regular command or start conversation.",
+      "buttons": ["I need assistance"]
     },
-    "language": {
-        "welcome": {
-            "embeds": [
-                {
-                    "title": "Welcome to the XTOP BOT Support Server!"
-                }
-            ]
-        },
-        "set": {
-            "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
+    "requestHumanAssistant": {
+      "exceededLimitation": {
+        "content": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!"
+      },
+      "publicThread": {
+        "notBelongToHim": {
+          "warning": {
+            "content": "Hey <@{{user.id}}>,\nYou seems are sending message in the wrong thread. Head to your thread <#{{active.thread.id}}> and start sending message there!"
+          },
+          "timeout": {
+            "content": "Hey <@{{user.id}}>,\nYou have sent a lot of messages on thread that is not yours! I had to timeout you for a while. (Your thread has been closed due to your bad behavior)"
+          }
         }
-    },
-    "helpdesk": {
-        "articles": [
+      },
+      "requestCreated": {
+        "interaction": {
+          "embeds": [
             {
-                "id": 34,
-                "article": "كيف أقوم بأضافة البوت الى السيرفر الخاص بي؟",
-                "tags": [],
-                "response": {
-                    "embeds": [
-                        {
-                            "title": "{{article}}",
-                            "description": ""
-                        }
-                    ]
+              "title": "Assistant Request Created!",
+              "description": "Looking for an available assistant... **(Wait time: {{request.expires.in.minutes}} minutes)**",
+              "fields": [
+                {
+                  "name": "Language",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "Requested At",
+                  "value": "<t:{{request.timestamp}}:f>",
+                  "inline": true
                 }
+              ],
+              "footer": {
+                "text": "Request Id: {{request.uuid}}"
+              }
             }
-        ]
+          ],
+          "buttons": ["Cancel"]
+        },
+        "admins": {
+          "embeds": [
+            {
+              "title": "Incoming Request Needs Assistance!",
+              "description": "{{request.issue}}",
+              "fields": [
+                {
+                  "name": "User",
+                  "value": "{{user.tag}} (<@{{user.id}}>)",
+                  "inline": true
+                },
+                {
+                  "name": "Language",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "Expires In",
+                  "value": "<t:{{request.expires.timestamp}}:R>",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "Request Id: {{request.uuid}}"
+              }
+            }
+          ],
+          "buttons": ["Accept"]
+        }
+      },
+      "requestCanceled": {
+        "userRequested": {
+          "embeds": [
+            {
+              "title": "Assistant Request Was Canceled By You",
+              "footer": {
+                "text": "Request Id: {{request.uuid}}"
+              }
+            }
+          ]
+        },
+        "expired": {
+          "update": {
+            "embeds": [
+              {
+                "title": "Assistant Request Was Canceled",
+                "footer": {
+                  "text": "Request Id: {{request.uuid}}"
+                }
+              }
+            ]
+          },
+          "followUp": {
+            "content": "We're sorry that assistants are not available to help you at this time. Come back another time Thank you for your understanding"
+          }
+        }
+      },
+      "acceptedRequest": {
+        "thread": {
+          "content": "<@{{requester.id}}>, <@{{assistant.id}}> has come to help you!"
+        },
+        "interaction": {
+          "update": {
+            "embeds": [
+              {
+                "title": "Assistant Request Accepted!",
+                "description": "<@{{assistant.id}}> came to help you!",
+                "fields": [
+                  {
+                    "name": "Thread",
+                    "value": "<#{{thread.id}}>",
+                    "inline": true
+                  },
+                  {
+                    "name": "Language",
+                    "value": "{{locale.name}}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Requested At",
+                    "value": "<t:{{request.timestamp}}:f>",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Request Id: {{request.uuid}}\nWould you mind taking a minute to tell us how we did? (Available when thread is closed)"
+                }
+              }
+            ],
+            "buttons": ["Feedback"]
+          },
+          "followUp": {
+            "content": "Hey <@{{requester.id}}>, your request has been accepted by <@{{assistant.id}}>, please go to <#{{thread.id}}> thread and specify your issue in detail.!"
+          }
+        }
+      },
+      "assistantAcceptsRequest": {
+        "update": {
+          "embeds": [
+            {
+              "title": "Assistant Request Accepted By {{assistant.tag}}!",
+              "description": "{{request.issue}}",
+              "fields": [
+                {
+                  "name": "User",
+                  "value": "{{requester.tag}} (<@{{requester.id}}>)",
+                  "inline": true
+                },
+                {
+                  "name": "Language",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "Requested At",
+                  "value": "<t:{{request.timestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "Assistant",
+                  "value": "<@{{assistant.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "Thread",
+                  "value": "<#{{thread.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "Accepted At",
+                  "value": "<t:{{thread.timestamp}}:f>",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "Request Id: {{request.uuid}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "Close thread with reason..",
+              "options": [
+                {
+                  "label": "Solved",
+                  "description": "Customer issue solved"
+                },
+                {
+                  "label": "Inactive",
+                  "description": "Customer was inactive for over a minute"
+                }
+              ]
+            }
+          ]
+        },
+        "followUp": {
+          "content": "**Request Accepted Successfully.** \nGo to <#{{thread.id}}> thread and assistance the customer!"
+        }
+      },
+      "activeThread": {
+        "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
+      },
+      "activeRequset": {
+        "content": "You have active request"
+      },
+      "solvedIssue": {
+        "interaction": {
+          "content": "**Would you mind taking a minute to tell us how we did?**\njust two quick questions if you don't mind.",
+          "buttons": ["Give Feedback"]
+        },
+        "thread": {}
+      },
+      "summonerLeftTheThread": {
+        "interaction": {
+          "content": "You left the thread and no assistant came to help you with your issue. Can you provide a reason for leaving the thread?",
+          "selectMenu": [
+            {
+              "placeholder": "The reason for leaving thread",
+              "options": [
+                {
+                  "label": "I solved the issue"
+                },
+                {
+                  "label": "Assistant delayed"
+                },
+                {
+                  "label": "Other"
+                }
+              ]
+            }
+          ]
+        },
+        "thread": {}
+      },
+      "survey": {
+        "thread": {
+          "content": "How would you rate your overall thread experience with **{{assistant.tag}}**?"
+        },
+        "service": {
+          "content": "How satisfied are you with our services?"
+        }
+      }
+    },
+    "article": {
+      "noLongerExists": {}
     }
+  },
+  "language": {
+    "welcome": {
+      "embeds": [
+        {
+          "title": "Welcome to the XTOP BOT Support Server!"
+        }
+      ]
+    },
+    "set": {
+      "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
+    }
+  },
+  "helpdesk": {
+    "articles": [
+      {
+        "id": 34,
+        "article": "كيف أقوم بأضافة البوت الى السيرفر الخاص بي؟",
+        "tags": [],
+        "response": {
+          "embeds": [
+            {
+              "title": "{{article}}",
+              "description": ""
+            }
+          ]
+        }
+      }
+    ]
+  }
 }

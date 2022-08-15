@@ -46,4 +46,19 @@ export default class message {
       )
     );
   }
+
+  public static async onMessageUpdate(
+    oldMessage: Message | PartialMessage,
+    newMessage: Message | PartialMessage
+  ) {
+    await AuditLog.onMessageUpdate(oldMessage, newMessage).catch(
+      (err: unknown) =>
+        Logger.error(
+          err,
+          `[App](Event: MessageEdited (AuditLog)) Error while execute: ${
+            (err as Error)?.message
+          }`
+        )
+    );
+  }
 }

@@ -211,7 +211,7 @@ interface NotificationRoles {
 }
 
 enum DefaultNotificationRoles {
-  UPDATES = "updates",
-  NEWS = "news",
-  STATUS = "status",
+    UPDATES = "updates",
+    NEWS = "news",
+    STATUS = "status",
 }

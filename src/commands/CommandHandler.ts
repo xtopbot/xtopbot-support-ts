@@ -28,6 +28,7 @@ import CommandMethod, {
 } from "./CommandMethod";
 import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import InteractionOnly from "../plugins/InteractionOnly";
+
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
     Logger.info("[MessageCreate] Received.");

@@ -10,6 +10,7 @@ import CommandMethod, { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import { VM } from "vm2";
+
 export default class Eval extends BaseCommand {
   constructor() {
     super({
@@ -21,9 +22,11 @@ export default class Eval extends BaseCommand {
       applicationCommandData: [],
     });
   }
+
   public async message(dcm: CommandMethod<Message>) {
     return this.runEval(dcm, dcm.context);
   }
+
   private async runEval(
     dcm: Method<Message>,
     input: string
@@ -109,6 +112,7 @@ interface DataEvalFlags {
   input: string;
   flags: Array<EvalFlags>;
 }
+
 enum EvalFlags {
   OUTPUT,
   FILE,

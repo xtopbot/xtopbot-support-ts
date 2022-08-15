@@ -5,6 +5,7 @@ import db from "../providers/Mysql";
 import app from "../app";
 import Exception, { Severity } from "../utils/Exception";
 import Logger from "../utils/Logger";
+
 export default class UserManager extends CacheManager<User> {
   constructor() {
     super();

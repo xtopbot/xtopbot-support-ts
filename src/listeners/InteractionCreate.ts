@@ -14,6 +14,7 @@ import Logger from "../utils/Logger";
 
 export default class InteractionCreate {
   static onInteraction: any;
+
   public static async onInteractionCreate(
     interaction: Interaction
   ): Promise<void> {
