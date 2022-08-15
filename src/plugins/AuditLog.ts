@@ -299,7 +299,7 @@ export default class AuditLog {
             {
               name: `Removed Attachments \`${removedAttachments.size}\``,
               value:
-                embedRemovedAttachments.length > 1
+                removedAttachments.size >= 1
                   ? isTxtRemovedAttachments
                     ? "`Attached in txt format`"
                     : embedRemovedAttachments
@@ -403,7 +403,7 @@ export default class AuditLog {
             {
               name: `Attachments \`${message.attachments.size}\``,
               value:
-                embedAttachments.length > 1
+                message.attachments.size >= 1
                   ? isTxtAttachments
                     ? "`Attached in txt format`"
                     : embedAttachments
