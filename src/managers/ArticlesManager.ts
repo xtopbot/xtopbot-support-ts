@@ -105,7 +105,7 @@ export default class ArticlesManager extends CacheManager<Article> {
     const resolved = this.resolve(
       await db.query(
         `
-    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, BIN_TO_UUID(al.id) as localizationId, al.title, al.locale, BIN_TO_UUID(al.messageId) as messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, unix_timestamp(al.updatedAt) as localizationUpdatedTimestampAt, al.published, al.editable, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, BIN_TO_UUID(alt.articleLocalizationId) as tagReferenceLocalizationId
+    select BIN_TO_UUID(a.id) as id, a.note, a.creatorId, unix_timestamp(a.createdAt) as createdTimestampAt, BIN_TO_UUID(al.id) as localizationId, al.title, al.locale, BIN_TO_UUID(al.messageId) as messageId, unix_timestamp(al.createdAt) as localizationCreatedTimestampAt, unix_timestamp(al.updatedAt) as localizationUpdatedTimestampAt, al.published, al.editable, alt.tag as localizationTagName, alt.creatorId as localizationTagCreatorId, unix_timestamp(alt.createdAt) as localizationTagCreatedTimestampAt, BIN_TO_UUID(alt.id) as localizationTagId
     from \`Article.Localization\` al
     right join \`Article\` a on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
@@ -224,7 +224,12 @@ export default class ArticlesManager extends CacheManager<Article> {
             ),
             tags: raws
               .filter(
-                (tag) => tag.tagReferenceLocalizationId === localization.id
+                (tag, index) =>
+                  Util.isUUID(tag.localizationTagId) &&
+                  tag.localizationId === localization.localizationId &&
+                  raws
+                    .map((raw) => raw.localizationTagId)
+                    .indexOf(tag.localizationTagId) === index
               )
               .map((tag) => ({
                 id: tag.localizationTagId,

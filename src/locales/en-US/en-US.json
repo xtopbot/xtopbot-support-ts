@@ -63,6 +63,10 @@
                   "name": "Related to",
                   "value": "{{article.note}} ({{article.id}})",
                   "inline": true
+                },
+                {
+                  "name": "Tags `{{article.localization.tags.size}}`",
+                  "value": "Tags can be useful if there are other similar titles or words related to this article to help customers find the article faster."
                 }
               ],
               "footer": {
@@ -75,9 +79,20 @@
             "Edit message",
             "Revoke",
             "Publish",
-            "Published"
+            "Published",
+            "Add Tag"
           ],
-          "extra": ["(Preview Mode)"],
+          "selectMenu": [
+            {
+              "placeholder": "Unselected tag will be removed",
+              "options": [
+                {
+                  "description": "Created at {{tag.createdAt}}"
+                }
+              ]
+            }
+          ],
+          "extra": ["(Preview Mode)", "(Maximum limit reached)"],
           "modal": [
             {
               "title": "Edit localization message for {{article.localization.tag}} article",

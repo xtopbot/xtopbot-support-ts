@@ -134,12 +134,14 @@ export default class ArticleLocalization {
     const tags = Array.isArray(tag)
       ? tag.map((t) => ({ name: validation(t), id: uuidv4() }))
       : [{ name: validation(tag), id: uuidv4() }];
+
     await db.query(
-      `insert into \`Article.Localization.Tag\` (id, articleLocalizationId, creatorId, tag) values ${tags.map(
-        (t) => "(UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?)"
-      )}`,
-      [tags.map((t) => [t.id, this.id, contributorId, t.name])]
+      `insert into \`Article.Localization.Tag\` (id, articleLocalizationId, creatorId, tag) values ${tags
+        .map((t) => "(UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?)")
+        .join(", ")}`,
+      tags.map((t) => [t.id, this.id, contributorId, t.name]).flat(1)
     );
+
     await this.addContributor(contributorId, ContributorActions.ADD_TAGS);
     tags.map((t) =>
       this.tags.set(t.id, {
@@ -160,7 +162,7 @@ export default class ArticleLocalization {
 
     await db.query(
       `delete from \`Article.Localization.Tag\` where BIN_TO_UUID(articleLocalizationId) = ? ${
-        isSpecifiedTagId ? "and BIN_TO_UUID(id) IN ?" : ""
+        isSpecifiedTagId ? "and BIN_TO_UUID(id) IN (?)" : ""
       }`,
       [this.id, tagsId]
     );
