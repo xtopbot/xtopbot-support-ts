@@ -79,7 +79,7 @@ export default class AuditLog {
             },
             {
               name: "User Preferred Language",
-              value: user.locale ? user.locale : "None",
+              value: user.locale ? user.locale : "N/A",
               inline: true,
             },
             {
@@ -180,7 +180,7 @@ export default class AuditLog {
             },
             {
               name: "User Preferred Language",
-              value: user.locale ? user.locale : "None",
+              value: user.locale ? user.locale : "N/A",
               inline: true,
             },
           ],
@@ -212,7 +212,7 @@ export default class AuditLog {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "None",
+          value: moderator.reason ?? "N/A",
           inline: true,
         }
       );
@@ -388,7 +388,7 @@ export default class AuditLog {
             },
             {
               name: "User Preferred Language",
-              value: user.locale ? user.locale : "None",
+              value: user.locale ? user.locale : "N/A",
               inline: true,
             },
             {
@@ -429,7 +429,7 @@ export default class AuditLog {
         },
         {
           name: "Reason",
-          value: moderator.reason ?? "None",
+          value: moderator.reason ?? "N/A",
           inline: true,
         }
       );
