@@ -55,22 +55,30 @@ export default class App {
 
   private static _initialize = false;
 
-  private static initialize(): void {
+  private static async initialize(): Promise<void> {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
     this._initialize = true;
-    ListenersHandler.handler(this.client);
-  }
 
-  public static async launch(): Promise<void> {
-    if (process.argv.find((arg) => arg === "--test")) return this.shutdown();
     await mysql.connect();
-    this.initialize();
+
+    Logger.info("Fetch all articles & messages built");
+    await this.articles.fetch();
+    await this.messages.fetch();
+
+    ListenersHandler.handler(this.client);
+
     Logger.info("[Discord] <>Bot connecting...");
-    this.client.login(
+    await this.client.login(
       process.argv.find((arg) => arg === "--dev")
         ? process.env.DISCORD_TEST_BOT_TOKEN
         : process.env.DISCORD_BOT_TOKEN
     );
+  }
+
+  public static async launch(): Promise<void> {
+    if (process.argv.find((arg) => arg === "--test")) return this.shutdown();
+    await this.initialize();
+    Logger.info("App launched!");
   }
 
   public static shutdown(): void {
