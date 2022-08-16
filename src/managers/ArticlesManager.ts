@@ -7,6 +7,8 @@ import ArticleLocalization, {
 } from "../structures/ArticleLocalization";
 import { v4 as uuidv4 } from "uuid";
 import Util from "../utils/Util";
+import Fuse from "fuse.js";
+import app from "../app";
 
 export default class ArticlesManager extends CacheManager<Article> {
   constructor() {
@@ -181,6 +183,46 @@ export default class ArticlesManager extends CacheManager<Article> {
       new Date(),
       "ALL_ARTICLE_LOCALIZATIONS"
     );
+  }
+
+  public async search(
+    input: string,
+    force = false
+  ): Promise<ArticleLocalization[]> {
+    if (force) await this.fetch();
+    const fuse = new Fuse(
+      app.articles.cache
+        .map((article) =>
+          article.localizations.map((localization) => localization)
+        )
+        .flat()
+        .filter((localization) => localization.published),
+      {
+        threshold: 0.3,
+        keys: [
+          {
+            weight: 0.9,
+            name: "title",
+          },
+          {
+            name: "localizationTags",
+            weight: 0.8,
+            getFn: (localization: ArticleLocalization) =>
+              localization.tags.map((tag) => tag.name),
+          },
+          {
+            name: "localizationDescription",
+            weight: 0.4,
+            getFn: (localization: ArticleLocalization) =>
+              localization.messageId
+                ? app.messages.cache.get(localization.messageId)?.embeds[0]
+                    ?.description ?? ""
+                : "",
+          },
+        ],
+      }
+    );
+    return fuse.search(input).map((f) => f.item);
   }
 
   private resolve(raws: any[]) {
