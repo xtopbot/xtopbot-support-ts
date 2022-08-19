@@ -39,9 +39,7 @@ export default class ArticleLocalization {
     tags.map((tag) => this.tags.set(tag.id, tag));
     this.messageId = messageId;
     this.published =
-      typeof options?.published === "boolean"
-        ? options.published
-        : this.published;
+      typeof options?.published === "boolean" ? true : this.published;
     this.editable =
       typeof options?.editable === "boolean" ? options.editable : this.editable;
     this.messageId = messageId;

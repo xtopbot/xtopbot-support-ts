@@ -251,12 +251,12 @@ export default class ArticlesManager extends CacheManager<Article> {
             locale: localization.locale,
             messageId: localization.messageId,
             published:
-              typeof localization.published === "boolean"
-                ? localization.published
+              typeof localization.published === "number"
+                ? !!localization.published
                 : null,
             editable:
-              typeof localization.editable === "boolean"
-                ? localization.editable
+              typeof localization.editable === "number"
+                ? !!localization.editable
                 : null,
             updatedAt: new Date(
               Math.round(localization.localizationUpdatedTimestampAt * 1000)
