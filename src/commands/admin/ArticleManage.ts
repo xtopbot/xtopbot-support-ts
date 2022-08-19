@@ -171,7 +171,6 @@ export default class ArticleManage extends BaseCommand {
           .filter((option) => !dcm.d.values.includes(option.value))
           .map((option) => option.value);
 
-        console.log("Unselected Value", unselectedValue);
         if (unselectedValue.length)
           await articleLocalization.removeTags(dcm.user.id, unselectedValue);
 
@@ -189,20 +188,20 @@ export default class ArticleManage extends BaseCommand {
 
       if (!article)
         return new Response(ResponseCodes.ARTICLE_NOT_FOUND, {
-          ...dcm.locale.origin.commands.article.notFound,
+          ...dcm.locale.origin.commands.article.notFound.single,
           ephemeral: true,
         });
+      if (article.creatorId !== dcm.user.id)
+        return new Response(
+          ResponseCodes.INSUFFICIENT_PERMISSION,
+          dcm.locale.origin.requirement.insufficientPermission
+        );
       if (dcm.getKey("editNote")) {
-        if (article.creatorId !== dcm.user.id)
-          return new Response(
-            ResponseCodes.INSUFFICIENT_PERMISSION,
-            dcm.locale.origin.requirement.insufficientPermission
-          );
         return new Response(
           ResponseCodes.SUCCESS,
           {
             title: Util.textEllipsis(
-              dcm.locale.origin.commands.article.manage.editNote.title,
+              dcm.locale.origin.commands.article.manage.single.modals[0].title,
               45
             ),
             customId: `articleManage:manageSingle:${article.id}:editNote`,
@@ -212,8 +211,8 @@ export default class ArticleManage extends BaseCommand {
                 components: [
                   {
                     type: ComponentType.TextInput,
-                    ...dcm.locale.origin.commands.article.manage.editNote
-                      .textInput[0],
+                    ...dcm.locale.origin.commands.article.manage.single
+                      .modals[0].textInput[0],
                     style: TextInputStyle.Short,
                     minLength: 3,
                     maxLength: 100,
@@ -224,6 +223,56 @@ export default class ArticleManage extends BaseCommand {
             ],
           },
           Action.MODAL
+        );
+      } else if (dcm.getKey("delete")) {
+        dcm.cf.formats.set("article.id", article.id);
+        dcm.cf.formats.set(
+          "article.localization.size",
+          String(article.localizations.size)
+        );
+        if (dcm.getKey("confirmed")) {
+          await article.delete();
+          return new Response(
+            ResponseCodes.SUCCESS,
+            {
+              ...dcm.locale.origin.commands.article.manage.single.delete
+                .confirmed,
+              components: [],
+              ephemeral: true,
+            },
+            Action.UPDATE
+          );
+        }
+        return new Response(
+          ResponseCodes.SUCCESS,
+          {
+            ...dcm.locale.origin.commands.article.manage.single.delete,
+            ephemeral: true,
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Danger,
+                    label:
+                      dcm.locale.origin.commands.article.manage.single.delete
+                        .buttons[0],
+                    customId: `articleManage:manageSingle:${article.id}:delete:confirmed`,
+                  },
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Secondary,
+                    label:
+                      dcm.locale.origin.commands.article.manage.single.delete
+                        .buttons[1],
+                    customId: `articleManage:manageSingle:${article.id}`,
+                  },
+                ],
+              },
+            ],
+          },
+          Action.UPDATE
         );
       }
       return ArticleManage.manageSingleArticle(dcm, article);
@@ -560,7 +609,7 @@ export default class ArticleManage extends BaseCommand {
         value: key,
       }))
       .slice(0, 25);
-    console.log("Tags", articleLocalization.tags);
+
     return new Response(
       ResponseCodes.SUCCESS,
       {
