@@ -151,7 +151,7 @@ export default class ArticlesManager extends CacheManager<Article> {
           articleLocalization
         );
 
-        return articleLocalization;
+        localizations.push(articleLocalization);
       }
 
       const article = new Article(
@@ -179,7 +179,7 @@ export default class ArticlesManager extends CacheManager<Article> {
       this._add(article);
       localizations.push(articleLocalization);
     }
-    console.log("TES", localizations);
+
     return type === "BULK_FETCH" ? localizations : localizations[0];
   }
 
