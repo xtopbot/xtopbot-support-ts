@@ -2,9 +2,7 @@ import db from "../providers/Mysql";
 import { LocaleTag } from "./LocaleManager";
 import CacheManager from "./CacheManager";
 import Article from "../structures/Article";
-import ArticleLocalization, {
-  ArticleLocalizationTags,
-} from "../structures/ArticleLocalization";
+import ArticleLocalization from "../structures/ArticleLocalization";
 import { v4 as uuidv4 } from "uuid";
 import Util from "../utils/Util";
 import Fuse from "fuse.js";
@@ -100,10 +98,19 @@ export default class ArticlesManager extends CacheManager<Article> {
 
     return articles;
   }
-
   public async fetchLocalization(
     id: string
-  ): Promise<ArticleLocalization | null> {
+  ): Promise<ArticleLocalization | null>;
+  public async fetchLocalization(id: string[]): Promise<ArticleLocalization[]>;
+  public async fetchLocalization(
+    id: string | string[]
+  ): Promise<ArticleLocalization | ArticleLocalization[] | null> {
+    const type: "SINGLE_FETCH" | "BULK_FETCH" = Array.isArray(id)
+      ? "BULK_FETCH"
+      : "SINGLE_FETCH";
+
+    const ids = type === "BULK_FETCH" ? id : [id];
+
     const resolved = this.resolve(
       await db.query(
         `
@@ -111,18 +118,51 @@ export default class ArticlesManager extends CacheManager<Article> {
     from \`Article.Localization\` al
     right join \`Article\` a on al.articleId = a.id
     left join \`Article.Localization.Tag\` alt on alt.articleLocalizationId = al.id
-    where BIN_TO_UUID(al.id) = ?;
+    where BIN_TO_UUID(al.id) in (?);
     `,
-        [id]
+        [ids]
       )
     );
-    if (!resolved.length) return null;
-    const localization = resolved[0].localizations[0];
+    if (!resolved.length) return type === "BULK_FETCH" ? [] : null;
 
-    const cachedArticle = this.cache.get(resolved[0].id);
-    if (cachedArticle) {
+    const localizations: ArticleLocalization[] = [];
+
+    for (let i = 0; i < resolved.length; i++) {
+      const localization = resolved[i].localizations[0];
+
+      const cachedArticle = this.cache.get(resolved[i].id);
+      if (cachedArticle) {
+        const articleLocalization = new ArticleLocalization(
+          cachedArticle,
+          localization.id,
+          localization.title,
+          localization.locale as LocaleTag,
+          localization.tags,
+          localization.messageId,
+          {
+            published: localization.published,
+            editable: localization.editable,
+            createdAt: localization.createdAt,
+          }
+        );
+        cachedArticle.localizations.delete(articleLocalization.id);
+        cachedArticle.localizations.set(
+          articleLocalization.id,
+          articleLocalization
+        );
+
+        return articleLocalization;
+      }
+
+      const article = new Article(
+        resolved[i].id,
+        resolved[i].creatorId,
+        resolved[i].note,
+        resolved[i].createdAt,
+        "SINGLE_ARTICLE_LOCALIZATIONS"
+      );
       const articleLocalization = new ArticleLocalization(
-        cachedArticle,
+        article,
         localization.id,
         localization.title,
         localization.locale as LocaleTag,
@@ -134,40 +174,13 @@ export default class ArticlesManager extends CacheManager<Article> {
           createdAt: localization.createdAt,
         }
       );
-      cachedArticle.localizations.delete(articleLocalization.id);
-      cachedArticle.localizations.set(
-        articleLocalization.id,
-        articleLocalization
-      );
+      article.localizations.set(articleLocalization.id, articleLocalization);
 
-      return articleLocalization;
+      this._add(article);
+      localizations.push(articleLocalization);
     }
-
-    const article = new Article(
-      resolved[0].id,
-      resolved[0].creatorId,
-      resolved[0].note,
-      resolved[0].createdAt,
-      "SINGLE_ARTICLE_LOCALIZATIONS"
-    );
-    const articleLocalization = new ArticleLocalization(
-      article,
-      localization.id,
-      localization.title,
-      localization.locale as LocaleTag,
-      localization.tags,
-      localization.messageId,
-      {
-        published: localization.published,
-        editable: localization.editable,
-        createdAt: localization.createdAt,
-      }
-    );
-    article.localizations.set(articleLocalization.id, articleLocalization);
-
-    this._add(article);
-
-    return articleLocalization;
+    console.log("TES", localizations);
+    return type === "BULK_FETCH" ? localizations : localizations[0];
   }
 
   public async create(creatorId: string, note: string): Promise<Article> {
@@ -223,6 +236,52 @@ export default class ArticlesManager extends CacheManager<Article> {
       }
     );
     return fuse.search(input).map((f) => f.item);
+  }
+
+  public async getCommonsArticles(
+    locale?: LocaleTag
+  ): Promise<ArticleLocalization[]>;
+  public async getCommonsArticles(): Promise<Article[]>;
+  public async getCommonsArticles(
+    locale?: LocaleTag
+  ): Promise<Article[] | ArticleLocalization[]> {
+    const type: "LOCALE_ONLY" | "GLOBAL" = locale ? "LOCALE_ONLY" : "GLOBAL";
+
+    const raws: any[] = await db.query(
+      `
+    select  BIN_TO_UUID(als.articleLocalizationId) as articleLocalizationId, als.userId, BIN_TO_UUID(al.articleId) as articleId, count(distinct als.articleLocalizationId, als.userId) as uses
+    from \`Article.Localization.Stats\` als
+    right join \`Article.Localization\` al on al.id = als.articleLocalizationId
+    where unix_timestamp(als.createdAt) between unix_timestamp() - 1209600 and unix_timestamp() and al.published = 1 ${
+      type === "LOCALE_ONLY" ? "and al.locale = ?" : ""
+    } or unix_timestamp(als.createdAt) between unix_timestamp() - 2419200 and unix_timestamp() and al.published = 1 ${
+        type === "LOCALE_ONLY" ? "and al.locale = ?" : ""
+      }
+    group by als.articleLocalizationId
+    order by count(distinct als.articleLocalizationId, als.userId) DESC
+    limit 10;
+    `,
+      [locale, locale]
+    );
+
+    if (!raws.length) return [];
+
+    if (type === "LOCALE_ONLY") {
+      const localizations = await this.fetchLocalization(
+        raws.map((raw) => raw.articleLocalizationId)
+      );
+      return raws.flatMap(
+        (raw) =>
+          localizations.find(
+            (localization) => localization.id === raw.articleLocalizationId
+          ) ?? []
+      );
+    }
+
+    const articles = await this.fetch();
+    return raws.flatMap(
+      (raw) => articles.find((article) => article.id === raw.articleId) ?? []
+    );
   }
 
   private resolve(raws: any[]) {
