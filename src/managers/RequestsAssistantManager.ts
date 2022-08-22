@@ -73,7 +73,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
   ): Promise<Message> {
     const requestsChannel = guild.channels.cache.find(
       (channel) =>
-        channel.type === ChannelType.GuildText && channel.name == "rha"
+        channel.type === ChannelType.GuildText && channel.name == "active-rha"
     );
     if (!requestsChannel)
       throw new Exception(
