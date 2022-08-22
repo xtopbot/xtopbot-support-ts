@@ -6,7 +6,6 @@ import db from "../providers/Mysql";
 import Logger from "../utils/Logger";
 import { v4 as uuidv4 } from "uuid";
 import { Collection } from "discord.js";
-import Util from "../utils/Util";
 
 export default class ArticleLocalization {
   public declare readonly article: Article;
@@ -193,6 +192,36 @@ export default class ArticleLocalization {
         );
   }
 
+  public async addFeedback(
+    userId: string,
+    helpful: boolean,
+    userReference?: string
+  ): Promise<void> {
+    if (userReference) await app.users.fetch(userReference);
+    await db.query(
+      "insert into `Article.Localization.Stats` (id, userId, articleLocalizationId, issueSolved, userReference) values (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), ?, ?)",
+      [uuidv4(), userId, this.id, Number(helpful), userReference ?? null]
+    );
+  }
+
+  public async getFeedback(userId: string): Promise<{
+    userId: string;
+    helpful: boolean;
+    createdAt: Date;
+  } | null> {
+    const [raw] = await db.query(
+      "select userId, issueSolved, unix_timestamp(createdAt) as createdTimestampAt from `Article.Localization.Stats` where userId = ? order by createdTimestampAt desc limit 1",
+      [userId]
+    );
+
+    if (!raw || !raw.userId) return null;
+    return {
+      userId: raw.userId,
+      helpful: !!raw.issueSolved,
+      createdAt: new Date(Math.round(raw.createdTimestampAt * 1000)),
+    };
+  }
+
   public async addContributor(userId: string, actions: number) {
     await db.query(
       `insert into \`Article.Localization.Contributor\` (userId, articleLocalizationId, actions) values (?, UUID_TO_BIN(?), ?)`,
@@ -211,8 +240,6 @@ export default class ArticleLocalization {
         .map((raw: any) => raw.userId) ?? []
     );
   }
-
-  public feedback(userId: string, helpful: boolean) {}
 }
 export enum ContributorActions {
   NONE = 0,

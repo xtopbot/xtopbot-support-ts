@@ -18,6 +18,17 @@
     "buttons": ["Did this article resolve the issue?", "Yes", "No"]
   },
   "commands": {
+    "help": {
+      "getArticle": {
+        "articleNoLongerExits": {
+          "embeds": [
+            {
+              "description": "The article is no longer available or does not exist"
+            }
+          ]
+        }
+      }
+    },
     "article": {
       "notFound": {
         "single": {
