@@ -204,14 +204,17 @@ export default class ArticleLocalization {
     );
   }
 
-  public async getFeedback(userId: string): Promise<{
+  public async getFeedback(
+    articleLocalizationId: string,
+    userId: string
+  ): Promise<{
     userId: string;
     helpful: boolean;
     createdAt: Date;
   } | null> {
     const [raw] = await db.query(
-      "select userId, issueSolved, unix_timestamp(createdAt) as createdTimestampAt from `Article.Localization.Stats` where userId = ? order by createdTimestampAt desc limit 1",
-      [userId]
+      "select userId, issueSolved, unix_timestamp(createdAt) as createdTimestampAt from `Article.Localization.Stats` where userId = ? and BIN_TO_UUID(articleLocalizationId) = ? order by createdTimestampAt desc limit 1",
+      [userId, articleLocalizationId]
     );
 
     if (!raw || !raw.userId) return null;

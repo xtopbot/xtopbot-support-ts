@@ -70,7 +70,11 @@ export default class HelpDesk extends BaseCommand {
       });
     } else {
       const searchArticles = await app.articles.search(issue ?? "");
-      if (!searchArticles.length) return;
+      if (!searchArticles.length)
+        return new Response(ResponseCodes.NO_RESULTS_FOUND, {
+          ephemeral: true,
+          ...dcm.locale.origin.commands.help.noResultsFound,
+        });
 
       return new Response(ResponseCodes.SUCCESS, {
         ephemeral: true,
@@ -143,7 +147,7 @@ export default class HelpDesk extends BaseCommand {
       : null;
     const description = message?.embeds[0]?.description; //3159092
     const userFeedback = userId
-      ? await articleLocalization.getFeedback(userId)
+      ? await articleLocalization.getFeedback(articleLocalization.id, userId)
       : null;
     const rowTwo = [
       {
@@ -152,6 +156,7 @@ export default class HelpDesk extends BaseCommand {
           userFeedback?.helpful === true
             ? ButtonStyle.Primary
             : ButtonStyle.Secondary,
+        disabled: userFeedback?.helpful === true,
         label: locale.origin.article.buttons[1],
         customId: `helpdesk:article:${articleLocalization.id}:feedback:solved`,
       },
@@ -162,6 +167,7 @@ export default class HelpDesk extends BaseCommand {
             ? ButtonStyle.Primary
             : ButtonStyle.Secondary,
         label: locale.origin.article.buttons[2],
+        disabled: userFeedback?.helpful === false,
         customId: `helpdesk:article:${articleLocalization.id}:feedback:unsolved`,
       },
     ];
