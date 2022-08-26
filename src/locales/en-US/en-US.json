@@ -32,6 +32,13 @@
             }
           ]
         }
+      },
+      "noResultsFound": {
+        "embeds": [
+          {
+            "description": "No result found"
+          }
+        ]
       }
     },
     "article": {

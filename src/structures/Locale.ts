@@ -1,4 +1,5 @@
 import en_US from "../locales/en-US/en-US.json";
+import ar_SA from "../locales/ar-SA/ar-SA.json";
 import { LocaleTag } from "../managers/LocaleManager";
 
 export default class Locale {
