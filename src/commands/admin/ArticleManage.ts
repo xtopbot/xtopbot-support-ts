@@ -32,9 +32,9 @@ export default class ArticleManage extends BaseCommand {
   constructor() {
     super({
       flag:
-        UserFlagsPolicy.SUPPORT &
-        UserFlagsPolicy.MODERATOR &
-        UserFlagsPolicy.ADMIN &
+        UserFlagsPolicy.SUPPORT |
+        UserFlagsPolicy.MODERATOR |
+        UserFlagsPolicy.ADMIN |
         UserFlagsPolicy.DEVELOPER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks"],
@@ -191,12 +191,12 @@ export default class ArticleManage extends BaseCommand {
           ...dcm.locale.origin.commands.article.notFound.single,
           ephemeral: true,
         });
-      if (article.creatorId !== dcm.user.id)
-        return new Response(
-          ResponseCodes.INSUFFICIENT_PERMISSION,
-          dcm.locale.origin.requirement.insufficientPermission
-        );
       if (dcm.getKey("editNote")) {
+        if (article.creatorId !== dcm.user.id)
+          return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          });
         return new Response(
           ResponseCodes.SUCCESS,
           {
@@ -225,6 +225,11 @@ export default class ArticleManage extends BaseCommand {
           Action.MODAL
         );
       } else if (dcm.getKey("delete")) {
+        if (article.creatorId !== dcm.user.id)
+          return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          });
         dcm.cf.formats.set("article.id", article.id);
         dcm.cf.formats.set(
           "article.localization.size",
@@ -349,10 +354,10 @@ export default class ArticleManage extends BaseCommand {
             (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
             0
         )
-          return new Response(
-            ResponseCodes.INSUFFICIENT_PERMISSION,
-            dcm.locale.origin.requirement.insufficientPermission
-          );
+          return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          });
         await articleLocalization.edit(dcm.user.id, {
           published: dcm.getKey("publish"),
         });
@@ -367,10 +372,10 @@ export default class ArticleManage extends BaseCommand {
             (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
             0
         )
-          return new Response(
-            ResponseCodes.INSUFFICIENT_PERMISSION,
-            dcm.locale.origin.requirement.insufficientPermission
-          );
+          return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          });
         dcm.cf.formats.set(
           "article.localization.tag",
           articleLocalization.locale
@@ -451,10 +456,10 @@ export default class ArticleManage extends BaseCommand {
         });
       if (dcm.getKey("editNote")) {
         if (article.creatorId !== dcm.user.id)
-          return new Response(
-            ResponseCodes.INSUFFICIENT_PERMISSION,
-            dcm.locale.origin.requirement.insufficientPermission
-          );
+          return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
+            ...dcm.locale.origin.requirement.insufficientPermission,
+            ephemeral: true,
+          });
 
         const noteTextInput = dcm.d.fields.getField(
           "note",

@@ -20,9 +20,9 @@ export default class ArticleCreate extends BaseCommand {
   constructor() {
     super({
       flag:
-        UserFlagsPolicy.SUPPORT &
-        UserFlagsPolicy.MODERATOR &
-        UserFlagsPolicy.ADMIN &
+        UserFlagsPolicy.SUPPORT |
+        UserFlagsPolicy.MODERATOR |
+        UserFlagsPolicy.ADMIN |
         UserFlagsPolicy.DEVELOPER,
       memberPermissions: [],
       botPermissions: ["SendMessages", "EmbedLinks"],

@@ -73,9 +73,7 @@ export default class CommandRequirementsHandler {
   }
 
   public userFlagPolicy(): boolean {
-    return (
-      (this.dcm.user.flags & this.dcm.command.flag) == this.dcm.command.flag
-    );
+    return (this.dcm.user.flags & this.dcm.command.flag) !== 0;
   }
 
   /**
