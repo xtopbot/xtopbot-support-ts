@@ -38,7 +38,7 @@ export default class ArticleLocalization {
     tags.map((tag) => this.tags.set(tag.id, tag));
     this.messageId = messageId;
     this.published =
-      typeof options?.published === "boolean" ? true : this.published;
+      typeof options?.published === "boolean" ? this.published : this.published;
     this.editable =
       typeof options?.editable === "boolean" ? options.editable : this.editable;
     this.messageId = messageId;
@@ -91,7 +91,7 @@ export default class ArticleLocalization {
     const values = [];
     for (const [key, value] of Object.entries(options)) {
       keys.push(`${key} = ${key === "messageId" ? "UUID_TO_BIN(?)" : "?"}`);
-      values.push(value);
+      values.push(key === "published" ? Number(value) : value);
     }
     values.push(this.id);
 
