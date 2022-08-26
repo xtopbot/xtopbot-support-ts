@@ -3,10 +3,15 @@
   "flag": "\uD83C\uDDFA\uD83C\uDDF8",
   "tags": ["en", "english", "us-english"],
   "roleName": "English",
+  "helpdeskChannel": "help-desk",
   "requirement": {
     "insufficientPermission": {
       "content": "Insufficient permission."
     }
+  },
+  "helpdesk": {
+    "title": "Help Desk",
+    "thereNoPublishedArticle": "I did not find any published article"
   },
   "article": {
     "embeds": [
@@ -18,6 +23,17 @@
     "buttons": ["Did this article resolve the issue?", "Yes", "No"]
   },
   "commands": {
+    "help": {
+      "getArticle": {
+        "articleNoLongerExits": {
+          "embeds": [
+            {
+              "description": "The article is no longer available or does not exist"
+            }
+          ]
+        }
+      }
+    },
     "article": {
       "notFound": {
         "single": {
@@ -63,6 +79,10 @@
                   "name": "Related to",
                   "value": "{{article.note}} ({{article.id}})",
                   "inline": true
+                },
+                {
+                  "name": "Tags `{{article.localization.tags.size}}`",
+                  "value": "Tags can be useful if there are other similar titles or words related to this article to help customers find the article faster."
                 }
               ],
               "footer": {
@@ -75,9 +95,20 @@
             "Edit message",
             "Revoke",
             "Publish",
-            "Published"
+            "Published",
+            "Add Tag"
           ],
-          "extra": ["(Preview Mode)"],
+          "selectMenu": [
+            {
+              "placeholder": "Unselected tag will be removed",
+              "options": [
+                {
+                  "description": "Created at {{tag.createdAt}}"
+                }
+              ]
+            }
+          ],
+          "extra": ["(Preview Mode)", "(Maximum limit reached)"],
           "modal": [
             {
               "title": "Edit localization message for {{article.localization.tag}} article",
@@ -148,6 +179,28 @@
           "buttons": ["Refresh", "My Only"]
         },
         "single": {
+          "delete": {
+            "embeds": [
+              {
+                "title": "Delete Article",
+                "description": "Are you sure you want to delete this article and **{{article.localization.size}}** localizations related to this article?\nThis interaction cannot be undone",
+                "footer": {
+                  "text": "{{article.id}}"
+                }
+              }
+            ],
+            "buttons": ["Confirm deletion", "Cancel"],
+            "confirmed": {
+              "embeds": [
+                {
+                  "title": "Article deleted",
+                  "footer": {
+                    "text": "{{article.id}}"
+                  }
+                }
+              ]
+            }
+          },
           "embeds": [
             {
               "title": "Manage Article",
@@ -184,14 +237,16 @@
               "options": ["Not localized yet", "Last update"]
             }
           ],
-          "buttons": ["Edit Note", "Refresh", "Delete"]
-        },
-        "editNote": {
-          "title": "{{article.id}} Article Edit Note",
-          "textInput": [
+          "buttons": ["Edit Note", "Refresh", "Delete"],
+          "modals": [
             {
-              "label": "Note",
-              "placeholder": "Tell the staff what they need to know about your article"
+              "title": "{{article.id}} Article Edit Note",
+              "textInput": [
+                {
+                  "label": "Note",
+                  "placeholder": "Tell the staff what they need to know about your article"
+                }
+              ]
             }
           ]
         }
@@ -498,22 +553,5 @@
     "set": {
       "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
     }
-  },
-  "helpdesk": {
-    "articles": [
-      {
-        "id": 34,
-        "article": "كيف أقوم بأضافة البوت الى السيرفر الخاص بي؟",
-        "tags": [],
-        "response": {
-          "embeds": [
-            {
-              "title": "{{article}}",
-              "description": ""
-            }
-          ]
-        }
-      }
-    ]
   }
 }

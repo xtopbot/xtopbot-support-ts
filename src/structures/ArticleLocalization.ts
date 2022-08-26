@@ -6,7 +6,6 @@ import db from "../providers/Mysql";
 import Logger from "../utils/Logger";
 import { v4 as uuidv4 } from "uuid";
 import { Collection } from "discord.js";
-import Util from "../utils/Util";
 
 export default class ArticleLocalization {
   public declare readonly article: Article;
@@ -39,9 +38,7 @@ export default class ArticleLocalization {
     tags.map((tag) => this.tags.set(tag.id, tag));
     this.messageId = messageId;
     this.published =
-      typeof options?.published === "boolean"
-        ? options.published
-        : this.published;
+      typeof options?.published === "boolean" ? true : this.published;
     this.editable =
       typeof options?.editable === "boolean" ? options.editable : this.editable;
     this.messageId = messageId;
@@ -134,12 +131,14 @@ export default class ArticleLocalization {
     const tags = Array.isArray(tag)
       ? tag.map((t) => ({ name: validation(t), id: uuidv4() }))
       : [{ name: validation(tag), id: uuidv4() }];
+
     await db.query(
-      `insert into \`Article.Localization.Tag\` (id, articleLocalizationId, creatorId, tag) values ${tags.map(
-        (t) => "(UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?)"
-      )}`,
-      [tags.map((t) => [t.id, this.id, contributorId, t.name])]
+      `insert into \`Article.Localization.Tag\` (id, articleLocalizationId, creatorId, tag) values ${tags
+        .map((t) => "(UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?)")
+        .join(", ")}`,
+      tags.map((t) => [t.id, this.id, contributorId, t.name]).flat(1)
     );
+
     await this.addContributor(contributorId, ContributorActions.ADD_TAGS);
     tags.map((t) =>
       this.tags.set(t.id, {
@@ -160,7 +159,7 @@ export default class ArticleLocalization {
 
     await db.query(
       `delete from \`Article.Localization.Tag\` where BIN_TO_UUID(articleLocalizationId) = ? ${
-        isSpecifiedTagId ? "and BIN_TO_UUID(id) IN ?" : ""
+        isSpecifiedTagId ? "and BIN_TO_UUID(id) IN (?)" : ""
       }`,
       [this.id, tagsId]
     );
@@ -193,6 +192,36 @@ export default class ArticleLocalization {
         );
   }
 
+  public async addFeedback(
+    userId: string,
+    helpful: boolean,
+    userReference?: string
+  ): Promise<void> {
+    if (userReference) await app.users.fetch(userReference);
+    await db.query(
+      "insert into `Article.Localization.Stats` (id, userId, articleLocalizationId, issueSolved, userReference) values (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), ?, ?)",
+      [uuidv4(), userId, this.id, Number(helpful), userReference ?? null]
+    );
+  }
+
+  public async getFeedback(userId: string): Promise<{
+    userId: string;
+    helpful: boolean;
+    createdAt: Date;
+  } | null> {
+    const [raw] = await db.query(
+      "select userId, issueSolved, unix_timestamp(createdAt) as createdTimestampAt from `Article.Localization.Stats` where userId = ? order by createdTimestampAt desc limit 1",
+      [userId]
+    );
+
+    if (!raw || !raw.userId) return null;
+    return {
+      userId: raw.userId,
+      helpful: !!raw.issueSolved,
+      createdAt: new Date(Math.round(raw.createdTimestampAt * 1000)),
+    };
+  }
+
   public async addContributor(userId: string, actions: number) {
     await db.query(
       `insert into \`Article.Localization.Contributor\` (userId, articleLocalizationId, actions) values (?, UUID_TO_BIN(?), ?)`,
@@ -211,8 +240,6 @@ export default class ArticleLocalization {
         .map((raw: any) => raw.userId) ?? []
     );
   }
-
-  public feedback(userId: string, helpful: boolean) {}
 }
 export enum ContributorActions {
   NONE = 0,

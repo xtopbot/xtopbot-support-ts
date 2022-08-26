@@ -156,6 +156,29 @@ export default class ArticleManage extends BaseCommand {
         },
         Action.MODAL
       );
+    } else if (dcm.getKey("manageLocalization")) {
+      const articleLocalization = await app.articles.fetchLocalization(
+        dcm.getValue("manageLocalization", true)
+      );
+      if (!articleLocalization)
+        return new Response(ResponseCodes.ARTICLE_LOCALIZATION_NOT_FOUND, {
+          ...dcm.locale.origin.commands.article.notFound.localization,
+          ephemeral: true,
+        });
+
+      if (dcm.getKey("removeTags")) {
+        const unselectedValue = dcm.d.component.options
+          .filter((option) => !dcm.d.values.includes(option.value))
+          .map((option) => option.value);
+
+        if (unselectedValue.length)
+          await articleLocalization.removeTags(dcm.user.id, unselectedValue);
+
+        return ArticleManage.manageArticleLocalization(
+          dcm,
+          articleLocalization
+        );
+      }
     }
   }
 
@@ -165,15 +188,20 @@ export default class ArticleManage extends BaseCommand {
 
       if (!article)
         return new Response(ResponseCodes.ARTICLE_NOT_FOUND, {
-          ...dcm.locale.origin.commands.article.notFound,
+          ...dcm.locale.origin.commands.article.notFound.single,
           ephemeral: true,
         });
-      if (dcm.getKey("editNote"))
+      if (article.creatorId !== dcm.user.id)
+        return new Response(
+          ResponseCodes.INSUFFICIENT_PERMISSION,
+          dcm.locale.origin.requirement.insufficientPermission
+        );
+      if (dcm.getKey("editNote")) {
         return new Response(
           ResponseCodes.SUCCESS,
           {
             title: Util.textEllipsis(
-              dcm.locale.origin.commands.article.manage.editNote.title,
+              dcm.locale.origin.commands.article.manage.single.modals[0].title,
               45
             ),
             customId: `articleManage:manageSingle:${article.id}:editNote`,
@@ -183,8 +211,8 @@ export default class ArticleManage extends BaseCommand {
                 components: [
                   {
                     type: ComponentType.TextInput,
-                    ...dcm.locale.origin.commands.article.manage.editNote
-                      .textInput[0],
+                    ...dcm.locale.origin.commands.article.manage.single
+                      .modals[0].textInput[0],
                     style: TextInputStyle.Short,
                     minLength: 3,
                     maxLength: 100,
@@ -196,6 +224,57 @@ export default class ArticleManage extends BaseCommand {
           },
           Action.MODAL
         );
+      } else if (dcm.getKey("delete")) {
+        dcm.cf.formats.set("article.id", article.id);
+        dcm.cf.formats.set(
+          "article.localization.size",
+          String(article.localizations.size)
+        );
+        if (dcm.getKey("confirmed")) {
+          await article.delete();
+          return new Response(
+            ResponseCodes.SUCCESS,
+            {
+              ...dcm.locale.origin.commands.article.manage.single.delete
+                .confirmed,
+              components: [],
+              ephemeral: true,
+            },
+            Action.UPDATE
+          );
+        }
+        return new Response(
+          ResponseCodes.SUCCESS,
+          {
+            ...dcm.locale.origin.commands.article.manage.single.delete,
+            ephemeral: true,
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Danger,
+                    label:
+                      dcm.locale.origin.commands.article.manage.single.delete
+                        .buttons[0],
+                    customId: `articleManage:manageSingle:${article.id}:delete:confirmed`,
+                  },
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Secondary,
+                    label:
+                      dcm.locale.origin.commands.article.manage.single.delete
+                        .buttons[1],
+                    customId: `articleManage:manageSingle:${article.id}`,
+                  },
+                ],
+              },
+            ],
+          },
+          Action.UPDATE
+        );
+      }
       return ArticleManage.manageSingleArticle(dcm, article);
     } else if (dcm.getKey("manageAll")) {
       if (
@@ -264,6 +343,16 @@ export default class ArticleManage extends BaseCommand {
           Action.MODAL
         );
       } else if (dcm.getKey("publish") || dcm.getKey("unpublish")) {
+        if (
+          articleLocalization.article.creatorId !== dcm.user.id &&
+          (dcm.user.flags &
+            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+            0
+        )
+          return new Response(
+            ResponseCodes.INSUFFICIENT_PERMISSION,
+            dcm.locale.origin.requirement.insufficientPermission
+          );
         await articleLocalization.edit(dcm.user.id, {
           published: dcm.getKey("publish"),
         });
@@ -272,6 +361,16 @@ export default class ArticleManage extends BaseCommand {
           articleLocalization
         );
       } else if (dcm.getKey("revoke")) {
+        if (
+          articleLocalization.article.creatorId !== dcm.user.id &&
+          (dcm.user.flags &
+            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+            0
+        )
+          return new Response(
+            ResponseCodes.INSUFFICIENT_PERMISSION,
+            dcm.locale.origin.requirement.insufficientPermission
+          );
         dcm.cf.formats.set(
           "article.localization.tag",
           articleLocalization.locale
@@ -306,6 +405,35 @@ export default class ArticleManage extends BaseCommand {
           },
           Action.UPDATE
         );
+      } else if (dcm.getKey("addTag")) {
+        return new Response(
+          ResponseCodes.SUCCESS,
+          {
+            title: Util.quickFormatContext(
+              dcm.locale.origin.commands.article.manage.localization.modal[1]
+                .title,
+              { "article.localization.tag": articleLocalization.locale }
+            ),
+            customId: `articleManage:manageLocalization:${articleLocalization.id}:addTag`,
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.TextInput,
+                    style: TextInputStyle.Short,
+                    ...dcm.locale.origin.commands.article.manage.localization
+                      .modal[1].textInput[0],
+                    customId: "tag",
+                    minLength: 3,
+                    maxLength: 100,
+                  },
+                ],
+              },
+            ],
+          },
+          Action.MODAL
+        );
       }
     }
   }
@@ -323,9 +451,9 @@ export default class ArticleManage extends BaseCommand {
         });
       if (dcm.getKey("editNote")) {
         if (article.creatorId !== dcm.user.id)
-          throw new Exception(
-            `Only creator can edit note on \`${article.id}\` article`,
-            Severity.COMMON
+          return new Response(
+            ResponseCodes.INSUFFICIENT_PERMISSION,
+            dcm.locale.origin.requirement.insufficientPermission
           );
 
         const noteTextInput = dcm.d.fields.getField(
@@ -398,6 +526,22 @@ export default class ArticleManage extends BaseCommand {
           dcm,
           articleLocalization
         );
+      } else if (dcm.getKey("addTag")) {
+        if (articleLocalization.tags.size >= 25)
+          throw new Exception("Tags maximum limit reached", Severity.COMMON);
+        const tag = dcm.d.fields.getTextInputValue("tag");
+        if (typeof tag !== "string" || tag.length < 3 || tag.length > 100)
+          throw new Exception(
+            "Tag must be string and length between 3 to 100 .",
+            Severity.SUSPICIOUS
+          );
+
+        await articleLocalization.addTags(dcm.user.id, tag);
+
+        return ArticleManage.manageArticleLocalization(
+          dcm,
+          articleLocalization
+        );
       }
     }
   }
@@ -437,14 +581,35 @@ export default class ArticleManage extends BaseCommand {
         )
       )
     );
-    console.log(articleLocalization);
     dcm.cf.formats.set("article.note", articleLocalization.article.note);
     dcm.cf.formats.set("article.id", articleLocalization.article.id);
     dcm.cf.formats.set("article.localization.title", articleLocalization.title);
     dcm.cf.formats.set(
+      "article.localization.tags.size",
+      String(articleLocalization.tags.size)
+    );
+    dcm.cf.formats.set(
       "article.localization.description",
       message?.embeds[0].description ?? ""
     );
+
+    const tagsOptions = articleLocalization.tags
+      .map((tag, key) => ({
+        label: tag.name,
+        description: Util.quickFormatContext(
+          dcm.locale.origin.commands.article.manage.localization.selectMenu[0]
+            .options[0].description,
+          {
+            "tag.createdAt": moment(tag.createdAt)
+              .locale(dcm.locale.tag)
+              .format("lll"),
+          }
+        ),
+        default: true,
+        value: key,
+      }))
+      .slice(0, 25);
+
     return new Response(
       ResponseCodes.SUCCESS,
       {
@@ -496,6 +661,20 @@ export default class ArticleManage extends BaseCommand {
               },
               {
                 type: ComponentType.Button,
+                style: ButtonStyle.Secondary,
+                label:
+                  dcm.locale.origin.commands.article.manage.localization
+                    .buttons[5] +
+                  (articleLocalization.tags.size >= 25
+                    ? " " +
+                      dcm.locale.origin.commands.article.manage.localization
+                        .extra[1]
+                    : ""),
+                customId: `articleManage:manageLocalization:${articleLocalization.id}:addTag`,
+                disabled: articleLocalization.tags.size >= 25,
+              },
+              {
+                type: ComponentType.Button,
                 style: ButtonStyle.Danger,
                 label:
                   dcm.locale.origin.commands.article.manage.localization
@@ -505,7 +684,24 @@ export default class ArticleManage extends BaseCommand {
               },
             ],
           },
-        ],
+          (articleLocalization.tags.size >= 1
+            ? {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.SelectMenu,
+                    placeholder:
+                      dcm.locale.origin.commands.article.manage.localization
+                        .selectMenu[0].placeholder,
+                    customId: `articleManage:manageLocalization:${articleLocalization.id}:removeTags`,
+                    options: tagsOptions,
+                    minValues: 0,
+                    maxValues: Math.min(articleLocalization.tags.size, 25), // Edit this
+                  },
+                ],
+              }
+            : undefined) as any,
+        ].filter((row) => typeof row !== "undefined"),
         ephemeral: true,
       },
       Action.UPDATE

@@ -69,7 +69,10 @@ export default class CommandMethod<T extends CommandMethodTypes> {
     }
     if (!this._user)
       // fetch user form our data;
-      this._user = await app.users.fetch(this.author);
+      this._user = await app.users.fetch(
+        this.author,
+        !(this.d instanceof AutocompleteInteraction)
+      );
   }
 
   public get me(): GuildMember {

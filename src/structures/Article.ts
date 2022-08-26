@@ -84,6 +84,13 @@ export default class Article {
     this.note = options.note;
   }
 
+  public async delete() {
+    await db.query("delete from `Article` where BIN_TO_UUID(id) = ?", [
+      this.id,
+    ]);
+    app.articles.cache.delete(this.id);
+  }
+
   public async fetch(): Promise<Article> {
     const article = await app.articles.fetch({ id: this.id }, true);
     if (!article)
