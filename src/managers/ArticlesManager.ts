@@ -385,7 +385,7 @@ export default class ArticlesManager extends CacheManager<Article> {
               ? commonsArticles
                   .slice(0, 8)
                   .map((article, index) => `\`${index + 1}.\` ${article.title}`)
-                  .join("\n")
+                  .join("\n\n")
               : locale.origin.helpdesk.thereNoPublishedArticle,
         },
       ],
