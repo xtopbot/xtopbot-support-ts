@@ -3,10 +3,15 @@
   "flag": "\uD83C\uDDFA\uD83C\uDDF8",
   "tags": ["en", "english", "us-english"],
   "roleName": "English",
+  "helpdeskChannel": "help-desk",
   "requirement": {
     "insufficientPermission": {
       "content": "Insufficient permission."
     }
+  },
+  "helpdesk": {
+    "title": "Help Desk",
+    "thereNoPublishedArticle": "I did not find any published article"
   },
   "article": {
     "embeds": [
@@ -548,22 +553,5 @@
     "set": {
       "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
     }
-  },
-  "helpdesk": {
-    "articles": [
-      {
-        "id": 34,
-        "article": "كيف أقوم بأضافة البوت الى السيرفر الخاص بي؟",
-        "tags": [],
-        "response": {
-          "embeds": [
-            {
-              "title": "{{article}}",
-              "description": ""
-            }
-          ]
-        }
-      }
-    ]
   }
 }

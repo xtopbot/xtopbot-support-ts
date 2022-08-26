@@ -120,6 +120,15 @@ export default class HelpDesk extends BaseCommand {
             Action.UPDATE
           );
         }
+      } else if (dcm.getKey("asUser")) {
+        return new Response(ResponseCodes.SUCCESS, {
+          ephemeral: true,
+          ...(await HelpDesk.getArticleMessage(
+            dcm.locale,
+            articleLocalization,
+            dcm.user.id
+          )),
+        });
       }
     }
   }
@@ -136,6 +145,36 @@ export default class HelpDesk extends BaseCommand {
     const userFeedback = userId
       ? await articleLocalization.getFeedback(userId)
       : null;
+    const rowTwo = [
+      {
+        type: ComponentType.Button,
+        style:
+          userFeedback?.helpful === true
+            ? ButtonStyle.Primary
+            : ButtonStyle.Secondary,
+        label: locale.origin.article.buttons[1],
+        customId: `helpdesk:article:${articleLocalization.id}:feedback:solved`,
+      },
+      {
+        type: ComponentType.Button,
+        style:
+          userFeedback?.helpful === false
+            ? ButtonStyle.Primary
+            : ButtonStyle.Secondary,
+        label: locale.origin.article.buttons[2],
+        customId: `helpdesk:article:${articleLocalization.id}:feedback:unsolved`,
+      },
+    ];
+    if (userFeedback?.helpful === false)
+      rowTwo.push({
+        type: ComponentType.Button,
+        style: ButtonStyle.Danger,
+        label: locale.origin.plugins.interactionOnly.buttons[0],
+        emoji: {
+          name: "✋",
+        },
+        customId: `requestAssistant:create`,
+      } as any);
     return {
       ...Util.addFieldToEmbed(
         Util.quickFormatContext(locale.origin.article, {
@@ -161,26 +200,7 @@ export default class HelpDesk extends BaseCommand {
         },
         {
           type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.Button,
-              style:
-                userFeedback?.helpful === true
-                  ? ButtonStyle.Primary
-                  : ButtonStyle.Secondary,
-              label: locale.origin.article.buttons[1],
-              customId: `helpdesk:article:${articleLocalization.id}:feedback:solved`,
-            },
-            {
-              type: ComponentType.Button,
-              style:
-                userFeedback?.helpful === false
-                  ? ButtonStyle.Primary
-                  : ButtonStyle.Secondary,
-              label: locale.origin.article.buttons[2],
-              customId: `helpdesk:article:${articleLocalization.id}:feedback:unsolved`,
-            },
-          ],
+          components: rowTwo,
         },
       ],
     };

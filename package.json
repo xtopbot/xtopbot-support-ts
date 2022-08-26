@@ -2,6 +2,7 @@
   "name": "xtopbot-support-ts",
   "version": "0.1.0alpha",
   "devDependencies": {
+    "@types/node-schedule": "^2.1.0",
     "@types/pino": "^7.0.5",
     "@types/uuid": "^8.3.4",
     "ts-node": "^10.2.1",
@@ -22,6 +23,7 @@
     "fuse.js": "^6.6.2",
     "moment": "^2.29.3",
     "mysql2": "^2.3.3",
+    "node-schedule": "^2.1.0",
     "pino": "^7.5.1",
     "pino-pretty": "^7.2.0",
     "uuid": "^8.3.2",
