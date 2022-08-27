@@ -394,7 +394,8 @@ export default class ArticlesManager extends CacheManager<Article> {
   }
 
   private resolve(raws: any[]) {
-    return raws
+    console.log(raws);
+    const resolved = raws
       ?.filter(
         (raw, index) =>
           Util.isUUID(raw.id) &&
@@ -420,7 +421,7 @@ export default class ArticlesManager extends CacheManager<Article> {
             messageId: localization.messageId,
             published:
               typeof localization.published === "number"
-                ? !!localization.published
+                ? localization.published === true
                 : null,
             editable:
               typeof localization.editable === "number"
@@ -451,5 +452,7 @@ export default class ArticlesManager extends CacheManager<Article> {
               })),
           })),
       }));
+    console.log(resolved[0]);
+    return resolved;
   }
 }

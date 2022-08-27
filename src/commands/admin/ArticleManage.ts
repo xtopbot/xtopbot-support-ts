@@ -662,7 +662,6 @@ export default class ArticleManage extends BaseCommand {
                 customId: `articleManage:manageLocalization:${
                   articleLocalization.id
                 }:${articleLocalization.published ? "unpublish" : "publish"}`,
-                disable: true,
               },
               {
                 type: ComponentType.Button,

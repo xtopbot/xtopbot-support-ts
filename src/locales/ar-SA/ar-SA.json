@@ -3,7 +3,7 @@
   "flag": "\uD83C\uDDF8\uD83C\uDDE6",
   "tags": ["ar", "arabic", "arab", "عربي"],
   "roleNames": [],
-  "helpdeskChannel": "مساعدة",
+  "helpdeskChannel": "مكتب-المساعدة",
   "exceptions": {
     "unknownError": {
       "content": "An error occurred while executing the request.\n```{{error}}```\n `Request Id:` `**{{request.id}}**`"
