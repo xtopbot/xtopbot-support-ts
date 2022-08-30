@@ -225,7 +225,12 @@ export default class ArticleManage extends BaseCommand {
           Action.MODAL
         );
       } else if (dcm.getKey("delete")) {
-        if (article.creatorId !== dcm.user.id)
+        if (
+          article.creatorId !== dcm.user.id &&
+          (dcm.user.flags &
+            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) ===
+            0
+        )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
             ...dcm.locale.origin.requirement.insufficientPermission,
             ephemeral: true,
@@ -351,7 +356,7 @@ export default class ArticleManage extends BaseCommand {
         if (
           articleLocalization.article.creatorId !== dcm.user.id &&
           (dcm.user.flags &
-            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) ===
             0
         )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
@@ -369,7 +374,7 @@ export default class ArticleManage extends BaseCommand {
         if (
           articleLocalization.article.creatorId !== dcm.user.id &&
           (dcm.user.flags &
-            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) !==
+            (Constants.StaffBitwise & ~UserFlagsPolicy.SUPPORT)) ===
             0
         )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {

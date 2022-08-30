@@ -421,7 +421,7 @@ export default class ArticlesManager extends CacheManager<Article> {
             messageId: localization.messageId,
             published:
               typeof localization.published === "number"
-                ? localization.published === true
+                ? !!localization.published
                 : null,
             editable:
               typeof localization.editable === "number"
