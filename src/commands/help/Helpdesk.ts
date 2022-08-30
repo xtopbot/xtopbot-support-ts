@@ -54,6 +54,7 @@ export default class HelpDesk extends BaseCommand {
       const articleLocalization = await app.articles.fetchLocalization(
         issue as string
       );
+
       if (!articleLocalization || !articleLocalization.published)
         return new Response(ResponseCodes.SUCCESS, {
           ephemeral: true,
