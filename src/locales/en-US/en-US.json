@@ -300,7 +300,7 @@
       }
     },
     "interactionOnly": {
-      "content": "Hey {{user.tag}}, This channel is for **Slash Command** only, you cannot use regular command or start conversation.",
+      "content": "Hey <@{{user.id}}>, This channel is for {{emoji.slash}}**Slash Commands** only, you cannot use regular command or start conversation.",
       "buttons": ["I need assistance"]
     },
     "requestHumanAssistant": {

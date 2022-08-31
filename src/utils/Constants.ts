@@ -3,6 +3,7 @@ import { LocaleTag } from "../managers/LocaleManager";
 import { UserFlagsPolicy } from "../structures/User";
 
 export default class Constants {
+  public static readonly SLASH_EMOJI: string = "<:slash:984557412801478658>";
   public static readonly DEFAULT_LOCALE: LocaleTag = "en-US";
   public static readonly DEFAULT_COMMAND_DISABLEABLE_VALUE: boolean = true;
   public static readonly DEFAULT_COMMAND_DISABLED_VALUE: boolean = false;

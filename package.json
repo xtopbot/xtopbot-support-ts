@@ -9,7 +9,7 @@
     "typescript": "^4.6.3"
   },
   "scripts": {
-    "start": "node ./dist/launch.js --safe",
+    "start": "node ./dist/launch.js",
     "test": "node ./dist/launch.js --test",
     "dev": "ts-node ./src/launch.ts --dev",
     "build": "tsc -p ."

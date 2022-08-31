@@ -10,6 +10,8 @@ import app from "../app";
 import RatelimitManager from "../managers/RatelimitManager";
 import ContextFormats from "../utils/ContextFormats";
 import { UserFlagsPolicy } from "../structures/User";
+import Logger from "../utils/Logger";
+import Constants from "../utils/Constants";
 
 export default class InteractionOnly {
   private static readonly ratelimit = new RatelimitManager<DiscordUser>(
@@ -28,11 +30,13 @@ export default class InteractionOnly {
       const cfx = new ContextFormats();
       cfx.setObject("user", d.author);
       cfx.formats.set("user.tag", d.author.tag);
-      if (userRL.remaining >= 4)
-        d.channel.send(
+      cfx.formats.set("emoji.slash", Constants.SLASH_EMOJI);
+      if (userRL.remaining >= 4) {
+        const m = await d.channel.send(
           cfx.resolve({
             ...locale.origin.plugins.interactionOnly,
-            components: [
+            // Temporarily suspended
+            /*components: [
               {
                 type: ComponentType.ActionRow,
                 components: [
@@ -47,9 +51,21 @@ export default class InteractionOnly {
                   },
                 ],
               },
-            ],
+            ],*/
           })
         );
+        setTimeout(
+          () =>
+            m
+              .delete()
+              .catch((onrejected) =>
+                Logger.warn(
+                  `[InteractionOnly] Failed to delete message reason: ${onrejected?.message}`
+                )
+              ),
+          180000
+        );
+      }
     } else {
       d.member?.disableCommunicationUntil(
         userRL.blockedEndAt?.getTime() ?? Date.now() + 5 * 60 * 1000,
