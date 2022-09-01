@@ -54,16 +54,12 @@ export default class RequestAssistant extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("requestAssistant")) {
-          return true;
-        }
-        return false;
+        return d.matches("requestAssistant");
       },
     });
   }
 
   public async buttonInteraction(dcm: Method<ButtonInteraction>) {
-    console.log("test");
     if (dcm.getValue("requestAssistant", false) === "create")
       return this.request(null, dcm, dcm.d.guild as Guild);
     if (dcm.getValue("requestAssistant", false) === "cancel") {

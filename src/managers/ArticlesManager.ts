@@ -394,7 +394,6 @@ export default class ArticlesManager extends CacheManager<Article> {
   }
 
   private resolve(raws: any[]) {
-    console.log(raws);
     const resolved = raws
       ?.filter(
         (raw, index) =>

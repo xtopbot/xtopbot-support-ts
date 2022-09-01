@@ -40,8 +40,7 @@ export default class HelpDesk extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("helpdesk")) return true;
-        return false;
+        return d.matches("helpdesk");
       },
     });
   }

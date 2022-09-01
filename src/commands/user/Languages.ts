@@ -44,12 +44,7 @@ export default class Languages extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        console.log(d.customIds);
-        console.log(d.d.customId);
-        if (d.matches("languages")) {
-          return true;
-        }
-        return false;
+        return d.matches("languages");
       },
     });
   }
