@@ -4,6 +4,11 @@ import { MessageResponse } from "./Response";
 import ContextFormats from "./ContextFormats";
 
 export default class Util {
+  public static capitalize(value: string, eachWord = false): string {
+    const arr = eachWord ? value.split(" ") : [value];
+    return arr.map((a) => a.charAt(0).toUpperCase() + a.slice(1)).join(" ");
+  }
+
   public static permissionsToStringArray(
     permissions: Array<PermissionsString>
   ): Array<string> {

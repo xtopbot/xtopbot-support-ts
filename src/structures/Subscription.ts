@@ -1,4 +1,5 @@
 import SubscriptionsManager from "../managers/SubscriptionsManager";
+import Util from "../utils/Util";
 
 export default class Subscription {
   public readonly tierId: PatreonTierId;
@@ -17,9 +18,9 @@ export default class Subscription {
     this.discordUserId = discordUserId;
   }
 
-  public getPaidAmount(cents: false): string;
-  public getPaidAmount(cents: true): number;
-  public getPaidAmount(cents: boolean = false): string | number {
+  public getTotalPaidAmount(cents: false): string;
+  public getTotalPaidAmount(cents: true): number;
+  public getTotalPaidAmount(cents: boolean = false): string | number {
     const paidSubscriptions = this.events.filter(
       (event) => event.chargeStatus === "PAID"
     );
@@ -27,9 +28,13 @@ export default class Subscription {
       (event) => event.chargeStatus === "REFUND"
     );
     const paidAmountCents =
-      paidSubscriptions.map((sub) => sub.amountCents).reduce((a, b) => a + b) -
-      refundSubscriptions.map((sub) => sub.amountCents).reduce((a, b) => a + b);
-    return cents ? paidAmountCents : paidAmountCents.toFixed();
+      paidSubscriptions
+        .map((sub) => sub.amountCents)
+        .reduce((a, b) => a + b, 0) -
+      refundSubscriptions
+        .map((sub) => sub.amountCents)
+        .reduce((a, b) => a + b, 0);
+    return cents ? paidAmountCents : (paidAmountCents / 100).toFixed(2);
   }
 
   public getExpires(): Date {
@@ -37,19 +42,28 @@ export default class Subscription {
       this.events
         .filter((event) => event.chargeStatus === "PAID")
         .map(() => SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM)
-        .reduce((a, b) => a + b) -
+        .reduce((a, b) => a + b, 0) -
         this.events
           .filter((event) => event.chargeStatus === "REFUND")
           .map(() => SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM)
-          .reduce((a, b) => a + b) +
+          .reduce((a, b) => a + b, 0) +
         Date.now()
     );
   }
 
   public getTierName(): string {
-    return Object.keys(PatreonTierId)[
-      Object.values(PatreonTierId).indexOf(this.tierId)
-    ];
+    return Util.capitalize(
+      Object.keys(PatreonTierId)
+        [Object.values(PatreonTierId).indexOf(this.tierId)].replace(/_/g, " ")
+        .toLowerCase(),
+      true
+    );
+  }
+
+  public getLastSubscriptionPaidId(): string {
+    return this.events.sort(
+      (a, b) => b.eventCreatedAt.getTime() - a.eventCreatedAt.getTime()
+    )[0].id;
   }
 
   public getCreatedAt(): Date {
