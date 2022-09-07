@@ -12,6 +12,8 @@ import RequestsAssistantManager from "./managers/RequestsAssistantManager";
 import ArticlesManager from "./managers/ArticlesManager";
 import MessageBuilderManager from "./managers/MessageBuilderManager";
 import childProcess from "child_process";
+import SubscriptionsManager from "./managers/SubscriptionsManager";
+import CustomBotsManager from "./managers/CustomBotsManager";
 
 dotenv.config();
 
@@ -52,6 +54,8 @@ export default class App {
   public static readonly requests = new RequestsAssistantManager();
   public static readonly articles = new ArticlesManager();
   public static readonly messages = new MessageBuilderManager();
+  public static readonly subscriptions = new SubscriptionsManager();
+  public static readonly customBots = new CustomBotsManager();
 
   private static _initialize = false;
 
