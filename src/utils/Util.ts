@@ -1,9 +1,27 @@
-import { PermissionsString } from "discord.js";
+import { ButtonStyle, ComponentType, PermissionsString } from "discord.js";
 import Exception, { Severity } from "./Exception";
 import { MessageResponse } from "./Response";
 import ContextFormats from "./ContextFormats";
+import Locale from "../structures/Locale";
 
 export default class Util {
+  public static backButton(locale: Locale, customId: string) {
+    return {
+      type: ComponentType.Button,
+      label: locale.origin.backButton,
+      style: ButtonStyle.Secondary,
+      customId: customId,
+      emoji: {
+        name: "left_arrow",
+        id: "1017280123587805244",
+      },
+    };
+  }
+
+  public static getUUIDLowTime(uuid: string) {
+    return uuid.substring(0, 8);
+  }
+
   public static capitalize(value: string, eachWord = false): string {
     const arr = eachWord ? value.split(" ") : [value];
     return arr.map((a) => a.charAt(0).toUpperCase() + a.slice(1)).join(" ");

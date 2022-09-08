@@ -8,6 +8,7 @@ import Languages from "../commands/user/Languages";
 import RequestAssistant from "../commands/user/RequestAssistant";
 import ArticleCreate from "../commands/admin/ArticleCreate";
 import ArticleManage from "../commands/admin/ArticleManage";
+import Subscriptions from "../commands/user/Subscriptions";
 
 export default class CommandsManager implements CommandsManagerTypes {
   private declare readonly commands: Array<BaseCommand>;
@@ -23,6 +24,7 @@ export default class CommandsManager implements CommandsManagerTypes {
       new RequestAssistant(),
       new ArticleCreate(),
       new ArticleManage(),
+      new Subscriptions(),
     ];
   }
 
