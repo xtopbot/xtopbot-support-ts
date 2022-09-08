@@ -17,7 +17,7 @@ import Response, {
   ResponseCodes,
 } from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import CommandMethod, { AnyInteraction } from "../CommandMethod";
+import CommandMethod, { AnyInteraction, Method } from "../CommandMethod";
 import app from "../../app";
 import Article from "../../structures/Article";
 import Util from "../../utils/Util";
@@ -70,7 +70,7 @@ export default class ArticleManage extends BaseCommand {
     });
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: CommandMethod<ChatInputCommandInteraction>
   ) {
     const articleId = dcm.d.options.getString("id", false);
@@ -89,7 +89,7 @@ export default class ArticleManage extends BaseCommand {
     return ArticleManage.manageSingleArticle(dcm, article);
   }
 
-  public async selectMenuInteraction(
+  protected async selectMenuInteraction(
     dcm: ComponentMethod<SelectMenuInteraction>
   ) {
     const firstValue = dcm.d.values[0];
@@ -182,7 +182,7 @@ export default class ArticleManage extends BaseCommand {
     }
   }
 
-  public async buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
+  protected async buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
     if (dcm.getKey("manageSingle")) {
       const article = await this.getArticleFromCustomId(dcm);
 
@@ -448,7 +448,7 @@ export default class ArticleManage extends BaseCommand {
     }
   }
 
-  public async modalSubmitInteraction(
+  protected async modalSubmitInteraction(
     dcm: ComponentMethod<ModalSubmitInteraction>
   ) {
     if (dcm.getKey("manageSingle")) {
@@ -848,7 +848,7 @@ export default class ArticleManage extends BaseCommand {
   }
 
   public static async manageSingleArticle(
-    dcm: CommandMethod<AnyInteraction>,
+    dcm: Method<AnyInteraction>,
     article: Article
   ): Promise<Response<MessageResponse>> {
     dcm.cf.formats.set("article.id", article.id);

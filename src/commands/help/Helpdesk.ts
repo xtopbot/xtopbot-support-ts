@@ -212,7 +212,9 @@ export default class HelpDesk extends BaseCommand {
     };
   }
 
-  public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
+  protected async autoCompleteInteraction(
+    dcm: Method<AutocompleteInteraction>
+  ) {
     const focused = dcm.d.options.getFocused(true);
     if (focused.name === "issue") {
       const result = await app.articles.search(focused.value);

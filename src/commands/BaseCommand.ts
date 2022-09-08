@@ -141,35 +141,35 @@ export abstract class BaseCommand implements BaseCommandType {
     return response;
   }
 
-  public autoCompleteInteraction?(
+  protected autoCompleteInteraction?(
     dcm: CommandMethod<AutocompleteInteraction>
   ): Promise<Response<AutocompleteResponse> | void>;
 
-  public chatInputCommandInteraction?(
+  protected chatInputCommandInteraction?(
     dcm: CommandMethod<ChatInputCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse> | void>;
 
-  public userContextMenuCommandInteraction?(
+  protected userContextMenuCommandInteraction?(
     dcm: CommandMethod<UserContextMenuCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse> | void>;
 
-  public messageContextMenuCommandInteraction?(
+  protected messageContextMenuCommandInteraction?(
     dcm: CommandMethod<MessageContextMenuCommandInteraction>
   ): Promise<Response<MessageResponse | ModalResponse> | void>;
 
-  public modalSubmitInteraction?(
+  protected modalSubmitInteraction?(
     dcm: ComponentMethod<ModalSubmitInteraction>
   ): Promise<Response<MessageResponse> | void>;
 
-  public buttonInteraction?(
+  protected buttonInteraction?(
     dcm: ComponentMethod<ButtonInteraction>
   ): Promise<Response<MessageResponse | ModalResponse> | void>;
 
-  public selectMenuInteraction?(
+  protected selectMenuInteraction?(
     dcm: ComponentMethod<SelectMenuInteraction>
   ): Promise<Response<MessageResponse | ModalResponse> | void>;
 
-  public message?(
+  protected message?(
     dcm: CommandMethod<Message>
   ): Promise<Response<MessageResponse | null>>;
 
@@ -227,36 +227,6 @@ interface BaseCommandDataType {
 interface BaseCommandType extends BaseCommandDataType {
   readonly applicationCommandOnly: boolean;
   messageComponent: (d: ComponentMethod<AnyComponentInteraction>) => boolean;
-
-  autoCompleteInteraction?(
-    dcm: Method<AutocompleteInteraction>
-  ): Promise<Response<AutocompleteResponse> | void>;
-
-  chatInputInteraction?(
-    dcm: Method<ChatInputCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void>;
-
-  userContextMenuCommandInteraction?(
-    dcm: Method<UserContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void>;
-
-  messageContextMenuCommandInteraction?(
-    dcm: Method<MessageContextMenuCommandInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void>;
-
-  modalSubmitInteraction?(
-    dcm: Method<ModalSubmitInteraction>
-  ): Promise<Response<MessageResponse> | void>;
-
-  buttonInteraction?(
-    dcm: Method<ButtonInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void>;
-
-  selectMenuInteraction?(
-    dcm: Method<SelectMenuInteraction>
-  ): Promise<Response<MessageResponse | ModalResponse> | void>;
-
-  message?(dcm: Method<Message>): Promise<Response<MessageResponse | null>>;
 
   setDisable(): void;
 

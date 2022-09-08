@@ -23,7 +23,7 @@ export default class Eval extends BaseCommand {
     });
   }
 
-  public async message(dcm: CommandMethod<Message>) {
+  protected async message(dcm: CommandMethod<Message>) {
     return this.runEval(dcm, dcm.context);
   }
 

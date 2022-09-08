@@ -47,7 +47,7 @@ export default class WebhookCreate extends BaseCommand {
     });
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: Method<ChatInputCommandInteraction>
   ) {
     const _channel = dcm.d.options.getChannel("channel");
