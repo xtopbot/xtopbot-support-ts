@@ -11,12 +11,22 @@ export default class Exception extends Response<MessageResponse> {
   constructor(message: string, severity: Severity, cause?: Error | unknown) {
     super(
       ResponseCodes.EXCEPTION,
-      {
-        content: `An error occurred while executing the request.\n\`\`\`${escapeMarkdown(
-          message
-        )}\`\`\`\n \`Request Id:\`**\`${uuidv4()}\`**`,
-        ephemeral: true,
-      },
+      severity === Severity.COMMON
+        ? {
+            embeds: [
+              {
+                description: message,
+                color: 12008772,
+              },
+            ],
+            ephemeral: true,
+          }
+        : {
+            content: `An error occurred while executing the request.\n\`\`\`${escapeMarkdown(
+              message
+            )}\`\`\`\n \`Request Id:\`**\`${uuidv4()}\`**`,
+            ephemeral: true,
+          },
       Action.REPLY
     ); // this Reply message is temp while locale is finished
     this.reason = message;
