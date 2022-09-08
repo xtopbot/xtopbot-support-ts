@@ -2,14 +2,85 @@ import { PatreonTierId } from "../structures/Subscription";
 import Exception, { Severity } from "../utils/Exception";
 import Locale from "../structures/Locale";
 import Util from "../utils/Util";
+import db from "../providers/Mysql";
+import CustomBot from "../structures/CustomBot";
+import app from "../app";
+import User from "../structures/User";
+import { v4 as uuidv4 } from "uuid";
 
 export default class CustomBotsManager {
   public async fetch(userId: string, tierId: PatreonTierId) {
     if (
       CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) !== 0
     )
-      return [];
-    return [];
+      return this.result([], tierId);
+    let raws: any[] = await db.query(
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, unix_timestamp(createdAt) as createdTimestampAt from \`Custom.Bots\` where ownerId = ? and tierId = ?`,
+      [userId, tierId]
+    );
+
+    return this.result(
+      raws.map(
+        (raw) =>
+          new CustomBot(
+            raw.id,
+            raw.token,
+            raw.username,
+            raw.discriminator,
+            raw.avatar,
+            raw.ownerId,
+            raw.tokenValidation === 1,
+            new Date(Math.round(raw.createdTimestampAt * 1000))
+          )
+      ),
+      tierId
+    );
+  }
+
+  public async create(
+    user: User,
+    token: string,
+    checkLimit?: {
+      tierId: PatreonTierId;
+    }
+  ): Promise<CustomBot> {
+    const validation = await app.customBots.validation(
+      token,
+      user.id,
+      app.locales.get(user.locale)
+    );
+    if (checkLimit) {
+      const bots = await this.fetch(user.id, checkLimit.tierId);
+      if (bots.remaining <= 0)
+        throw new Exception(
+          "Custom bot creation limit reached.",
+          Severity.COMMON
+        );
+    }
+    const id = uuidv4();
+    await db.query(
+      "insert into `Custom.Bot` (id, token, botId, ownerId, username, discriminator, avatar, tokenValidation) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)",
+      [
+        id,
+        token,
+        validation.bot.id,
+        user.id,
+        validation.bot.username,
+        validation.bot.discriminator,
+        validation.bot.avatar,
+        true,
+      ]
+    );
+    return new CustomBot(
+      id,
+      token,
+      validation.bot.username,
+      validation.bot.discriminator,
+      validation.bot.avatar,
+      user.id,
+      true,
+      new Date()
+    );
   }
 
   public static getCustomBotQuantityBySubscriptionTierId(
@@ -18,11 +89,13 @@ export default class CustomBotsManager {
     return PatreonTierId.ONE_CUSTOM_BOT ? 1 : 0;
   }
 
-  public async validation(
-    token: string,
-    userId: string,
-    locale: Locale
-  ): Promise<void> {
+  public async validation(token: string, userId: string, locale: Locale) {
+    if (!/[a-z0-9-_.]{32,}/i.test(token))
+      throw new Exception(
+        locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
+        Severity.COMMON
+      );
+
     const fetchInit = {
       method: "get",
       headers: {
@@ -92,7 +165,7 @@ export default class CustomBotsManager {
     }
 
     const botData = await botReq.json();
-    if (botData.flags === 0 || (applicationData.flags & (1 << 16)) === 0)
+    if ((botData.flags & (1 << 16)) !== 0)
       throw new Exception(
         locale.origin.commands.subscriptions.manage.one.bot.validations.verified,
         Severity.COMMON
@@ -115,12 +188,48 @@ export default class CustomBotsManager {
       );
     }
 
-    const guildsData = await guildsReq.json();
+    const guildsData: any[] = await guildsReq.json();
 
     if (guildsData.length > 3)
       throw new Exception(
         locale.origin.commands.subscriptions.manage.one.bot.validations.maximumServers,
         Severity.COMMON
       );
+
+    return {
+      application: {
+        id: applicationData.id,
+        name: applicationData.name,
+        icon: applicationData.icon,
+        description: applicationData.description,
+        ownerId: applicationData.owner.id,
+      },
+      bot: {
+        id: botData.id,
+        username: botData.id,
+        discriminator: botData.discriminator,
+        avatar: botData.avatar,
+      },
+      guilds: guildsData.map((guild) => ({
+        id: guild.id,
+        name: guild.name,
+        icon: guild.icon,
+        ownerId: guild.owner_id,
+      })),
+    };
+  }
+
+  private result(customBots: CustomBot[], tierId: PatreonTierId) {
+    return {
+      items: customBots.slice(
+        0,
+        CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId)
+      ),
+      remaining: Math.max(
+        0,
+        CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) -
+          customBots.length
+      ),
+    };
   }
 }

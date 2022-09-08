@@ -9,6 +9,7 @@
       "content": "Insufficient permission."
     }
   },
+  "backButton": "Back",
   "helpdesk": {
     "title": "Help Desk",
     "thereNoPublishedArticle": "I did not find any published article"
@@ -23,6 +24,186 @@
     "buttons": ["Did this article resolve the issue?", "Yes", "No"]
   },
   "commands": {
+    "language": {
+      "embeds": [
+        {
+          "description": ""
+        }
+      ],
+      "set": {
+        "embeds": []
+      }
+    },
+    "subscriptions": {
+      "notSubscribedYet": {
+        "embeds": [
+          {
+            "title": "We haven't seen any subscriptions you've made.",
+            "description": "[Check out our Patreon page to get one of the subscription plans.](https://www.patreon.com/xtopbot)\n\nIf you subscribed and haven't linked your Discord account to your Patreon account, you **must**. Check [How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) complete the steps, click on the `sync` button below and enter your **Patreon email** you have subscribed to."
+          }
+        ],
+        "buttons": ["Subscribe"]
+      },
+      "unknownSubscriptionTier": {
+        "embeds": [
+          {
+            "description": "This subscription tier is unknown, or has been removed."
+          }
+        ]
+      },
+      "subscriptionExpired": {
+        "embeds": [
+          {
+            "title": "Your subscription has expired",
+            "description": "Subscription to **{{subscription.tier.name}}** has expired on <t:{{subscription.expiredTimestamp}}:D>, you must pay for the renewal of the subscription via [Patreon]({{subscription.tier.checkout.url}})"
+          }
+        ],
+        "buttons": ["Renewal"]
+      },
+      "createCustomBotLimitReached": {
+        "embeds": [
+          {
+            "description": "You have reached the limit to create a custom bot in **{{subscription.tier.name}}** tier."
+          }
+        ]
+      },
+      "manage": {
+        "embeds": [
+          {
+            "title": "Manage Subscriptions",
+            "description": ""
+          }
+        ],
+        "one": {
+          "status": {
+            "expires": "Expires in <t:{{subscription.expiresTimestamp}}:D> (<t:{{subscription.expiresTimestamp}}:R>)",
+            "expired": "Expired on <t:{{subscription.expiresTimestamp}}:D> (<t:{{subscription.expiresTimestamp}}:R>)"
+          },
+          "embeds": [
+            {
+              "author": {
+                "name": "Subscription"
+              },
+              "title": "{{subscription.tier.name}}",
+              "description": "{{subscription.description}}",
+              "fields": [
+                {
+                  "name": "Created",
+                  "value": "<t:{{subscription.createdTimestamp}}:D>",
+                  "inline": true
+                },
+                {
+                  "name": "Total Paid",
+                  "value": "${{subscription.totalPaid}}",
+                  "inline": true
+                },
+                {
+                  "name": "Status `{{subscription.status}}`",
+                  "value": "{{subscription.status.description}}",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "{{subscription.id}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "Manage your custom bots",
+              "options": [
+                {
+                  "description": "The bot is not setup yet!"
+                },
+                {
+                  "description": "The bot token is valid, the bot works normally."
+                },
+                {
+                  "description": "The bot token is invalid, you should set it up again!"
+                },
+                {
+                  "description": "The bot token is valid, our operating system is not working well."
+                }
+              ]
+            }
+          ],
+          "buttons": ["Manage Patreon Pledge"],
+          "bot": {
+            "validations": {
+              "invalidToken": "Bot token invalid.",
+              "ownedByUser": "The bot owner must be owned by you.",
+              "verified": "The bot must be **unverified**.",
+              "public": "The bot must be **unpublic**. \n\nTo make your bot unpublic go to [`Application` → `Bot`](https://discord.com/developers/applications/{{bot.id}}/bot) and make `PUBLIC BOT` disabled.",
+              "messageContentIntent": "The bot must be enable **Message Content Intent**. \n\nTo enable **Message Content Intent** go to [`Application` → `Bot`](https://discord.com/developers/applications/{{bot.id}}/bot) and make `MESSAGE CONTENT INTENT` enabled.",
+              "maximumServers": "The bot must have **3** or fewer servers."
+            },
+            "setup": {
+              "completed": {
+                "embeds": [
+                  {
+                    "title": "Custom Bot Setup Completed!",
+                    "description": "Your **{{bot.tag}}** ({{bot.shortUUID}})  has been added to our operating system, usually the bot is fully operational in a few seconds.\n\nIf you encounter operational or other problems, don't hesitate to ask for assistance in the helpdesk channel!"
+                  }
+                ],
+                "buttons": ["Manage your {{bot.tag}}"]
+              },
+              "embeds": [
+                {
+                  "title": "Setup a custom bot",
+                  "description": "Follow these steps to get your bot token:\nGo to [`Discord Developer Portal`](https://discord.com/developers/applications) → `Applications` → `New Application` → `Bot` → `Add bot` → `Reset Token` → `Copy Token`"
+                }
+              ],
+              "buttons": ["Back", "Add your bot token"]
+            },
+            "embeds": [
+              {
+                "title": "Manage your custom bot",
+                "author": {
+                  "name": "{{bot.tag}} ({{bot.id}})",
+                  "icon_url": "{{bot.avatar}}"
+                },
+                "description": "",
+                "fields": [
+                  {
+                    "name": "Bot Tag",
+                    "value": "{{bot.tag}}"
+                  },
+                  {
+                    "name": "Status",
+                    "value": "{{bot.status}}"
+                  },
+                  {
+                    "name": "Currently Bot Servers `{{bot.servers.size}}/{{allowed.servers}}`",
+                    "value": "{{bot.servers}}"
+                  }
+                ],
+                "footer": "{{subscription.id}}"
+              }
+            ],
+            "buttons": ["Back", "Start", "Stop"],
+            "modals": [
+              {
+                "title": "Add your bot token",
+                "textInput": [
+                  {
+                    "label": "token",
+                    "placeholder": "Copy your bot token from Discord Developer Portal"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "subscriptionStatus": {
+        "active": "Active",
+        "cancelled": "Cancelled",
+        "expired": "Expired"
+      },
+      "tierDescription": {
+        "7764503": ""
+      }
+    },
     "help": {
       "getArticle": {
         "articleNoLongerExits": {
