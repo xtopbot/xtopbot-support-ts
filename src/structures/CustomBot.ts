@@ -1,24 +1,32 @@
-export default class CustomBot {
+import Exception, { Severity } from "../utils/Exception";
+import app from "../app";
+import Locale from "./Locale";
+import { LocaleTag } from "../managers/LocaleManager";
+import Util from "../utils/Util";
+export default class CustomBot<T extends "CREATION" | "GET"> {
   public readonly id: string;
   public declare readonly token: string | null;
-  public readonly username: string;
-  public readonly discriminator: number;
-  public readonly avatar: string;
-  public readonly ownerId: string;
-  public readonly tokenValidation: boolean;
+  public readonly botId: T extends "GET" ? string : string | null;
+  public readonly username: T extends "GET" ? string : string | null;
+  public readonly discriminator: T extends "GET" ? number : number | null;
+  public readonly avatar: T extends "GET" ? string : string | null;
+  public readonly ownerId: T extends "GET" ? string : string | null;
+  public readonly tokenValidation: T extends "GET" ? boolean : boolean | null;
   public readonly createdAt: Date;
   constructor(
     id: string,
     token: string,
-    username: string,
-    discriminator: number,
-    avatar: string,
-    ownerId: string,
-    tokenValidation: boolean,
-    createdAt: Date
+    botId: T extends "GET" ? string : string | null,
+    username: T extends "GET" ? string : string | null,
+    discriminator: T extends "GET" ? number : number | null,
+    avatar: T extends "GET" ? string : string | null,
+    ownerId: T extends "GET" ? string : string | null,
+    tokenValidation: T extends "GET" ? boolean : boolean | null,
+    createdAt: Date = new Date()
   ) {
     this.id = id;
     this.token = token;
+    this.botId = botId;
     this.username = username;
     this.discriminator = discriminator;
     this.avatar = avatar;
@@ -33,8 +41,153 @@ export default class CustomBot {
       : CustomBotStatus.ONLINE;
   }
 
-  public async fetchUser() {
-    const user = fetch("https://discord.com/api/v10/");
+  public async fetchGuilds(locale: LocaleTag | null = null) {
+    const data: any[] = await this.request("/users/@me/guilds", locale);
+
+    return data.map((d) => ({
+      id: d.id,
+      name: d.name,
+      icon: d.icon,
+      ownerId: d.owner_id,
+    }));
+  }
+
+  public async fetchUser(locale: LocaleTag | null = null) {
+    const data = await this.request("/users/@me", locale);
+
+    return {
+      id: data.id,
+      username: data.username,
+      discriminator: data.discriminator,
+      avatar: data.avatar,
+      flags: data.flags,
+    };
+  }
+
+  public async fetchApplication(locale: LocaleTag | null = null) {
+    const data = await this.request("/oauth2/applications/@me", locale);
+
+    return {
+      id: data.id,
+      name: data.name,
+      icon: data.icon,
+      description: data.description,
+      ownerId: data.owner.id,
+      botPublic: data.bot_public,
+      flags: data.flags,
+    };
+  }
+
+  public async validation(
+    type: ValidationType.BOT,
+    validation: {
+      data: {
+        flags: number;
+      };
+    },
+    localeTag: LocaleTag | null
+  ): Promise<void>;
+  public async validation(
+    type: ValidationType.APPLICATION,
+    validation: {
+      data: {
+        id: string;
+        flags: number;
+        botPublic: boolean;
+        ownerId: string;
+      };
+      userId: string;
+    },
+    localeTag: LocaleTag | null
+  ): Promise<void>;
+  public async validation(
+    type: ValidationType.GUILDS,
+    validation: {
+      data: any[];
+      limit: number;
+    },
+    localeTag: LocaleTag | null
+  ): Promise<void>;
+  public async validation(
+    type:
+      | ValidationType.GUILDS
+      | ValidationType.BOT
+      | ValidationType.APPLICATION,
+    validation: any,
+    localeTag: LocaleTag | null = null
+  ): Promise<void> {
+    const locale = app.locales.get(localeTag, true);
+
+    if (type === ValidationType.APPLICATION) {
+      if (validation.data.own1erId !== validation.userId)
+        throw new Exception(
+          locale.origin.commands.subscriptions.manage.one.bot.validations.ownedByUser,
+          Severity.COMMON
+        );
+      if (validation.data.botPublic != false)
+        throw new Exception(
+          Util.quickFormatContext(
+            locale.origin.commands.subscriptions.manage.one.bot.validations
+              .public,
+            { "bot.id": validation.data.id }
+          ),
+          Severity.COMMON
+        );
+      if (
+        validation.data.flags === 0 ||
+        (validation.data.flags & (1 << 19)) === 0
+      )
+        throw new Exception(
+          Util.quickFormatContext(
+            locale.origin.commands.subscriptions.manage.one.bot.validations
+              .messageContentIntent,
+            { "bot.id": validation.data.id }
+          ),
+          Severity.COMMON
+        );
+    } else if (type === ValidationType.BOT) {
+      if ((validation.data.flags & (1 << 16)) !== 0)
+        throw new Exception(
+          locale.origin.commands.subscriptions.manage.one.bot.validations.verified,
+          Severity.COMMON
+        );
+    } else if (type === ValidationType.GUILDS) {
+      if (validation.data.length > 3)
+        throw new Exception(
+          locale.origin.commands.subscriptions.manage.one.bot.validations.maximumServers,
+          Severity.COMMON
+        );
+    }
+  }
+
+  private async request(uri: string, localeTag: LocaleTag | null = null) {
+    const locale = app.locales.get(localeTag, true);
+
+    if (typeof this.token !== "string" || !/[a-z0-9-_.]{32,}/i.test(this.token))
+      throw new Exception(
+        locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
+        Severity.COMMON
+      );
+
+    const res = await fetch("https://discord.com/api/v10" + uri, {
+      method: "get",
+      headers: {
+        authorization: "Bot " + this.token,
+      },
+    });
+
+    if (res.status !== 200) {
+      if (res.status === 401)
+        throw new Exception(
+          locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
+          Severity.COMMON
+        );
+      throw new Exception(
+        `Unexpected Discord API status code: ${res.status}`,
+        Severity.FAULT
+      );
+    }
+    return res.json();
   }
 }
 
@@ -42,4 +195,10 @@ export enum CustomBotStatus {
   ONLINE = 1,
   OFFLINE,
   TOKEN_INVALID,
+}
+
+export enum ValidationType {
+  APPLICATION,
+  BOT,
+  GUILDS,
 }

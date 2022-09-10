@@ -395,7 +395,7 @@ export default class ArticleManage extends BaseCommand {
               dcm.locale.origin.commands.article.manage.localization.revoke,
               0,
               "color",
-              Constants.DEFAULT_COLORS.DANGER
+              Constants.defaultColors.RED
             ),
             components: [
               {

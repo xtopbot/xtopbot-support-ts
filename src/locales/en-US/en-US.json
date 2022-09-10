@@ -127,8 +127,15 @@
               ]
             }
           ],
-          "buttons": ["Manage Patreon Pledge"],
+          "buttons": ["Manage Patreon Pledge", "Refresh"],
           "bot": {
+            "notLongerAvailable": {
+              "embeds": [
+                {
+                  "description": "The bot is no longer available for you."
+                }
+              ]
+            },
             "validations": {
               "invalidToken": "Bot token invalid.",
               "ownedByUser": "The bot owner must be owned by you.",
@@ -162,7 +169,7 @@
                   "name": "{{bot.tag}} ({{bot.id}})",
                   "icon_url": "{{bot.avatar}}"
                 },
-                "description": "",
+                "description": "{{subscription.description}}",
                 "fields": [
                   {
                     "name": "Bot Tag",
@@ -177,10 +184,10 @@
                     "value": "{{bot.servers}}"
                   }
                 ],
-                "footer": "{{subscription.id}}"
+                "footer": "{{bot.uuid}}"
               }
             ],
-            "buttons": ["Back", "Start", "Stop"],
+            "buttons": ["Terminate"],
             "modals": [
               {
                 "title": "Add your bot token",

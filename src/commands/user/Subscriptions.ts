@@ -21,8 +21,9 @@ import Response, {
   ResponseCodes,
 } from "../../utils/Response";
 import Util from "../../utils/Util";
-import { CustomBotStatus } from "../../structures/CustomBot";
+import CustomBot, { CustomBotStatus } from "../../structures/CustomBot";
 import ComponentMethod from "../ComponentMethod";
+import Constants from "../../utils/Constants";
 
 export default class Subscriptions extends BaseCommand {
   constructor() {
@@ -69,7 +70,8 @@ export default class Subscriptions extends BaseCommand {
     if (checker?.path === "CREATE_CUSTOM_BOT") {
       const customBot = await app.customBots.create(
         dcm.user,
-        dcm.d.fields.getTextInputValue("token")
+        dcm.d.fields.getTextInputValue("token"),
+        checker.subscription.tierId
       );
       dcm.cf.formats.set(
         "bot.tag",
@@ -185,7 +187,35 @@ export default class Subscriptions extends BaseCommand {
         },
         Action.UPDATE
       );
-    if (checker?.path === "SUBSCRIPTION_MANAGE")
+    else if (checker?.path === "MANAGE_CUSTOM_BOT") {
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          ...dcm.locale.origin.commands.subscriptions.manage.one.bot,
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                Util.backButton(
+                  dcm.locale,
+                  `subscription:tier:${checker.subscription.tierId}`
+                ) as any,
+                {
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Primary,
+                  customId: `subscription:tier:${checker.subscription.tierId}:bots:create`,
+                  label:
+                    dcm.locale.origin.commands.subscriptions.manage.one.bot
+                      .setup.buttons[1],
+                },
+              ],
+            },
+          ],
+          ephemeral: true,
+        },
+        Action.UPDATE
+      );
+    } else if (checker?.path === "SUBSCRIPTION_MANAGE")
       return Subscriptions.manageSubscription(dcm, checker.subscription);
   }
 
@@ -196,7 +226,12 @@ export default class Subscriptions extends BaseCommand {
     | Response<MessageResponse>
     | {
         subscription: Subscription;
-        path: "CREATE_CUSTOM_BOT" | "SUBSCRIPTION_MANAGE";
+        customBots?: {
+          items: CustomBot[];
+          remaining: number;
+        };
+        target?: any;
+        path: "CREATE_CUSTOM_BOT" | "SUBSCRIPTION_MANAGE" | "MANAGE_CUSTOM_BOT";
       }
     | void
   > {
@@ -263,13 +298,40 @@ export default class Subscriptions extends BaseCommand {
               Action.UPDATE
             );
           return {
-            subscription: subscription,
+            subscription,
+            customBots,
             path: "CREATE_CUSTOM_BOT",
           };
+        } else if (dcm.getKey("manage")) {
+          const botUUID =
+            value && Util.isUUID(value)
+              ? value
+              : Util.isUUID(dcm.getValue("bots"))
+              ? dcm.getValue("bots", true)
+              : null;
+
+          const customBot = botUUID
+            ? customBots.items.find((cb) => cb.id === botUUID)
+            : null;
+          if (!customBot)
+            return new Response(ResponseCodes.CUSTOM_BOT_NO_LONGER_AVAILABLE, {
+              ...dcm.locale.origin.commands.subscriptions.manage.one.bot
+                .notLongerAvailable,
+              ephemeral: true,
+            });
+
+          return {
+            subscription,
+            customBots,
+            target: customBot,
+            path: "MANAGE_CUSTOM_BOT",
+          };
         }
+
+        return;
       }
       return {
-        subscription: subscription,
+        subscription,
         path: "SUBSCRIPTION_MANAGE",
       };
     }
@@ -294,6 +356,13 @@ export default class Subscriptions extends BaseCommand {
               dcm.locale.origin.commands.subscriptions.manage.one.buttons[0],
             style: ButtonStyle.Link,
             url: "https://www.patreon.com/join/xtopbot/checkout?edit=1",
+          },
+          {
+            type: ComponentType.Button,
+            label:
+              dcm.locale.origin.commands.subscriptions.manage.one.buttons[1],
+            style: ButtonStyle.Secondary,
+            customId: `subscription:tier:${subscription.tierId}`,
           },
         ],
       },
@@ -392,7 +461,14 @@ export default class Subscriptions extends BaseCommand {
     return new Response(
       ResponseCodes.SUCCESS,
       {
-        ...dcm.locale.origin.commands.subscriptions.manage.one,
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.subscriptions.manage.one,
+          0,
+          "color",
+          subscription.isActive()
+            ? Constants.defaultColors.GREEN
+            : Constants.defaultColors.GRAY
+        ),
         components,
         ephemeral: true,
       },
