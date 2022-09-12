@@ -191,7 +191,7 @@ export default class Subscriptions extends BaseCommand {
       return new Response(
         ResponseCodes.SUCCESS,
         {
-          ...dcm.locale.origin.commands.subscriptions.manage.one.bot,
+          ...(dcm.locale.origin.commands.subscriptions.manage.one.bot as any),
           components: [
             {
               type: ComponentType.ActionRow,
@@ -227,7 +227,7 @@ export default class Subscriptions extends BaseCommand {
     | {
         subscription: Subscription;
         customBots?: {
-          items: CustomBot[];
+          items: CustomBot<"GET">[];
           remaining: number;
         };
         target?: any;

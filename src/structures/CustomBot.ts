@@ -3,6 +3,9 @@ import app from "../app";
 import Locale from "./Locale";
 import { LocaleTag } from "../managers/LocaleManager";
 import Util from "../utils/Util";
+import Logger from "../utils/Logger";
+import { PatreonTierId } from "./Subscription";
+import CustomBotsManager from "../managers/CustomBotsManager";
 export default class CustomBot<T extends "CREATION" | "GET"> {
   public readonly id: string;
   public declare readonly token: string | null;
@@ -38,7 +41,9 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   public getStatus(): CustomBotStatus {
     return !this.tokenValidation
       ? CustomBotStatus.TOKEN_INVALID
-      : CustomBotStatus.ONLINE;
+      : app.customBots.processed.find((p) => p === this.id)
+      ? CustomBotStatus.ONLINE
+      : CustomBotStatus.PROVISIONING;
   }
 
   public async fetchGuilds(locale: LocaleTag | null = null) {
@@ -189,11 +194,53 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     }
     return res.json();
   }
+
+  public async start(localeTag: LocaleTag | null = null) {
+    if (this.getStatus() === C)
+      Logger.info(`[CustomBot<Process>] ${this.botId} Starting...`);
+    if (this.getStatus() === CustomBotStatus.PROVISIONING) {
+      Logger.info(`[CustomBot<Process>] ${this.botId} Validation...`);
+      let valid = true;
+      await this.validation(
+        ValidationType.BOT,
+        { data: await this.fetchUser() },
+        null
+      ).catch(() => (valid = false));
+      if (valid)
+        await this.validation(
+          ValidationType.APPLICATION,
+          {
+            data: await this.fetchApplication(),
+            userId: this.ownerId as string,
+          },
+          null
+        ).catch(() => (valid = false));
+      if (valid)
+        await this.validation(
+          ValidationType.GUILDS,
+          {
+            data: await this.fetchGuilds(),
+            limit: CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
+              PatreonTierId.ONE_CUSTOM_BOT
+            ),
+          },
+          null
+        ).catch(() => (valid = false));
+      if (!valid)
+        return Logger.info(
+          `[CustomBot<Process>] ${this.botId} Validation failed!`
+        );
+      Logger.info(
+        `[CustomBot<Process>] ${this.botId} Validation completed successfully`
+      );
+    }
+  }
 }
 
 export enum CustomBotStatus {
-  ONLINE = 1,
+  STARTED = 1,
   OFFLINE,
+  PROVISIONING,
   TOKEN_INVALID,
 }
 
