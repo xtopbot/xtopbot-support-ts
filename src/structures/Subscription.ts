@@ -47,7 +47,15 @@ export default class Subscription {
           .filter((event) => event.chargeStatus === "REFUND")
           .map(() => SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM)
           .reduce((a, b) => a + b, 0) +
-        Date.now()
+        (this.events
+          .find(
+            (event) =>
+              event.eventCreatedAt.getTime() +
+                SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM >
+              Date.now()
+          )
+          ?.eventCreatedAt.getTime() ??
+          this.getLastEvent("PAID").eventCreatedAt.getTime())
     );
   }
 
@@ -60,10 +68,12 @@ export default class Subscription {
     );
   }
 
-  public getLastSubscriptionPaidId(): string {
-    return this.events.sort(
-      (a, b) => b.eventCreatedAt.getTime() - a.eventCreatedAt.getTime()
-    )[0].id;
+  public getLastEvent(status: "PAID" | "REFUND"): SubscriptionEvent {
+    return this.events
+      .filter((e) => e.chargeStatus === status)
+      .sort(
+        (a, b) => b.eventCreatedAt.getTime() - a.eventCreatedAt.getTime()
+      )[0];
   }
 
   public getCreatedAt(): Date {

@@ -374,7 +374,7 @@ export default class Subscriptions extends BaseCommand {
       description:
         dcm.locale.origin.commands.subscriptions.manage.one.selectMenu[0]
           .options[
-          cb.getStatus() === CustomBotStatus.ONLINE
+          cb.getStatus() === CustomBotStatus.STARTED
             ? 1
             : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
             ? 2
@@ -382,7 +382,7 @@ export default class Subscriptions extends BaseCommand {
         ].description,
       emoji: {
         name:
-          cb.getStatus() === CustomBotStatus.ONLINE
+          cb.getStatus() === CustomBotStatus.STARTED
             ? "🟢"
             : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
             ? "🟠"
@@ -421,10 +421,7 @@ export default class Subscriptions extends BaseCommand {
       });
 
     dcm.cf.formats.set("subscription.tier.name", subscription.getTierName());
-    dcm.cf.formats.set(
-      "subscription.id",
-      subscription.getLastSubscriptionPaidId()
-    );
+    dcm.cf.formats.set("subscription.id", subscription.getLastEvent("PAID").id);
     dcm.cf.formats.set(
       "subscription.description",
       dcm.locale.origin.commands.subscriptions.tierDescription[

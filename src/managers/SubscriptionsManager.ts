@@ -48,7 +48,7 @@ export default class SubscriptionsManager {
                from \`Patreon.Pledges\`
                ${
                  where.length > 0
-                   ? "where " + where.map((w) => w.name).join(" and")
+                   ? "where " + where.map((w) => w.name).join(" and ")
                    : ""
                }
            group by chargeDate, chargeStatus`,
@@ -68,8 +68,6 @@ export default class SubscriptionsManager {
       ? subscriptions[0]
       : subscriptions;
   }
-
-  public async fetchActive() {}
 
   private resolve(raws: any[]): Subscription {
     return new Subscription(

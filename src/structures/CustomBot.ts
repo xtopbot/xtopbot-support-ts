@@ -41,13 +41,15 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   public getStatus(): CustomBotStatus {
     return !this.tokenValidation
       ? CustomBotStatus.TOKEN_INVALID
-      : app.customBots.processed.find((p) => p === this.id)
-      ? CustomBotStatus.ONLINE
-      : CustomBotStatus.PROVISIONING;
+      : app.customBots.processes.get(this.id) === "PROCESSED"
+      ? CustomBotStatus.STARTED
+      : app.customBots.processes.get(this.id) === "PROCESSING"
+      ? CustomBotStatus.PROVISIONING
+      : CustomBotStatus.OFFLINE;
   }
 
   public async fetchGuilds(locale: LocaleTag | null = null) {
-    const data: any[] = await this.request("/users/@me/guilds", locale);
+    const data: any[] = await this.apiRequest("/users/@me/guilds", locale);
 
     return data.map((d) => ({
       id: d.id,
@@ -58,7 +60,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async fetchUser(locale: LocaleTag | null = null) {
-    const data = await this.request("/users/@me", locale);
+    const data = await this.apiRequest("/users/@me", locale);
 
     return {
       id: data.id,
@@ -70,7 +72,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async fetchApplication(locale: LocaleTag | null = null) {
-    const data = await this.request("/oauth2/applications/@me", locale);
+    const data = await this.apiRequest("/oauth2/applications/@me", locale);
 
     return {
       id: data.id,
@@ -165,7 +167,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     }
   }
 
-  private async request(uri: string, localeTag: LocaleTag | null = null) {
+  private async apiRequest(uri: string, localeTag: LocaleTag | null = null) {
     const locale = app.locales.get(localeTag, true);
 
     if (typeof this.token !== "string" || !/[a-z0-9-_.]{32,}/i.test(this.token))
@@ -195,45 +197,52 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     return res.json();
   }
 
-  public async start(localeTag: LocaleTag | null = null) {
-    if (this.getStatus() === C)
-      Logger.info(`[CustomBot<Process>] ${this.botId} Starting...`);
-    if (this.getStatus() === CustomBotStatus.PROVISIONING) {
-      Logger.info(`[CustomBot<Process>] ${this.botId} Validation...`);
-      let valid = true;
+  public async start() {
+    if (this.getStatus() !== CustomBotStatus.OFFLINE)
+      throw new Exception(
+        `status of this custom bot is inoperable. status: ${Util.capitalize(
+          CustomBotStatus[this.getStatus()]
+        )}`,
+        Severity.SUSPICIOUS
+      );
+    Logger.info(
+      `[CustomBot<Process>] ${this.botId} Starting(Section: validation)...`
+    );
+    let valid = true;
+    await this.validation(
+      ValidationType.BOT,
+      { data: await this.fetchUser() },
+      null
+    ).catch(() => (valid = false));
+    if (valid)
       await this.validation(
-        ValidationType.BOT,
-        { data: await this.fetchUser() },
+        ValidationType.APPLICATION,
+        {
+          data: await this.fetchApplication(),
+          userId: this.ownerId as string,
+        },
         null
       ).catch(() => (valid = false));
-      if (valid)
-        await this.validation(
-          ValidationType.APPLICATION,
-          {
-            data: await this.fetchApplication(),
-            userId: this.ownerId as string,
-          },
-          null
-        ).catch(() => (valid = false));
-      if (valid)
-        await this.validation(
-          ValidationType.GUILDS,
-          {
-            data: await this.fetchGuilds(),
-            limit: CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
-              PatreonTierId.ONE_CUSTOM_BOT
-            ),
-          },
-          null
-        ).catch(() => (valid = false));
-      if (!valid)
-        return Logger.info(
-          `[CustomBot<Process>] ${this.botId} Validation failed!`
-        );
-      Logger.info(
-        `[CustomBot<Process>] ${this.botId} Validation completed successfully`
+    if (valid)
+      await this.validation(
+        ValidationType.GUILDS,
+        {
+          data: await this.fetchGuilds(),
+          limit: CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
+            PatreonTierId.ONE_CUSTOM_BOT
+          ),
+        },
+        null
+      ).catch(() => (valid = false));
+    if (!valid)
+      return Logger.info(
+        `[CustomBot<Process>] ${this.botId} Validation failed!`
       );
-    }
+    Logger.info(
+      `[CustomBot<Process>] ${this.botId} Validation completed successfully. Starting<Process>`
+    );
+    await app.customBots.PM2Start(this.id, this.token as string);
+    Logger.info(`[CustomBot<Process>] ${this.botId} Processed successfully`);
   }
 }
 
