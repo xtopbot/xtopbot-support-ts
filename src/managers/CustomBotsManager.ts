@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import pm2, { ProcessDescription } from "pm2";
 import Logger from "../utils/Logger";
 import { Collection } from "discord.js";
+import schedule from "node-schedule";
 
 export default class CustomBotsManager {
   public readonly processes = new Collection<
@@ -17,7 +18,10 @@ export default class CustomBotsManager {
   >();
   private PM2Connected = false;
   //id: User or Custom bot
-  public async fetch(id: string | string[], tierId: PatreonTierId) {
+  public async fetch(
+    id: string | string[],
+    tierId: PatreonTierId
+  ): Promise<{ items: CustomBot<"GET">[]; remaining: number }> {
     if (CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) < 0)
       return this.result([], tierId);
     let raws: any[] = await db.query(
@@ -118,9 +122,29 @@ export default class CustomBotsManager {
     );
     await this.PM2Connect();
     Logger.info("[CustomBotsManager<Process>][PM2] Process Manager connected");
+
+    const rule = new schedule.RecurrenceRule();
+    rule.hour = 0;
+    rule.minute = 0;
+    rule.second = 0;
+    rule.tz = "Etc/UTC";
+    Logger.info(
+      "[CustomBotsManager<Process>] Subscribed (schedule every day)."
+    );
+    const job = schedule.scheduleJob(rule, async () => {
+      Logger.info(
+        "[CustomBotsManager<Process>] Validation Running Processes..."
+      );
+      await this.validationRunningProcesses();
+      Logger.info(
+        "[CustomBotsManager<Process>] Running processes have been successfully validated!"
+      );
+    });
+
+    job.invoke();
   }
 
-  private async checkProcessedValidation() {
+  private async validationRunningProcesses() {
     const processes = (await this.PM2Processes()).flatMap((process) =>
       Util.isUUID(process.name) ? process : []
     );
@@ -142,13 +166,28 @@ export default class CustomBotsManager {
     Logger.info(
       `[CustomBotsManager<Process>] All Custom Bots Fetched (${activeSubscriptions.length})`
     );
-    //destroy expired subscription process
+    //Destroy expired subscription process and add running process to cache.
     processes.map(async (p) => {
       if (Util.isUUID(p.name)) {
         if (p.pm2_env?.status === "online") {
-          if (customBots.items.find((item) => item.id === (p.name as string))) {
+          const customBot = customBots.items.find(
+            (item) => item.id === (p.name as string)
+          );
+          if (customBot) {
             this.processes.set(p.name as string, "PROCESSED");
+            Logger.info(
+              `[CustomBotsManager<Process>] ${customBot.username}#${
+                customBot.discriminator
+              }(${customBot.botId}[${Util.getUUIDLowTime(
+                p.name as string
+              )}]) Process Running`
+            );
           } else {
+            Logger.info(
+              `[CustomBotsManager<Process>] ${Util.getUUIDLowTime(
+                p.name as string
+              )} Process destroyed`
+            );
             await this.PM2Delete(p.name as string);
           }
         }
@@ -159,6 +198,7 @@ export default class CustomBotsManager {
   private async PM2Connect() {
     if (this.PM2Connected)
       throw new Exception("PM2 is connected", Severity.FAULT);
+    this.PM2Connected = true;
     return new Promise((resolve, reject) =>
       pm2.connect((err) =>
         err ? reject("Failed to connect PM2") : resolve(true)
@@ -209,6 +249,12 @@ export default class CustomBotsManager {
     tierId: PatreonTierId
   ): number {
     return PatreonTierId.ONE_CUSTOM_BOT ? 1 : 0;
+  }
+
+  public static getCustomBotAccessServersSizeBySubscriptionTierId(
+    tierId: PatreonTierId
+  ): number {
+    return PatreonTierId.ONE_CUSTOM_BOT ? 3 : 0;
   }
 
   private result<T extends "GET" | "CREATION">(

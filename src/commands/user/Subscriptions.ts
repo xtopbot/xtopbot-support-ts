@@ -5,6 +5,7 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   ComponentType,
+  escapeMarkdown,
   InteractionType,
   ModalSubmitInteraction,
   SelectMenuInteraction,
@@ -24,6 +25,7 @@ import Util from "../../utils/Util";
 import CustomBot, { CustomBotStatus } from "../../structures/CustomBot";
 import ComponentMethod from "../ComponentMethod";
 import Constants from "../../utils/Constants";
+import CustomBotsManager from "../../managers/CustomBotsManager";
 
 export default class Subscriptions extends BaseCommand {
   constructor() {
@@ -58,7 +60,7 @@ export default class Subscriptions extends BaseCommand {
         ephemeral: true,
       });
 
-    return Subscriptions.manageSubscription(dcm, subscription);
+    return this.manageSubscription(dcm, subscription);
   }
 
   protected async modalSubmitInteraction(
@@ -108,7 +110,7 @@ export default class Subscriptions extends BaseCommand {
       );
     }
     if (checker?.path === "SUBSCRIPTION_MANAGE")
-      return Subscriptions.manageSubscription(dcm, checker.subscription);
+      return this.manageSubscription(dcm, checker.subscription);
   }
 
   protected async buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
@@ -145,8 +147,10 @@ export default class Subscriptions extends BaseCommand {
         },
         Action.MODAL
       );
-    if (checker?.path === "SUBSCRIPTION_MANAGE")
-      return Subscriptions.manageSubscription(dcm, checker.subscription);
+    else if (checker?.path === "MANAGE_CUSTOM_BOT")
+      return this.manageCustomBot(dcm, checker.subscription, checker.target);
+    else if (checker?.path === "SUBSCRIPTION_MANAGE")
+      return this.manageSubscription(dcm, checker.subscription);
   }
 
   protected async selectMenuInteraction(
@@ -188,35 +192,9 @@ export default class Subscriptions extends BaseCommand {
         Action.UPDATE
       );
     else if (checker?.path === "MANAGE_CUSTOM_BOT") {
-      return new Response(
-        ResponseCodes.SUCCESS,
-        {
-          ...(dcm.locale.origin.commands.subscriptions.manage.one.bot as any),
-          components: [
-            {
-              type: ComponentType.ActionRow,
-              components: [
-                Util.backButton(
-                  dcm.locale,
-                  `subscription:tier:${checker.subscription.tierId}`
-                ) as any,
-                {
-                  type: ComponentType.Button,
-                  style: ButtonStyle.Primary,
-                  customId: `subscription:tier:${checker.subscription.tierId}:bots:create`,
-                  label:
-                    dcm.locale.origin.commands.subscriptions.manage.one.bot
-                      .setup.buttons[1],
-                },
-              ],
-            },
-          ],
-          ephemeral: true,
-        },
-        Action.UPDATE
-      );
+      return this.manageCustomBot(dcm, checker.subscription, checker.target);
     } else if (checker?.path === "SUBSCRIPTION_MANAGE")
-      return Subscriptions.manageSubscription(dcm, checker.subscription);
+      return this.manageSubscription(dcm, checker.subscription);
   }
 
   private async subscriptionComponentChecker(
@@ -271,6 +249,12 @@ export default class Subscriptions extends BaseCommand {
         "https://www.patreon.com/join/xtopbot/checkout?rid=" +
           subscription.tierId
       );
+      dcm.cf.formats.set(
+        "subscription.description",
+        dcm.locale.origin.commands.subscriptions.tierDescription[
+          subscription.tierId
+        ] ?? ""
+      );
       if (!subscription.isActive())
         return new Response(
           ResponseCodes.SUBSCRIPTION_EXPIRED,
@@ -302,33 +286,31 @@ export default class Subscriptions extends BaseCommand {
             customBots,
             path: "CREATE_CUSTOM_BOT",
           };
-        } else if (dcm.getKey("manage")) {
-          const botUUID =
-            value && Util.isUUID(value)
-              ? value
-              : Util.isUUID(dcm.getValue("bots"))
-              ? dcm.getValue("bots", true)
-              : null;
-
-          const customBot = botUUID
-            ? customBots.items.find((cb) => cb.id === botUUID)
-            : null;
-          if (!customBot)
-            return new Response(ResponseCodes.CUSTOM_BOT_NO_LONGER_AVAILABLE, {
-              ...dcm.locale.origin.commands.subscriptions.manage.one.bot
-                .notLongerAvailable,
-              ephemeral: true,
-            });
-
-          return {
-            subscription,
-            customBots,
-            target: customBot,
-            path: "MANAGE_CUSTOM_BOT",
-          };
         }
+        const botUUID =
+          value && Util.isUUID(value)
+            ? value
+            : Util.isUUID(dcm.getValue("bots"))
+            ? dcm.getValue("bots", true)
+            : null;
 
-        return;
+        const customBot = botUUID
+          ? customBots.items.find((cb) => cb.id === botUUID)
+          : null;
+
+        if (!customBot)
+          return new Response(ResponseCodes.CUSTOM_BOT_NO_LONGER_AVAILABLE, {
+            ...dcm.locale.origin.commands.subscriptions.manage.one.bot
+              .notLongerAvailable,
+            ephemeral: true,
+          });
+
+        return {
+          subscription,
+          customBots,
+          target: customBot,
+          path: "MANAGE_CUSTOM_BOT",
+        };
       }
       return {
         subscription,
@@ -337,7 +319,139 @@ export default class Subscriptions extends BaseCommand {
     }
   }
 
-  public static async manageSubscription(
+  private async manageCustomBot(
+    dcm: Method<AnyInteraction>,
+    subscription: Subscription,
+    customBot: CustomBot<"GET">
+  ) {
+    const guilds = await customBot.fetchGuilds(dcm.locale.tag);
+    dcm.cf.formats.set("bot.id", customBot.botId);
+    dcm.cf.formats.set("bot.avatar", "");
+    dcm.cf.formats.set(
+      "bot.tag",
+      customBot.username + "#" + customBot.discriminator
+    );
+    dcm.cf.formats.set("bot.servers.size", String(guilds.length));
+    dcm.cf.formats.set(
+      "bot.servers",
+      guilds.length > 0
+        ? guilds
+            .map(
+              (guild) =>
+                `${escapeMarkdown(Util.textEllipsis(guild.name, 25))} (${
+                  guild.id
+                })`
+            )
+            .join(", ")
+        : "N/A"
+    );
+    dcm.cf.formats.set("custom.bot.id", customBot.id);
+    dcm.cf.formats.set(
+      "custom.bot.allowed.servers",
+      String(
+        CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+          subscription.tierId
+        )
+      )
+    );
+    dcm.cf.formats.set(
+      "custom.bot.status",
+      dcm.locale.origin.commands.subscriptions.manage.one.bot.status[
+        customBot.getStatus() === CustomBotStatus.STARTED
+          ? 0
+          : customBot.getStatus() === CustomBotStatus.PROVISIONING
+          ? 1
+          : customBot.getStatus() === CustomBotStatus.TOKEN_INVALID
+          ? 3
+          : 2
+      ]
+    );
+
+    const components: any[] = [
+      Util.backButton(
+        dcm.locale,
+        `subscription:tier:${subscription.tierId}`
+      ) as any,
+      {
+        type: ComponentType.Button,
+        style: ButtonStyle.Success,
+        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:start`,
+        label:
+          customBot.getStatus() === CustomBotStatus.STARTED
+            ? dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[3]
+            : customBot.getStatus() === CustomBotStatus.PROVISIONING
+            ? dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[2]
+            : dcm.locale.origin.commands.subscriptions.manage.one.bot
+                .buttons[1],
+        disable: customBot.getStatus() !== CustomBotStatus.OFFLINE,
+      },
+      {
+        type: ComponentType.Button,
+        style: ButtonStyle.Danger,
+        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:terminate`,
+        label:
+          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[0],
+      },
+      {
+        type: ComponentType.Button,
+        style: ButtonStyle.Secondary,
+        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}`,
+        label:
+          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[4],
+      },
+    ];
+
+    if (guilds.length < 3)
+      components.push({
+        type: ComponentType.Button,
+        style: ButtonStyle.Link,
+        url: `https://discord.com/oauth2/authorize?client_id=${customBot.botId}&permissions=53865752&scope=bot%20applications.commands`,
+        label:
+          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[5],
+        disable: true,
+      });
+
+    const embeds: any[] = [];
+    embeds.push(
+      Util.addFieldToEmbed(
+        dcm.locale.origin.commands.subscriptions.manage.one.bot,
+        0,
+        "color",
+        customBot.getStatus() === CustomBotStatus.STARTED
+          ? Constants.defaultColors.GREEN
+          : customBot.getStatus() === CustomBotStatus.PROVISIONING
+          ? Constants.defaultColors.ORANGE
+          : customBot.getStatus() === CustomBotStatus.OFFLINE
+          ? Constants.defaultColors.GRAY
+          : Constants.defaultColors.RED
+      ).embeds
+    );
+    if (customBot.getStatus() === CustomBotStatus.TOKEN_INVALID)
+      embeds.push(
+        Util.addFieldToEmbed(
+          dcm.locale.origin.commands.subscriptions.manage.one.bot.invalidToken,
+          0,
+          "color",
+          Constants.defaultColors.RED
+        ).embeds
+      );
+    return new Response(
+      ResponseCodes.SUCCESS,
+      {
+        embeds: embeds.flat(),
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: components,
+          },
+        ],
+        ephemeral: true,
+      },
+      Action.UPDATE
+    );
+  }
+
+  private async manageSubscription(
     dcm: Method<AnyInteraction>,
     subscription: Subscription
   ) {
@@ -378,6 +492,8 @@ export default class Subscriptions extends BaseCommand {
             ? 1
             : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
             ? 2
+            : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
+            ? 2
             : 3
         ].description,
       emoji: {
@@ -385,8 +501,10 @@ export default class Subscriptions extends BaseCommand {
           cb.getStatus() === CustomBotStatus.STARTED
             ? "🟢"
             : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
-            ? "🟠"
-            : "🔴",
+            ? "🔴"
+            : cb.getStatus() === CustomBotStatus.OFFLINE
+            ? "⚫"
+            : "🟠",
       },
       value: cb.id,
     }));
@@ -413,7 +531,7 @@ export default class Subscriptions extends BaseCommand {
             placeholder:
               dcm.locale.origin.commands.subscriptions.manage.one.selectMenu[0]
                 .placeholder,
-            customId: `subscription:tier:${subscription.tierId}:bots:manage`,
+            customId: `subscription:tier:${subscription.tierId}:bots`,
             options: selectMenuCustomBotsOptions,
             disable: !subscription.isActive(),
           },

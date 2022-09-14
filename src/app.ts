@@ -65,10 +65,10 @@ export default class App {
 
     await mysql.connect();
 
-    Logger.info("Fetch all articles & messages built");
+    Logger.info("Fetch all articles & messages built & custom bot process");
     await this.articles.fetch();
     await this.messages.fetch();
-
+    await this.customBots.subscribe();
     ListenersHandler.handler(this.client);
 
     Logger.info("[Discord] <>Bot connecting...");

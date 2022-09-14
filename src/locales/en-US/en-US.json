@@ -122,7 +122,7 @@
                   "description": "The bot token is invalid, you should set it up again!"
                 },
                 {
-                  "description": "The bot token is valid, our operating system is not working well."
+                  "description": "The bot token is valid, and it is offline."
                 }
               ]
             }
@@ -162,6 +162,24 @@
               ],
               "buttons": ["Back", "Add your bot token"]
             },
+            "terminate": {
+              "embeds": [
+                {
+                  "title": "This action can't be undone!",
+                  "description": "You are requesting the termination of **{{bot.tag}}** (`{{custom.bot.id}}`) custom bot. Are you sure you want to continue processing this action?"
+                }
+              ],
+              "buttons": ["Cancel", "Terminate"]
+            },
+            "invalidToken": {
+              "embeds": [
+                {
+                  "title": "It must be terminated!",
+                  "description": "Since the bot token is invalid, you must **terminate** and setup your custom bot with another valid token again!"
+                }
+              ]
+            },
+            "status": ["Running", "Pending", "Offline", "Invalid Token"],
             "embeds": [
               {
                 "title": "Manage your custom bot",
@@ -169,25 +187,37 @@
                   "name": "{{bot.tag}} ({{bot.id}})",
                   "icon_url": "{{bot.avatar}}"
                 },
-                "description": "{{subscription.description}}",
+                "description": "This bot can be added to a maximum of `{{custom.bot.allowed.servers}}` or fewer servers.",
                 "fields": [
                   {
                     "name": "Bot Tag",
-                    "value": "{{bot.tag}}"
+                    "value": "{{bot.tag}}",
+                    "inline": true
                   },
                   {
                     "name": "Status",
-                    "value": "{{bot.status}}"
+                    "value": "{{custom.bot.status}}",
+                    "inline": true
                   },
                   {
-                    "name": "Currently Bot Servers `{{bot.servers.size}}/{{allowed.servers}}`",
-                    "value": "{{bot.servers}}"
+                    "name": "Currently Bot Servers `{{bot.servers.size}}/{{custom.bot.allowed.servers}}`",
+                    "value": "{{bot.servers}}",
+                    "inline": true
                   }
                 ],
-                "footer": "{{bot.uuid}}"
+                "footer": {
+                  "text": "{{custom.bot.id}}"
+                }
               }
             ],
-            "buttons": ["Terminate"],
+            "buttons": [
+              "Terminate",
+              "Start Bot",
+              "Pending",
+              "Running",
+              "Refresh",
+              "Add bot to server"
+            ],
             "modals": [
               {
                 "title": "Add your bot token",
@@ -208,7 +238,7 @@
         "expired": "Expired"
       },
       "tierDescription": {
-        "7764503": ""
+        "7764503": "In this subscription, there is `1` **Custom Bot** that can be entered into a maximum of `3` **Servers**."
       }
     },
     "help": {
