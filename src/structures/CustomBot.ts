@@ -6,6 +6,8 @@ import Util from "../utils/Util";
 import Logger from "../utils/Logger";
 import { PatreonTierId } from "./Subscription";
 import CustomBotsManager from "../managers/CustomBotsManager";
+import db from "../providers/Mysql";
+
 export default class CustomBot<T extends "CREATION" | "GET"> {
   public readonly id: string;
   public declare readonly token: string | null;
@@ -38,6 +40,16 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     this.createdAt = createdAt;
   }
 
+  public getAvatar(): T extends "GET" ? string : null;
+  public getAvatar(): string | null {
+    if (typeof this.discriminator !== "number") return null;
+    return !this.avatar
+      ? `https://cdn.discordapp.com/embed/avatars/${this.discriminator % 5}.png`
+      : `https://cdn.discordapp.com/embed/avatars/${this.botId}/${
+          this.avatar
+        }.${this.avatar.startsWith("a_") ? "gif" : "png"}`;
+  }
+
   public getStatus(): CustomBotStatus {
     return !this.tokenValidation
       ? CustomBotStatus.TOKEN_INVALID
@@ -49,7 +61,11 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async fetchGuilds(locale: LocaleTag | null = null) {
-    const data: any[] = await this.apiRequest("/users/@me/guilds", locale);
+    const data: any[] = await this.apiRequest(
+      "/users/@me/guilds",
+      "get",
+      locale
+    );
 
     return data.map((d) => ({
       id: d.id,
@@ -60,7 +76,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async fetchUser(locale: LocaleTag | null = null) {
-    const data = await this.apiRequest("/users/@me", locale);
+    const data = await this.apiRequest("/users/@me", "get", locale);
 
     return {
       id: data.id,
@@ -72,7 +88,11 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async fetchApplication(locale: LocaleTag | null = null) {
-    const data = await this.apiRequest("/oauth2/applications/@me", locale);
+    const data = await this.apiRequest(
+      "/oauth2/applications/@me",
+      "get",
+      locale
+    );
 
     return {
       id: data.id,
@@ -83,6 +103,10 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       botPublic: data.bot_public,
       flags: data.flags,
     };
+  }
+
+  public async leaveGuild(id: string, locale: LocaleTag | null = null) {
+    await this.apiRequest(`/users/@me/guilds/${id}`, "delete", locale);
   }
 
   public async validation(
@@ -126,7 +150,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     const locale = app.locales.get(localeTag, true);
 
     if (type === ValidationType.APPLICATION) {
-      if (validation.data.own1erId !== validation.userId)
+      if (validation.data.ownerId !== validation.userId)
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.ownedByUser,
           Severity.COMMON
@@ -167,7 +191,11 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     }
   }
 
-  private async apiRequest(uri: string, localeTag: LocaleTag | null = null) {
+  private async apiRequest(
+    uri: string,
+    method: "get" | "post" | "delete" | "put" = "get",
+    localeTag: LocaleTag | null = null
+  ) {
     const locale = app.locales.get(localeTag, true);
 
     if (typeof this.token !== "string" || !/[a-z0-9-_.]{32,}/i.test(this.token))
@@ -177,13 +205,13 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       );
 
     const res = await fetch("https://discord.com/api/v10" + uri, {
-      method: "get",
+      method: method,
       headers: {
         authorization: "Bot " + this.token,
       },
     });
 
-    if (res.status !== 200) {
+    if (res.status > 200 && res.status < 300) {
       if (res.status === 401)
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
@@ -200,40 +228,44 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   public async start() {
     if (this.getStatus() !== CustomBotStatus.OFFLINE)
       throw new Exception(
-        `status of this custom bot is inoperable. status: ${Util.capitalize(
+        `Status of this custom bot is inoperable. status: ${Util.capitalize(
           CustomBotStatus[this.getStatus()]
         )}`,
-        Severity.SUSPICIOUS
+        Severity.COMMON
       );
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Starting(Section: validation)...`
     );
     let valid = true;
-    await this.validation(
-      ValidationType.BOT,
-      { data: await this.fetchUser() },
-      null
-    ).catch(() => (valid = false));
-    if (valid)
+    let user, application, guilds;
+    user = await this.fetchUser();
+    await this.validation(ValidationType.BOT, { data: user }, null).catch(
+      () => (valid = false)
+    );
+    if (valid) {
+      application = await this.fetchApplication();
       await this.validation(
         ValidationType.APPLICATION,
         {
-          data: await this.fetchApplication(),
+          data: application,
           userId: this.ownerId as string,
         },
         null
       ).catch(() => (valid = false));
-    if (valid)
+    }
+    if (valid) {
+      guilds = await this.fetchGuilds();
       await this.validation(
         ValidationType.GUILDS,
         {
-          data: await this.fetchGuilds(),
+          data: guilds,
           limit: CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
             PatreonTierId.ONE_CUSTOM_BOT
           ),
         },
         null
       ).catch(() => (valid = false));
+    }
     if (!valid)
       return Logger.info(
         `[CustomBot<Process>] ${this.botId} Validation failed!`
@@ -243,6 +275,34 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     );
     await app.customBots.PM2Start(this.id, this.token as string);
     Logger.info(`[CustomBot<Process>] ${this.botId} Processed successfully`);
+    return {
+      user,
+      application: application,
+      guilds: guilds,
+    };
+  }
+
+  public async stop() {
+    if (this.getStatus() === CustomBotStatus.PROVISIONING)
+      throw new Exception(
+        `status of this custom bot is inoperable. status: ${Util.capitalize(
+          CustomBotStatus[this.getStatus()]
+        )}`,
+        Severity.SUSPICIOUS
+      );
+    await app.customBots.PM2Delete(this.id);
+  }
+
+  public async terminate() {
+    if (this.createdAt.getTime() + 600_000 > Date.now())
+      throw new Exception(
+        `Creation date must be at least 5 minutes long`,
+        Severity.SUSPICIOUS
+      );
+    //await this.stop();
+    await db.query("delete from `Custom.Bot` where BIN_TO_UUID(id) = ?", [
+      this.id,
+    ]);
   }
 }
 

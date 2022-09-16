@@ -83,8 +83,13 @@ export default class Subscriptions extends BaseCommand {
       return new Response(
         ResponseCodes.SUCCESS,
         {
-          ...dcm.locale.origin.commands.subscriptions.manage.one.bot.setup
-            .completed,
+          ...Util.addFieldToEmbed(
+            dcm.locale.origin.commands.subscriptions.manage.one.bot.setup
+              .completed,
+            0,
+            "color",
+            Constants.defaultColors.GREEN
+          ),
           components: [
             {
               type: ComponentType.ActionRow,
@@ -149,7 +154,79 @@ export default class Subscriptions extends BaseCommand {
       );
     else if (checker?.path === "MANAGE_CUSTOM_BOT")
       return this.manageCustomBot(dcm, checker.subscription, checker.target);
-    else if (checker?.path === "SUBSCRIPTION_MANAGE")
+    else if (checker?.path === "TERMINATE_CUSTOM_BOT") {
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          ...Util.addFieldToEmbed(
+            dcm.locale.origin.commands.subscriptions.manage.one.bot.terminate,
+            0,
+            "color",
+            Constants.defaultColors.RED
+          ),
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Secondary,
+                  label:
+                    dcm.locale.origin.commands.subscriptions.manage.one.bot
+                      .terminate.buttons[0],
+                  customId: `subscription:tier:${checker.subscription.tierId}:bots:${checker.target.id}`,
+                },
+                {
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Danger,
+                  label:
+                    dcm.locale.origin.commands.subscriptions.manage.one.bot
+                      .terminate.buttons[1],
+                  customId: `subscription:tier:${checker.subscription.tierId}:bots:${checker.target.id}:terminate!`,
+                },
+              ],
+            },
+          ],
+          ephemeral: true,
+        },
+        Action.UPDATE
+      );
+    } else if (checker?.path === "FORCE_TERMINATE_CUSTOM_BOT") {
+      await checker.target.terminate();
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          ...Util.addFieldToEmbed(
+            dcm.locale.origin.commands.subscriptions.manage.one.bot.terminate
+              .confirmed,
+            0,
+            "color",
+            Constants.defaultColors.GREEN
+          ),
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                Util.backButton(
+                  dcm.locale,
+                  `subscription:tier:${checker.subscription.tierId}`
+                ) as any,
+              ],
+            },
+          ],
+          ephemeral: true,
+        },
+        Action.UPDATE
+      );
+    } else if (checker?.path === "START_CUSTOM_BOT") {
+      const { guilds } = await checker.target.start();
+      return this.manageCustomBot(
+        dcm,
+        checker.subscription,
+        checker.target,
+        guilds
+      );
+    } else if (checker?.path === "SUBSCRIPTION_MANAGE")
       return this.manageSubscription(dcm, checker.subscription);
   }
 
@@ -193,6 +270,11 @@ export default class Subscriptions extends BaseCommand {
       );
     else if (checker?.path === "MANAGE_CUSTOM_BOT") {
       return this.manageCustomBot(dcm, checker.subscription, checker.target);
+    } else if (checker?.path === "LEAVE_SERVERS_CUSTOM_BOT") {
+      dcm.d.values.slice(0, 3).map(async (value) => {
+        await checker.target.leaveGuild(value, dcm.locale.tag);
+      });
+      return this.manageCustomBot(dcm, checker.subscription, checker.target);
     } else if (checker?.path === "SUBSCRIPTION_MANAGE")
       return this.manageSubscription(dcm, checker.subscription);
   }
@@ -209,7 +291,14 @@ export default class Subscriptions extends BaseCommand {
           remaining: number;
         };
         target?: any;
-        path: "CREATE_CUSTOM_BOT" | "SUBSCRIPTION_MANAGE" | "MANAGE_CUSTOM_BOT";
+        path:
+          | "CREATE_CUSTOM_BOT"
+          | "SUBSCRIPTION_MANAGE"
+          | "MANAGE_CUSTOM_BOT"
+          | "TERMINATE_CUSTOM_BOT"
+          | "FORCE_TERMINATE_CUSTOM_BOT"
+          | "LEAVE_SERVERS_CUSTOM_BOT"
+          | "START_CUSTOM_BOT";
       }
     | void
   > {
@@ -305,6 +394,48 @@ export default class Subscriptions extends BaseCommand {
             ephemeral: true,
           });
 
+        dcm.cf.formats.set("bot.id", customBot.botId);
+        dcm.cf.formats.set("bot.avatar", "");
+        dcm.cf.formats.set(
+          "bot.tag",
+          customBot.username + "#" + customBot.discriminator
+        );
+        dcm.cf.formats.set("bot.avatar", customBot.getAvatar());
+        dcm.cf.formats.set("custom.bot.id", customBot.id);
+        dcm.cf.formats.set(
+          "custom.bot.id.short",
+          Util.getUUIDLowTime(customBot.id)
+        );
+
+        if (dcm.getKey("leave")) {
+          return {
+            subscription,
+            customBots,
+            target: customBot,
+            path: "LEAVE_SERVERS_CUSTOM_BOT",
+          };
+        }
+
+        if (dcm.getKey("terminate") || dcm.getKey("terminate!")) {
+          return {
+            subscription,
+            customBots,
+            target: customBot,
+            path: dcm.getKey("terminate!")
+              ? "FORCE_TERMINATE_CUSTOM_BOT"
+              : "TERMINATE_CUSTOM_BOT",
+          };
+        }
+
+        if (dcm.getKey("start")) {
+          return {
+            subscription,
+            customBots,
+            target: customBot,
+            path: "START_CUSTOM_BOT",
+          };
+        }
+
         return {
           subscription,
           customBots,
@@ -322,15 +453,10 @@ export default class Subscriptions extends BaseCommand {
   private async manageCustomBot(
     dcm: Method<AnyInteraction>,
     subscription: Subscription,
-    customBot: CustomBot<"GET">
+    customBot: CustomBot<"GET">,
+    guilds?: any[]
   ) {
-    const guilds = await customBot.fetchGuilds(dcm.locale.tag);
-    dcm.cf.formats.set("bot.id", customBot.botId);
-    dcm.cf.formats.set("bot.avatar", "");
-    dcm.cf.formats.set(
-      "bot.tag",
-      customBot.username + "#" + customBot.discriminator
-    );
+    guilds = guilds ?? (await customBot.fetchGuilds(dcm.locale.tag));
     dcm.cf.formats.set("bot.servers.size", String(guilds.length));
     dcm.cf.formats.set(
       "bot.servers",
@@ -345,7 +471,6 @@ export default class Subscriptions extends BaseCommand {
             .join(", ")
         : "N/A"
     );
-    dcm.cf.formats.set("custom.bot.id", customBot.id);
     dcm.cf.formats.set(
       "custom.bot.allowed.servers",
       String(
@@ -366,50 +491,6 @@ export default class Subscriptions extends BaseCommand {
           : 2
       ]
     );
-
-    const components: any[] = [
-      Util.backButton(
-        dcm.locale,
-        `subscription:tier:${subscription.tierId}`
-      ) as any,
-      {
-        type: ComponentType.Button,
-        style: ButtonStyle.Success,
-        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:start`,
-        label:
-          customBot.getStatus() === CustomBotStatus.STARTED
-            ? dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[3]
-            : customBot.getStatus() === CustomBotStatus.PROVISIONING
-            ? dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[2]
-            : dcm.locale.origin.commands.subscriptions.manage.one.bot
-                .buttons[1],
-        disable: customBot.getStatus() !== CustomBotStatus.OFFLINE,
-      },
-      {
-        type: ComponentType.Button,
-        style: ButtonStyle.Danger,
-        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:terminate`,
-        label:
-          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[0],
-      },
-      {
-        type: ComponentType.Button,
-        style: ButtonStyle.Secondary,
-        customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}`,
-        label:
-          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[4],
-      },
-    ];
-
-    if (guilds.length < 3)
-      components.push({
-        type: ComponentType.Button,
-        style: ButtonStyle.Link,
-        url: `https://discord.com/oauth2/authorize?client_id=${customBot.botId}&permissions=53865752&scope=bot%20applications.commands`,
-        label:
-          dcm.locale.origin.commands.subscriptions.manage.one.bot.buttons[5],
-        disable: true,
-      });
 
     const embeds: any[] = [];
     embeds.push(
@@ -435,6 +516,7 @@ export default class Subscriptions extends BaseCommand {
           Constants.defaultColors.RED
         ).embeds
       );
+    console.log(guilds);
     return new Response(
       ResponseCodes.SUCCESS,
       {
@@ -442,9 +524,80 @@ export default class Subscriptions extends BaseCommand {
         components: [
           {
             type: ComponentType.ActionRow,
-            components: components,
+            components: [
+              Util.backButton(
+                dcm.locale,
+                `subscription:tier:${subscription.tierId}`
+              ) as any,
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Success,
+                customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:start`,
+                label:
+                  customBot.getStatus() === CustomBotStatus.STARTED
+                    ? dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .buttons[3]
+                    : customBot.getStatus() === CustomBotStatus.PROVISIONING
+                    ? dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .buttons[2]
+                    : dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .buttons[1],
+                disabled: customBot.getStatus() !== CustomBotStatus.OFFLINE,
+              },
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Danger,
+                customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:terminate`,
+                label:
+                  dcm.locale.origin.commands.subscriptions.manage.one.bot
+                    .buttons[0],
+                disabled:
+                  customBot.createdAt.getTime() + 600_000 > Date.now() ??
+                  customBot.getStatus() === CustomBotStatus.PROVISIONING,
+              },
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Secondary,
+                customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}`,
+                label:
+                  dcm.locale.origin.commands.subscriptions.manage.one.bot
+                    .buttons[4],
+              },
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Link,
+                url: `https://discord.com/oauth2/authorize?client_id=${customBot.botId}&permissions=53865752&scope=bot%20applications.commands`,
+                label:
+                  dcm.locale.origin.commands.subscriptions.manage.one.bot
+                    .buttons[5],
+                disabled: guilds.length > 2,
+              },
+            ],
           },
-        ],
+          (guilds.length > 0
+            ? {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.SelectMenu,
+                    customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:leave`,
+                    placeholder:
+                      dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .selectMenu[0].placeholder,
+                    options: guilds
+                      .map((guild) => ({
+                        label: Util.textEllipsis(guild.name, 100),
+                        description: guild.id,
+                        value: guild.id,
+                      }))
+                      .slice(0, 25),
+                    minValues: 1,
+                    maxValues: Math.min(guilds.length, 3),
+                  },
+                ],
+              }
+            : null) as any,
+        ].filter((c) => c !== null),
         ephemeral: true,
       },
       Action.UPDATE
@@ -533,7 +686,7 @@ export default class Subscriptions extends BaseCommand {
                 .placeholder,
             customId: `subscription:tier:${subscription.tierId}:bots`,
             options: selectMenuCustomBotsOptions,
-            disable: !subscription.isActive(),
+            disabled: !subscription.isActive(),
           },
         ],
       });

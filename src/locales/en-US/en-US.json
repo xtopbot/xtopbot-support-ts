@@ -149,24 +149,32 @@
                 "embeds": [
                   {
                     "title": "Custom Bot Setup Completed!",
-                    "description": "Your **{{bot.tag}}** ({{bot.shortUUID}})  has been added to our operating system, usually the bot is fully operational in a few seconds.\n\nIf you encounter operational or other problems, don't hesitate to ask for assistance in the helpdesk channel!"
+                    "description": "**{{bot.tag}}** ({{bot.shortUUID}}) has been added to `{{subscription.tier.name}}` subscription and our operating system. You can now start your custom bot!\n\nIf you encounter operational or other problems, don't hesitate to ask for assistance in the helpdesk channel!"
                   }
                 ],
                 "buttons": ["Manage your {{bot.tag}}"]
               },
               "embeds": [
                 {
-                  "title": "Setup a custom bot",
+                  "title": "Custom Bot Setup",
                   "description": "Follow these steps to get your bot token:\nGo to [`Discord Developer Portal`](https://discord.com/developers/applications) → `Applications` → `New Application` → `Bot` → `Add bot` → `Reset Token` → `Copy Token`"
                 }
               ],
               "buttons": ["Back", "Add your bot token"]
             },
             "terminate": {
+              "confirmed": {
+                "embeds": [
+                  {
+                    "title": "Successfully Terminated!",
+                    "description": "You are **{{bot.tag}}** (`{{custom.bot.id.short}}`) custom bot has been terminated!"
+                  }
+                ]
+              },
               "embeds": [
                 {
-                  "title": "This action can't be undone!",
-                  "description": "You are requesting the termination of **{{bot.tag}}** (`{{custom.bot.id}}`) custom bot. Are you sure you want to continue processing this action?"
+                  "title": "This Action Cannot Be Undone!",
+                  "description": "You are requesting the termination of **{{bot.tag}}** (`{{custom.bot.id.short}}`) custom bot. Are you sure you want to continue processing this action?"
                 }
               ],
               "buttons": ["Cancel", "Terminate"]
@@ -184,14 +192,16 @@
               {
                 "title": "Manage your custom bot",
                 "author": {
-                  "name": "{{bot.tag}} ({{bot.id}})",
-                  "icon_url": "{{bot.avatar}}"
+                  "name": "{{bot.tag}} ({{bot.id}})"
+                },
+                "thumbnail": {
+                  "url": "{{bot.avatar}}"
                 },
                 "description": "This bot can be added to a maximum of `{{custom.bot.allowed.servers}}` or fewer servers.",
                 "fields": [
                   {
-                    "name": "Bot Tag",
-                    "value": "{{bot.tag}}",
+                    "name": "Activity",
+                    "value": "N/A",
                     "inline": true
                   },
                   {
@@ -217,6 +227,11 @@
               "Running",
               "Refresh",
               "Add bot to server"
+            ],
+            "selectMenu": [
+              {
+                "placeholder": "Select the servers you want to leave from"
+              }
             ],
             "modals": [
               {

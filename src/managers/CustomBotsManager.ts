@@ -219,7 +219,12 @@ export default class CustomBotsManager {
       throw new Exception("PM2 is not connected", Severity.FAULT);
     return new Promise((resolve, reject) =>
       pm2.start(
-        { name: name, script: "./xtopbot/custombot.js" },
+        {
+          name: name,
+          script: `./xtopbot-js/launch.js`,
+          args: `--token ${token}`,
+          interpreter: "node@16.11.1",
+        },
         (err, process) => (err ? reject(err) : resolve(process))
       )
     );
