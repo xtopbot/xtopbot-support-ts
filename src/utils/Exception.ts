@@ -33,8 +33,8 @@ export default class Exception extends Response<MessageResponse> {
     this.severity = severity;
     this.cause ??= cause ?? null;
     if (this.severity === Severity.FAULT)
-      Logger.error(`[${this.severity}] ${message}`);
-    else Logger.debug(`[${this.severity}] ${message}`);
+      Logger.error(cause, `[${Severity[this.severity]}] ${message}`);
+    else Logger.debug(cause, `[${Severity[this.severity]}] ${message}`);
   }
 }
 
