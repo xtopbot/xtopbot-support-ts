@@ -39,12 +39,12 @@ export default class SubscriptionsManager {
     }
     if (fetchType === "ALL_ACTIVE_SUBSCRIPTIONS")
       where.push({
-        name: "unix_timestamp(createdAt) > unix_timestamp() - ?",
-        value: Math.round(SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM / 1000),
+        name: "unix_timestamp(createdAt) > unix_timestamp() - subscriptionPeriodTerm",
+        value: undefined,
       });
 
     const raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, chargeStatus + 0 as chargeStatus, unix_timestamp(chargeDate) as chargeTimestamp, unix_timestamp(createdAt) as createdTimestamp, userId, amountCents, discordUserId, email, tierId, BIN_TO_UUID(memberId) as memberId
+      `select BIN_TO_UUID(id) as id, chargeStatus + 0 as chargeStatus, unix_timestamp(chargeDate) as chargeTimestamp, unix_timestamp(createdAt) as createdTimestamp, unix_timestamp(updatedAt) as updatedTimestamp, subscriptionPeriodTerm, userId, amountCents, discordUserId, email, tierId, BIN_TO_UUID(memberId) as memberId
                from \`Patreon.Pledges\`
                ${
                  where.length > 0
@@ -52,7 +52,7 @@ export default class SubscriptionsManager {
                    : ""
                }
            group by chargeDate, chargeStatus`,
-      where.map((w) => w.value)
+      where.filter((w) => w.value != undefined).map((w) => w.value)
     );
     if (!raws?.length)
       return fetchType === "ALL_ACTIVE_SUBSCRIPTIONS" ? [] : null;
@@ -75,6 +75,7 @@ export default class SubscriptionsManager {
       raws.map((raw) => ({
         id: raw.id,
         amountCents: raw.amountCents,
+        subscriptionPeriodTermMs: Math.round(raw.subscriptionPeriodTerm * 1000),
         chargeDate: new Date(Math.round(raw.chargeTimestamp * 1000)),
         chargeStatus:
           raw.chargeStatus === 1
@@ -83,6 +84,7 @@ export default class SubscriptionsManager {
             ? "REFUND"
             : "UNKNOWN",
         eventCreatedAt: new Date(Math.round(raw.createdTimestamp * 1000)),
+        eventUpdatedAt: new Date(Math.round(raw.updatedTimestamp * 1000)),
       })),
       {
         email: raws[0].email,

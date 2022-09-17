@@ -21,41 +21,30 @@ export default class Subscription {
   public getTotalPaidAmount(cents: false): string;
   public getTotalPaidAmount(cents: true): number;
   public getTotalPaidAmount(cents: boolean = false): string | number {
-    const paidSubscriptions = this.events.filter(
-      (event) => event.chargeStatus === "PAID"
-    );
-    const refundSubscriptions = this.events.filter(
-      (event) => event.chargeStatus === "REFUND"
-    );
-    const paidAmountCents =
-      paidSubscriptions
-        .map((sub) => sub.amountCents)
-        .reduce((a, b) => a + b, 0) -
-      refundSubscriptions
-        .map((sub) => sub.amountCents)
-        .reduce((a, b) => a + b, 0);
+    const paidAmountCents = this.events
+      .filter((event) => event.chargeStatus === "PAID")
+      .map((sub) => sub.amountCents)
+      .reduce((a, b) => a + b, 0);
     return cents ? paidAmountCents : (paidAmountCents / 100).toFixed(2);
   }
 
   public getExpires(): Date {
+    const activePaidSubscription = this.events.filter(
+      (event) =>
+        event.eventCreatedAt.getTime() + event.subscriptionPeriodTermMs >
+          Date.now() && event.chargeStatus === "PAID"
+    );
+    const lastPaid = this.getLastEvent("PAID");
     return new Date(
-      this.events
-        .filter((event) => event.chargeStatus === "PAID")
-        .map(() => SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM)
-        .reduce((a, b) => a + b, 0) -
-        this.events
-          .filter((event) => event.chargeStatus === "REFUND")
-          .map(() => SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM)
-          .reduce((a, b) => a + b, 0) +
-        (this.events
-          .find(
-            (event) =>
-              event.eventCreatedAt.getTime() +
-                SubscriptionsManager.SUBSCRIPTION_PERIOD_TERM >
-              Date.now()
-          )
-          ?.eventCreatedAt.getTime() ??
-          this.getLastEvent("PAID").eventCreatedAt.getTime())
+      activePaidSubscription
+        .map((event) => event.subscriptionPeriodTermMs)
+        .reduce((a, b) => a + b, 0) +
+        (activePaidSubscription[0]?.eventCreatedAt.getTime() ??
+          this.getLastEvent("REFUND")?.eventUpdatedAt.getTime() ??
+          (lastPaid
+            ? lastPaid.eventCreatedAt.getTime() +
+              lastPaid.subscriptionPeriodTermMs
+            : 0))
     );
   }
 
@@ -102,5 +91,7 @@ interface SubscriptionEvent {
   chargeStatus: "PAID" | "REFUND" | "UNKNOWN";
   chargeDate: Date;
   amountCents: number;
+  subscriptionPeriodTermMs: number;
   eventCreatedAt: Date;
+  eventUpdatedAt: Date;
 }
