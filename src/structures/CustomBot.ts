@@ -1,6 +1,5 @@
 import Exception, { Severity } from "../utils/Exception";
 import app from "../app";
-import Locale from "./Locale";
 import { LocaleTag } from "../managers/LocaleManager";
 import Util from "../utils/Util";
 import Logger from "../utils/Logger";
@@ -8,15 +7,24 @@ import { PatreonTierId } from "./Subscription";
 import CustomBotsManager from "../managers/CustomBotsManager";
 import db from "../providers/Mysql";
 
+export type BotStatus = "online" | "idle" | "dnd" | "invisible";
+export type ActivityType = "PLAYING" | "LISTENING" | "WATCHING" | "STREAMING";
 export default class CustomBot<T extends "CREATION" | "GET"> {
   public readonly id: string;
   public declare readonly token: string | null;
   public readonly botId: T extends "GET" ? string : string | null;
-  public readonly username: T extends "GET" ? string : string | null;
-  public readonly discriminator: T extends "GET" ? number : number | null;
-  public readonly avatar: T extends "GET" ? string : string | null;
+  public username: T extends "GET" ? string : string | null;
+  public discriminator: T extends "GET" ? number : number | null;
+  public avatar: T extends "GET" ? string : string | null;
   public readonly ownerId: T extends "GET" ? string : string | null;
-  public readonly tokenValidation: T extends "GET" ? boolean : boolean | null;
+  public presence: {
+    status: BotStatus | null;
+    activity: {
+      type: ActivityType | null;
+      name: string | null;
+    };
+  };
+  public tokenValidation: T extends "GET" ? boolean : boolean | null;
   public readonly createdAt: Date;
   constructor(
     id: string,
@@ -26,6 +34,9 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     discriminator: T extends "GET" ? number : number | null,
     avatar: T extends "GET" ? string : string | null,
     ownerId: T extends "GET" ? string : string | null,
+    botStatus: T extends "GET" ? BotStatus | null : null,
+    activityType: T extends "GET" ? ActivityType | null : null,
+    activityName: T extends "GET" ? string | null : null,
     tokenValidation: T extends "GET" ? boolean : boolean | null,
     createdAt: Date = new Date()
   ) {
@@ -37,6 +48,13 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     this.avatar = avatar;
     this.ownerId = ownerId;
     this.tokenValidation = tokenValidation;
+    this.presence = {
+      status: botStatus,
+      activity: {
+        type: activityType,
+        name: activityName,
+      },
+    };
     this.createdAt = createdAt;
   }
 
@@ -45,16 +63,16 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     if (typeof this.discriminator !== "number") return null;
     return !this.avatar
       ? `https://cdn.discordapp.com/embed/avatars/${this.discriminator % 5}.png`
-      : `https://cdn.discordapp.com/embed/avatars/${this.botId}/${
-          this.avatar
-        }.${this.avatar.startsWith("a_") ? "gif" : "png"}`;
+      : `https://cdn.discordapp.com/avatars/${this.botId}/${this.avatar}.${
+          this.avatar.startsWith("a_") ? "gif" : "png"
+        }`;
   }
 
   public getStatus(): CustomBotStatus {
     return !this.tokenValidation
       ? CustomBotStatus.TOKEN_INVALID
       : app.customBots.processes.get(this.id) === "PROCESSED"
-      ? CustomBotStatus.STARTED
+      ? CustomBotStatus.RUNNING
       : app.customBots.processes.get(this.id) === "PROCESSING"
       ? CustomBotStatus.PROVISIONING
       : CustomBotStatus.OFFLINE;
@@ -78,10 +96,24 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   public async fetchUser(locale: LocaleTag | null = null) {
     const data = await this.apiRequest("/users/@me", "get", locale);
 
+    if (
+      this.id &&
+      (data.username !== this.username ||
+        data.discriminator !== this.discriminator ||
+        data.avatar !== this.avatar)
+    ) {
+      this.username = data.username;
+      this.discriminator = Number(data.discriminator);
+      this.avatar = data.avatar;
+      await db.query(
+        "update `Custom.Bot` set username = ?, discriminator = ?, avatar = ?  where BIN_TO_UUID(id) = ?",
+        [data.username, Number(data.discriminator), data.avatar, this.id]
+      );
+    }
     return {
       id: data.id,
       username: data.username,
-      discriminator: data.discriminator,
+      discriminator: Number(data.discriminator),
       avatar: data.avatar,
       flags: data.flags,
     };
@@ -183,9 +215,13 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           Severity.COMMON
         );
     } else if (type === ValidationType.GUILDS) {
-      if (validation.data.length > 3)
+      if (validation.data.length > validation.data.limit)
         throw new Exception(
-          locale.origin.commands.subscriptions.manage.one.bot.validations.maximumServers,
+          Util.quickFormatContext(
+            locale.origin.commands.subscriptions.manage.one.bot.validations
+              .maximumServers,
+            { "custom.bot.allowed.servers": validation.data.limit }
+          ),
           Severity.COMMON
         );
     }
@@ -197,6 +233,9 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     localeTag: LocaleTag | null = null
   ) {
     const locale = app.locales.get(localeTag, true);
+
+    if (this.botId && this.tokenValidation != true)
+      throw new Exception("Token invalid", Severity.COMMON);
 
     if (typeof this.token !== "string" || !/[a-z0-9-_.]{32,}/i.test(this.token))
       throw new Exception(
@@ -211,12 +250,19 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       },
     });
 
-    if (res.status > 200 && res.status < 300) {
-      if (res.status === 401)
+    if (!(res.status >= 200 && res.status < 300)) {
+      if (res.status === 401) {
+        await db.query(
+          "update `Custom.Bot` set tokenValidation = 0 where BIN_TO_UUID(id) = ?",
+          [this.id]
+        );
+        if (this.getStatus() === CustomBotStatus.RUNNING) this.stop();
+        this.tokenValidation = false;
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
           Severity.COMMON
         );
+      }
       throw new Exception(
         `Unexpected Discord API status code: ${res.status}`,
         Severity.FAULT
@@ -236,6 +282,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Starting(Section: validation)...`
     );
+    app.customBots.processes.set(this.id, "PROCESSING");
     let valid = true;
     let user, application, guilds;
     user = await this.fetchUser();
@@ -273,7 +320,27 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Validation completed successfully. Starting<Process>`
     );
-    await app.customBots.PM2Start(this.id, this.token as string);
+    app.customBots
+      .PM2Start(this.id, this.token as string, {
+        args: [
+          "--status",
+          this.presence.status ?? "online",
+          "--activityType",
+          this.presence.activity.type && this.presence.activity.name
+            ? this.presence.activity.type
+            : "LISTENING",
+          "--activityName",
+          this.presence.activity.type && this.presence.activity.name
+            ? Util.textEllipsis(this.presence.activity.name, 125)
+            : "/play",
+        ],
+      })
+      .catch((onrejected) => {
+        Logger.error(
+          onrejected,
+          `[Custombot<process>] ${this.id} Failed to start`
+        );
+      });
     Logger.info(`[CustomBot<Process>] ${this.botId} Processed successfully`);
     return {
       user,
@@ -283,7 +350,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   }
 
   public async stop() {
-    if (this.getStatus() === CustomBotStatus.PROVISIONING)
+    if (this.getStatus() !== CustomBotStatus.RUNNING)
       throw new Exception(
         `status of this custom bot is inoperable. status: ${Util.capitalize(
           CustomBotStatus[this.getStatus()]
@@ -299,15 +366,63 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
         `Creation date must be at least 5 minutes long`,
         Severity.SUSPICIOUS
       );
-    //await this.stop();
+    await this.stop().catch(() => null);
     await db.query("delete from `Custom.Bot` where BIN_TO_UUID(id) = ?", [
       this.id,
     ]);
   }
+
+  public async updatePresence(
+    status: BotStatus | null,
+    activity: {
+      type: ActivityType | null;
+      name: string | null;
+    } | null
+  ) {
+    if (this.getStatus() === CustomBotStatus.TOKEN_INVALID)
+      throw new Exception(
+        `status of this custom bot is inoperable. status: ${Util.capitalize(
+          CustomBotStatus[this.getStatus()]
+        )}`,
+        Severity.SUSPICIOUS
+      );
+    await db.query(
+      "update `Custom.Bot` set botStatus = ?, activityType = ?, activityName = ? where BIN_TO_UUID(id) = ?",
+      [status, activity?.type ?? null, activity?.name ?? null, this.id]
+    );
+    this.presence.status = status;
+    this.presence.activity = {
+      type: activity?.type ?? null,
+      name: activity?.name ?? null,
+    };
+    if (this.getStatus() === CustomBotStatus.RUNNING)
+      await this.sendDataToProcess();
+  }
+
+  public async sendDataToProcess() {
+    if (this.getStatus() !== CustomBotStatus.RUNNING)
+      throw new Exception("Must the bot running.", Severity.SUSPICIOUS);
+    await app.customBots.PM2SendDataToProcess(this.id, {
+      op: "UPDATE_PRESENCE",
+      data: {
+        status: this.presence.status ?? "online",
+        activity: {
+          type:
+            this.presence.activity.type && this.presence.activity.name
+              ? this.presence.activity.type
+              : "LISTENING",
+          name:
+            this.presence.activity.type && this.presence.activity.name
+              ? Util.textEllipsis(this.presence.activity.name, 125)
+              : "/play",
+        },
+      },
+    });
+  }
 }
 
 export enum CustomBotStatus {
-  STARTED = 1,
+  RUNNING = 1,
   OFFLINE,
   PROVISIONING,
   TOKEN_INVALID,
