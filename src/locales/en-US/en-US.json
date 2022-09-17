@@ -201,7 +201,7 @@
                 "fields": [
                   {
                     "name": "Activity",
-                    "value": "N/A",
+                    "value": "{{bot.activity.name}}",
                     "inline": true
                   },
                   {
@@ -226,11 +226,47 @@
               "Pending",
               "Running",
               "Refresh",
-              "Add bot to server"
+              "Add bot to server",
+              "Manage bot profile"
             ],
             "selectMenu": [
               {
-                "placeholder": "Select the servers you want to leave from"
+                "placeholder": "Select the servers you want to leave from",
+                "options": []
+              },
+              {
+                "placeholder": "Select the bot status you prefer",
+                "options": [
+                  {
+                    "label": "Online",
+                    "description": null
+                  },
+                  {
+                    "label": "Idle",
+                    "description": null
+                  },
+                  {
+                    "label": "Dnd",
+                    "description": null
+                  },
+                  {
+                    "label": "Invisible",
+                    "description": null
+                  }
+                ]
+              },
+              {
+                "placeholder": "Select the type of activity and add a describe",
+                "options": [
+                  {
+                    "label": "Playing",
+                    "description": "Ability to add describe"
+                  },
+                  {
+                    "label": "Listening",
+                    "description": "Ability to add describe"
+                  }
+                ]
               }
             ],
             "modals": [
@@ -240,6 +276,15 @@
                   {
                     "label": "token",
                     "placeholder": "Copy your bot token from Discord Developer Portal"
+                  }
+                ]
+              },
+              {
+                "title": "Update bot activity",
+                "textInput": [
+                  {
+                    "label": "name",
+                    "placeholder": "Describe the activity."
                   }
                 ]
               }

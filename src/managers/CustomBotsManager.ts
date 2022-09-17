@@ -25,7 +25,7 @@ export default class CustomBotsManager {
     if (CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) < 0)
       return this.result([], tierId);
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, unix_timestamp(createdAt) as createdTimestampAt from \`Custom.Bot\` where ownerId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt from \`Custom.Bot\` where ownerId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
       [id, tierId, id, tierId]
     );
 
@@ -40,6 +40,9 @@ export default class CustomBotsManager {
             raw.discriminator,
             raw.avatar,
             raw.ownerId,
+            raw.botStatus ?? null,
+            raw.activityType ?? null,
+            raw.activityName ?? null,
             raw.tokenValidation === 1,
             new Date(Math.round(raw.createdTimestampAt * 1000))
           )
@@ -58,6 +61,9 @@ export default class CustomBotsManager {
     const customBot = new CustomBot<"CREATION">(
       id,
       token,
+      null,
+      null,
+      null,
       null,
       null,
       null,
@@ -111,6 +117,9 @@ export default class CustomBotsManager {
       botData.discriminator,
       botData.avatar,
       user.id,
+      null,
+      null,
+      null,
       true,
       new Date()
     );
@@ -214,18 +223,32 @@ export default class CustomBotsManager {
     );
   }
 
-  public async PM2Start(name: string, token: string, options?: object) {
+  public async PM2Start(
+    name: string,
+    token: string,
+    options?: { args?: any[]; processOptions?: object }
+  ) {
     if (!this.PM2Connected)
       throw new Exception("PM2 is not connected", Severity.FAULT);
+    this.processes.set(name, "PROCESSING");
+    await this.PM2Delete(name).catch(() => null);
+    console.log(options?.args?.join(" "));
     return new Promise((resolve, reject) =>
       pm2.start(
         {
           name: name,
           script: `./xtopbot-js/launch.js`,
-          args: `--token ${token}`,
+          args: `--token ${token} ${options?.args?.join(" ") ?? ""}`,
           interpreter: "node@16.11.1",
         },
-        (err, process) => (err ? reject(err) : resolve(process))
+        (err, process) => {
+          if (err) {
+            this.processes.delete(name);
+            return reject(err);
+          }
+          this.processes.set(name, "PROCESSED");
+          return resolve(process);
+        }
       )
     );
   }
@@ -240,12 +263,37 @@ export default class CustomBotsManager {
     );
   }
 
-  public async PM2Describe(process: number | string) {
+  public async PM2Describe(
+    process: number | string
+  ): Promise<ProcessDescription[]> {
     if (!this.PM2Connected)
       throw new Exception("PM2 is not connected", Severity.FAULT);
     return new Promise((resolve, reject) =>
       pm2.describe(process, (err, process) =>
         err ? reject(err) : resolve(process)
+      )
+    );
+  }
+
+  public async PM2SendDataToProcess(
+    name: string,
+    data: { op: "UPDATE_PRESENCE"; data: object }
+  ) {
+    const process = (await this.PM2Describe(name))[0];
+    if (!process)
+      throw new Exception(
+        `Unable to the process with name: ${name}`,
+        Severity.SUSPICIOUS
+      );
+    return new Promise((resolve, reject) =>
+      pm2.sendDataToProcessId(
+        process.pm_id as number,
+        {
+          type: "process:msg",
+          data: data,
+          topic: "CUSTOM_BOTS_MANAGER",
+        },
+        (err, process) => (err ? reject(err) : resolve(process))
       )
     );
   }
