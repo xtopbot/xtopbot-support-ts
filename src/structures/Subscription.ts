@@ -35,16 +35,19 @@ export default class Subscription {
           Date.now() && event.chargeStatus === "PAID"
     );
     const lastPaid = this.getLastEvent("PAID");
+    const lastPaidExpiredTimestamp = lastPaid
+      ? lastPaid.eventCreatedAt.getTime() + lastPaid.subscriptionPeriodTermMs
+      : 0;
+    const lastRefundExpiredTimestamp =
+      this.getLastEvent("REFUND")?.eventUpdatedAt.getTime() ?? 0;
     return new Date(
       activePaidSubscription
         .map((event) => event.subscriptionPeriodTermMs)
         .reduce((a, b) => a + b, 0) +
         (activePaidSubscription[0]?.eventCreatedAt.getTime() ??
-          this.getLastEvent("REFUND")?.eventUpdatedAt.getTime() ??
-          (lastPaid
-            ? lastPaid.eventCreatedAt.getTime() +
-              lastPaid.subscriptionPeriodTermMs
-            : 0))
+          (lastRefundExpiredTimestamp > lastPaidExpiredTimestamp
+            ? lastRefundExpiredTimestamp
+            : lastPaidExpiredTimestamp))
     );
   }
 
