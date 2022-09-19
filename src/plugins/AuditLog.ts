@@ -19,6 +19,27 @@ import RequestAssistant, {
 import Logger from "../utils/Logger";
 import Util from "../utils/Util";
 
+moment.updateLocale("en", {
+  relativeTime: {
+    future: "in %s",
+    past: "%s ago",
+    s: "%d seconds",
+    ss: "%d seconds",
+    m: "a minute",
+    mm: "%d minutes",
+    h: "an hour",
+    hh: "%d hours",
+    d: "a day",
+    dd: "%d days",
+    w: "a week",
+    ww: "%d weeks",
+    M: "a month",
+    MM: "%d months",
+    y: "a year",
+    yy: "%d years",
+  },
+});
+
 export default class AuditLog {
   public static async timeoutMember(
     oldMember: GuildMember | PartialGuildMember,
@@ -237,6 +258,7 @@ export default class AuditLog {
       newMessage.partial
     )
       return;
+    //oldMessage.editedTimestamp
     const user = await app.users.fetch(oldMessage.author, false);
 
     const isOldContentLong = AuditLog.checkContentCondition(oldMessage.content);
@@ -255,6 +277,12 @@ export default class AuditLog {
       removedAttachments
         .map((attach) => `${attach.name ?? "Unknown"} | ${attach.url}`)
         .join("\n") + `\n  (Usually media links expire within 24 hours)`;
+
+    if (
+      removedAttachments.size === 0 &&
+      oldMessage.content === newMessage.content
+    )
+      return;
 
     const log: MessageOptions = {
       embeds: [
@@ -296,6 +324,16 @@ export default class AuditLog {
             {
               name: "Channel",
               value: `<#${oldMessage.channel.id}>`,
+              inline: true,
+            },
+            {
+              name: "Time Between Last Update",
+              value: moment(
+                Date.now() +
+                  (oldMessage.editedTimestamp
+                    ? oldMessage.editedTimestamp - Date.now()
+                    : oldMessage.createdTimestamp - Date.now())
+              ).fromNow(true),
               inline: true,
             },
             {
@@ -401,6 +439,13 @@ export default class AuditLog {
             {
               name: "Channel",
               value: `<#${message.channel.id}>`,
+              inline: true,
+            },
+            {
+              name: "Message Life",
+              value: moment(
+                Date.now() + (Date.now() - message.createdTimestamp)
+              ).fromNow(true),
               inline: true,
             },
             {

@@ -54,16 +54,12 @@ export default class RequestAssistant extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("requestAssistant")) {
-          return true;
-        }
-        return false;
+        return d.matches("requestAssistant");
       },
     });
   }
 
-  public async buttonInteraction(dcm: Method<ButtonInteraction>) {
-    console.log("test");
+  protected async buttonInteraction(dcm: Method<ButtonInteraction>) {
     if (dcm.getValue("requestAssistant", false) === "create")
       return this.request(null, dcm, dcm.d.guild as Guild);
     if (dcm.getValue("requestAssistant", false) === "cancel") {
@@ -185,7 +181,7 @@ export default class RequestAssistant extends BaseCommand {
     }
   }
 
-  public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
+  protected async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     if (dcm.getValue("requestAssistant", false) === "create") {
       if (dcm.getKey("setLocale")) {
         const res = await Languages.setLocale(
@@ -260,7 +256,7 @@ export default class RequestAssistant extends BaseCommand {
     }
   }
 
-  public async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
+  protected async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
     if (dcm.getValue("requestAssistant", false) === "create") {
       return this.request(
         dcm.d.fields.getTextInputValue("issue"),

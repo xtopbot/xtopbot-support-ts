@@ -68,15 +68,14 @@ export default class WebhookMessage extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("webhook")) {
-          return true;
-        }
-        return false;
+        return d.matches("webhook");
       },
     });
   }
 
-  public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
+  protected async autoCompleteInteraction(
+    dcm: Method<AutocompleteInteraction>
+  ) {
     const webhookOption = dcm.d.options.getString("webhook");
     if (typeof webhookOption == "string" && webhookOption.length <= 32) {
       const webhooks = await dcm.d.guild?.fetchWebhooks(); // This not good for big bots :)
@@ -103,7 +102,7 @@ export default class WebhookMessage extends BaseCommand {
     return new Response(ResponseCodes.AUTOCOMPLETE_EMPTY_RESPONSE, []);
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: Method<ChatInputCommandInteraction>
   ) {
     //await dcm.d.deferReply({ ephemeral: true });
@@ -161,7 +160,7 @@ export default class WebhookMessage extends BaseCommand {
     );
   }
 
-  public async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
+  protected async modalSubmitInteraction(dcm: Method<ModalSubmitInteraction>) {
     const webhookId = dcm.getValue("webhook");
     const webhook = webhookId
       ? (await dcm.d.guild?.fetchWebhooks())?.find(

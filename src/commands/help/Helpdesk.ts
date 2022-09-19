@@ -40,8 +40,7 @@ export default class HelpDesk extends BaseCommand {
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("helpdesk")) return true;
-        return false;
+        return d.matches("helpdesk");
       },
     });
   }
@@ -213,16 +212,25 @@ export default class HelpDesk extends BaseCommand {
     };
   }
 
-  public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
+  protected async autoCompleteInteraction(
+    dcm: Method<AutocompleteInteraction>
+  ) {
     const focused = dcm.d.options.getFocused(true);
-    if (focused.name === "issue")
+    if (focused.name === "issue") {
+      const result = await app.articles.search(focused.value);
       return new Response(
         ResponseCodes.SUCCESS,
-        (await app.articles.search(focused.value)).map((localization) => ({
-          name: localization.title,
-          value: localization.id,
-        }))
+        result
+          .filter(
+            (article, index) =>
+              result.map((article) => article.id).indexOf(article.id) === index
+          )
+          .map((localization) => ({
+            name: localization.title,
+            value: localization.id,
+          }))
       );
+    }
     return new Response(ResponseCodes.SUCCESS, []);
   }
 }

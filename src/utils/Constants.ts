@@ -12,8 +12,12 @@ export default class Constants {
     ChannelType.GuildText,
     ChannelType.GuildNews,
   ];
-  public static readonly DEFAULT_COLORS: { [keys: string]: number } = {
-    DANGER: 12008772,
+  public static readonly defaultColors = {
+    RED: 12008772,
+    ORANGE: 16089632,
+    GREEN: 5151559,
+    GRAY: 3355443,
+    BLUE: 1340892,
   };
   public static readonly DEFAULT_INTERACTION_EXPIRES: number =
     1000 /*MiliSecond*/ * 60 /*Minute*/ * 15; //ms

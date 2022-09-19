@@ -276,7 +276,7 @@ export default class ArticlesManager extends CacheManager<Article> {
     or al.articleId = a.id and al.published = 1 ${
       type === "LOCALE_ONLY" ? "and al.locale = ?" : ""
     }
-    group by als.articleLocalizationId
+    group by al.id
     order by count(distinct als.articleLocalizationId, als.userId) DESC
     limit 10;
     `,
@@ -336,7 +336,7 @@ export default class ArticlesManager extends CacheManager<Article> {
     withRequestAssistantInteraction = true
   ) {
     const commonsArticles = await this.getCommonsArticles(locale.tag);
-    console.log(commonsArticles);
+
     const rowOne = commonsArticles.slice(0, 5).map((article, index) => ({
       type: ComponentType.Button,
       style: ButtonStyle.Secondary,
@@ -394,8 +394,7 @@ export default class ArticlesManager extends CacheManager<Article> {
   }
 
   private resolve(raws: any[]) {
-    console.log(raws);
-    const resolved = raws
+    return raws
       ?.filter(
         (raw, index) =>
           Util.isUUID(raw.id) &&
@@ -452,7 +451,5 @@ export default class ArticlesManager extends CacheManager<Article> {
               })),
           })),
       }));
-    console.log(resolved[0]);
-    return resolved;
   }
 }

@@ -65,7 +65,7 @@ export default class ArticleCreate extends BaseCommand {
     });
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: CommandMethod<ChatInputCommandInteraction>
   ) {
     const note = dcm.d.options.getString("note", true);
@@ -73,7 +73,7 @@ export default class ArticleCreate extends BaseCommand {
     return ArticleCreate.createArticle(dcm, note);
   }
 
-  public async selectMenuInteraction(
+  protected async selectMenuInteraction(
     dcm: ComponentMethod<SelectMenuInteraction>
   ) {
     console.log(dcm.d.values);
@@ -103,7 +103,7 @@ export default class ArticleCreate extends BaseCommand {
       );
   }
 
-  public async modalSubmitInteraction(
+  protected async modalSubmitInteraction(
     dcm: ComponentMethod<ModalSubmitInteraction>
   ) {
     if (dcm.getKey("create")) {

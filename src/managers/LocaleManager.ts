@@ -125,7 +125,7 @@ export default class LocaleManager extends CacheManager<Locale> {
 
       return newArray;
     } else {
-      if (Array.isArray(a)) return _default;
+      if (Array.isArray(a) || _default === null) return _default;
 
       const newObject: any = {};
       for (const [key, value] of Object.entries(_default)) {

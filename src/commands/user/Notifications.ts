@@ -36,13 +36,13 @@ export default class Notifications extends BaseCommand {
     });
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: Method<ChatInputCommandInteraction>
   ) {
     return this.getMessageNotificationRoles(dcm);
   }
 
-  public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
+  protected async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     const selectedRoles = dcm.d.values as DefaultNotificationRoles[];
     await dcm.d.deferReply({ ephemeral: true });
     return this.setMemberNotificationRole(dcm, selectedRoles);
@@ -211,7 +211,7 @@ interface NotificationRoles {
 }
 
 enum DefaultNotificationRoles {
-    UPDATES = "updates",
-    NEWS = "news",
-    STATUS = "status",
+  UPDATES = "updates",
+  NEWS = "news",
+  STATUS = "status",
 }

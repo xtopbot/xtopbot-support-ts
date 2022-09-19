@@ -157,6 +157,9 @@ export default class RequestAssistant {
               `Error FollowUp Interaction Message For Request Assistant Reason Of FollowUp: Request Expired. Message Error: ${err.message}`
             )
           );
+        AuditLog.assistanceThreadClosed(this);
+        this.deleteAssistantControlMessage();
+        Logger.info(`[RHA: ${this.id} (${this.userId})] Request expired.`);
       }
     }, time);
   }

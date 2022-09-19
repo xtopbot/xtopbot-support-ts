@@ -25,43 +25,49 @@ export default class Languages extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [
         {
-          name: "languages",
+          name: "user",
           description: "...",
           type: ApplicationCommandType.ChatInput,
           options: [
             {
-              name: "locale",
-              type: ApplicationCommandOptionType.String,
-              description: "...",
-              /*choices: app.locales.cache.map((locale) => ({
-                              name: locale.tag,
-                              value: locale.tag,
-                            })),*/
-              autocomplete: true,
-              required: true,
+              name: "Language",
+              description: "Shows/Edits your language on this server",
+              type: ApplicationCommandOptionType.Subcommand,
+              options: [
+                {
+                  name: "locale",
+                  type: ApplicationCommandOptionType.String,
+                  description: "...",
+                  /*choices: app.locales.cache.map((locale) => ({
+                                  name: locale.tag,
+                                  value: locale.tag,
+                                })),*/
+                  autocomplete: true,
+                  required: false,
+                },
+              ],
             },
           ],
         },
       ],
       messageComponent: (d) => {
-        console.log(d.customIds);
-        console.log(d.d.customId);
-        if (d.matches("languages")) {
-          return true;
-        }
-        return false;
+        return d.matches("languages");
       },
     });
   }
 
-  public async chatInputCommandInteraction(
+  protected async chatInputCommandInteraction(
     dcm: Method<ChatInputCommandInteraction>
   ) {
-    const localeArg = dcm.d.options.getString("locale", true);
-    return Languages.setLocale(dcm, localeArg as LocaleTag);
+    const localeArg = dcm.d.options.getString("locale", false);
+    if (localeArg) return Languages.setLocale(dcm, localeArg as LocaleTag);
+
+    return new Response(ResponseCodes.SUCCESS, {
+      ephemeral: true,
+    });
   }
 
-  public async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
+  protected async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     if (dcm.getValue("languages", false) === "set")
       return Languages.setLocale(dcm, dcm.d.values[0] as LocaleTag);
     throw new Exception("Unknown Argument", Severity.FAULT, dcm);
