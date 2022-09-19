@@ -181,11 +181,12 @@ export default class CustomBotsManager {
         "[CustomBotsManager<Process>] Running processes have been successfully validated!"
       );
     });
-
+    this.listener();
     job.invoke();
   }
 
   private listener() {
+    Logger.info("[CustomManager<Process>] listening to processes...");
     process.on("message", async (packet: any) => {
       const data = packet?.data?.data;
       if (packet?.data?.op === "CUSTOM_BOT_GUILD_ADDED") {

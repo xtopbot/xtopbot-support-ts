@@ -314,10 +314,12 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
         null
       ).catch(() => (valid = false));
     }
-    if (!valid)
+    if (!valid) {
+      app.customBots.processes.delete(this.id);
       return Logger.info(
         `[CustomBot<Process>] ${this.botId} Validation failed!`
       );
+    }
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Validation completed successfully. Starting<Process>`
     );
