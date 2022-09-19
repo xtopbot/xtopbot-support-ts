@@ -10,6 +10,7 @@ import pm2, { ProcessDescription } from "pm2";
 import Logger from "../utils/Logger";
 import { Collection } from "discord.js";
 import schedule from "node-schedule";
+import Constants from "../utils/Constants";
 
 export default class CustomBotsManager {
   public readonly processes = new Collection<
@@ -22,11 +23,16 @@ export default class CustomBotsManager {
     id: string | string[],
     tierId: PatreonTierId
   ): Promise<{ items: CustomBot<"GET">[]; remaining: number }> {
-    if (CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) < 0)
+    if (
+      CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId) < 0 ||
+      (Array.isArray(id) && id.length <= 0)
+    )
       return this.result([], tierId);
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt from \`Custom.Bot\` where ownerId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
-      [id, tierId, id, tierId]
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+              from \`Custom.Bot\`
+              where ownerId in (?) and tierId = ? OR botId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
+      [id, tierId, id, tierId, id, tierId]
     );
 
     return this.result<"GET">(
@@ -48,6 +54,32 @@ export default class CustomBotsManager {
           )
       ),
       tierId
+    );
+  }
+
+  public async fetchSingle(id: string): Promise<CustomBot<"GET"> | null> {
+    let raws: any[] = await db.query(
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+              from \`Custom.Bot\`
+              where botId = ? OR BIN_TO_UUID(id) = ?`,
+      [id, id]
+    );
+    const raw = raws[0];
+    if (!raw) return null;
+
+    return new CustomBot<"GET">(
+      raw.id,
+      raw.token,
+      raw.botId,
+      raw.username,
+      raw.discriminator,
+      raw.avatar,
+      raw.ownerId,
+      raw.botStatus ?? null,
+      raw.activityType ?? null,
+      raw.activityName ?? null,
+      raw.tokenValidation === 1,
+      new Date(Math.round(raw.createdTimestampAt * 1000))
     );
   }
 
@@ -153,6 +185,47 @@ export default class CustomBotsManager {
     job.invoke();
   }
 
+  private listener() {
+    process.on("message", async (packet: any) => {
+      const data = packet?.data?.data;
+      if (packet?.data?.op === "CUSTOM_BOT_GUILD_ADDED") {
+        const customBot = await this.fetchSingle(data.botId);
+        if (!customBot)
+          return this.PM2Delete(data.process.name).catch(() => null);
+        const subscription = await app.subscriptions.fetch(
+          customBot.ownerId,
+          PatreonTierId.ONE_CUSTOM_BOT
+        );
+        if (!subscription)
+          return this.PM2Delete(data.process.name).catch(() => null);
+        if (
+          data.guildsSize >
+          CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+            subscription.tierId
+          )
+        ) {
+          customBot.leaveGuild(data.guild.id).catch(() => null);
+          const user = await app.users.fetch(subscription.discordUserId);
+          const dm = await (
+            await app.client.users.fetch(subscription.discordUserId)
+          )
+            .createDM()
+            .catch(() => null);
+          const locale = app.locales.get(user.locale);
+          dm?.send(
+            Util.addFieldToEmbed(
+              locale.origin.commands.subscriptions.manage.one.bot
+                .guildsLimitReached,
+              0,
+              "color",
+              Constants.defaultColors.ORANGE
+            )
+          );
+        }
+      }
+    });
+  }
+
   private async validationRunningProcesses() {
     const processes = (await this.PM2Processes()).flatMap((process) =>
       Util.isUUID(process.name) ? process : []
@@ -238,7 +311,9 @@ export default class CustomBotsManager {
         {
           name: name,
           script: `./xtopbot-js/launch.js`,
-          args: `--token ${token} ${options?.args?.join(" ") ?? ""}`,
+          args: `--token ${token} --uuid ${name} ${
+            options?.args?.join(" ") ?? ""
+          }`,
           interpreter: "node@16.11.1",
         },
         (err, process) => {

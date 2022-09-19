@@ -370,6 +370,7 @@ export default class Subscriptions extends BaseCommand {
           ResponseCodes.UNKNOWN_SUBSCRIPTION_TIER,
           {
             ...dcm.locale.origin.commands.subscriptions.unknownSubscriptionTier,
+            components: [],
             ephemeral: true,
           },
           Action.UPDATE
@@ -384,6 +385,7 @@ export default class Subscriptions extends BaseCommand {
           ResponseCodes.NOT_SUBSCRIBED_YET,
           {
             ...dcm.locale.origin.commands.subscriptions.notSubscribedYet,
+            components: [],
             ephemeral: true,
           },
           Action.UPDATE
@@ -405,11 +407,40 @@ export default class Subscriptions extends BaseCommand {
           subscription.tierId
         ] ?? ""
       );
+
       if (!subscription.isActive())
         return new Response(
           ResponseCodes.SUBSCRIPTION_EXPIRED,
           {
-            ...dcm.locale.origin.commands.subscriptions.subscriptionExpired,
+            ...Util.addFieldToEmbed(
+              dcm.locale.origin.commands.subscriptions.subscriptionExpired,
+              0,
+              "color",
+              Constants.defaultColors.ORANGE
+            ),
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.Button,
+                    label:
+                      dcm.locale.origin.commands.subscriptions.manage.one
+                        .buttons[0],
+                    style: ButtonStyle.Link,
+                    url: "https://www.patreon.com/join/xtopbot/checkout?edit=1",
+                  },
+                  {
+                    type: ComponentType.Button,
+                    label:
+                      dcm.locale.origin.commands.subscriptions.manage.one
+                        .buttons[1],
+                    style: ButtonStyle.Secondary,
+                    customId: `subscription:tier:${subscription.tierId}`,
+                  },
+                ],
+              },
+            ],
             ephemeral: true,
           },
           Action.UPDATE
@@ -428,6 +459,7 @@ export default class Subscriptions extends BaseCommand {
                 ...dcm.locale.origin.commands.subscriptions
                   .createCustomBotLimitReached,
                 ephemeral: true,
+                components: [],
               },
               Action.UPDATE
             );
@@ -535,12 +567,10 @@ export default class Subscriptions extends BaseCommand {
     dcm: Method<AnyInteraction>,
     subscription: Subscription,
     customBot: CustomBot<"GET">,
-    options?: {
-      guilds?: any[];
-    }
+    guilds?: any[]
   ) {
-    const guilds =
-      options?.guilds ??
+    guilds =
+      guilds ??
       (customBot.tokenValidation
         ? await customBot.fetchGuilds(dcm.locale.tag).catch(() => [])
         : []);
@@ -900,7 +930,7 @@ export default class Subscriptions extends BaseCommand {
       });
 
     dcm.cf.formats.set("subscription.tier.name", subscription.getTierName());
-    dcm.cf.formats.set("subscription.id", subscription.getLastEvent("PAID").id);
+    dcm.cf.formats.set("subscription.id", subscription.getId());
     dcm.cf.formats.set(
       "subscription.description",
       dcm.locale.origin.commands.subscriptions.tierDescription[
@@ -942,8 +972,8 @@ export default class Subscriptions extends BaseCommand {
           0,
           "color",
           subscription.isActive()
-            ? Constants.defaultColors.GREEN
-            : Constants.defaultColors.GRAY
+            ? Constants.defaultColors.BLUE
+            : Constants.defaultColors.ORANGE
         ),
         components,
         ephemeral: true,

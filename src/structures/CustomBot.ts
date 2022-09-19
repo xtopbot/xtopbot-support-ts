@@ -265,7 +265,8 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       }
       throw new Exception(
         `Unexpected Discord API status code: ${res.status}`,
-        Severity.FAULT
+        Severity.FAULT,
+        `Unexpected Discord API status code: ${res.status}`
       );
     }
     return res.json();

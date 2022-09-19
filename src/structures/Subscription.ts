@@ -18,6 +18,10 @@ export default class Subscription {
     this.discordUserId = discordUserId;
   }
 
+  public getId() {
+    return this.getLastEvent()?.id ?? "Unknown";
+  }
+
   public getTotalPaidAmount(cents: false): string;
   public getTotalPaidAmount(cents: true): number;
   public getTotalPaidAmount(cents: boolean = false): string | number {
@@ -60,12 +64,13 @@ export default class Subscription {
     );
   }
 
-  public getLastEvent(status: "PAID" | "REFUND"): SubscriptionEvent {
-    return this.events
-      .filter((e) => e.chargeStatus === status)
-      .sort(
-        (a, b) => b.eventCreatedAt.getTime() - a.eventCreatedAt.getTime()
-      )[0];
+  public getLastEvent(status?: "PAID" | "REFUND"): SubscriptionEvent {
+    const events = status
+      ? this.events.filter((e) => e.chargeStatus === status)
+      : this.events;
+    return events.sort(
+      (a, b) => b.eventCreatedAt.getTime() - a.eventCreatedAt.getTime()
+    )[0];
   }
 
   public getCreatedAt(): Date {
