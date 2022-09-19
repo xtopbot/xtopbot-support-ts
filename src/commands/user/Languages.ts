@@ -30,7 +30,7 @@ export default class Languages extends BaseCommand {
           type: ApplicationCommandType.ChatInput,
           options: [
             {
-              name: "Language",
+              name: "language",
               description: "Shows/Edits your language on this server",
               type: ApplicationCommandOptionType.Subcommand,
               options: [
