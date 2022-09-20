@@ -183,7 +183,7 @@
               "embeds": [
                 {
                   "title": "It must be terminated!",
-                  "description": "Since the bot token is invalid, you must **terminate** and setup your custom bot with another valid token again!"
+                  "description": "Since the bot token is invalid or a custom bot validation fails according to the case of our custom bot terms, you must **terminate** and setup your custom bot with another valid token again!"
                 }
               ]
             },
@@ -191,9 +191,13 @@
               "embeds": [
                 {
                   "title": "Alert!",
-                  "description": "Your bot **{{bot.tag}}** ({{custom.bot.id}}) maxed out the servers limit `{{custom.bot.allowed.servers}}`."
+                  "description": "Your bot **{{bot.tag}}** ({{custom.bot.id.short}}) maxed out the servers limit `{{custom.bot.allowed.servers}}`.",
+                  "footer": {
+                    "text": "If you want to manage your bot servers, click the button below!"
+                  }
                 }
-              ]
+              ],
+              "buttons": ["Manage {{bot.tag}}"]
             },
             "status": ["Running", "Pending", "Offline", "Invalid Token"],
             "embeds": [
