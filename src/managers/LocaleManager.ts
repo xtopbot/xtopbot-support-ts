@@ -182,43 +182,6 @@ export default class LocaleManager extends CacheManager<Locale> {
     return localeRoles;
   }
 
-  public getMessageWithMenuOfLocales(user?: User): MessageOptions;
-  public getMessageWithMenuOfLocales(customId?: string): MessageOptions;
-  public getMessageWithMenuOfLocales(
-    user: User,
-    customId?: string
-  ): MessageOptions;
-  public getMessageWithMenuOfLocales(
-    arg?: User | string,
-    customId?: string
-  ): MessageOptions {
-    const _user: User | null = arg instanceof User ? arg : null;
-    const _customId: string | null =
-      typeof arg === "string" ? arg : customId ?? null;
-    return {
-      content: "\n",
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.SelectMenu,
-              customId: _customId ?? "languages:set",
-              placeholder: "Select language you might understand", // related to locale system.
-              minValues: 1,
-              maxValues: 1,
-              options: this.cache.map((locale) => ({
-                label: locale.origin.name,
-                value: locale.tag,
-                default: _user?.locale == locale.tag,
-              })),
-            },
-          ],
-        },
-      ],
-    };
-  }
-
   public async checkUserRoles(
     user: User,
     guild: Guild,
@@ -227,10 +190,11 @@ export default class LocaleManager extends CacheManager<Locale> {
     const guildLocaleRoles = this.getGuildLocaleRoles(guild);
     const role = user.locale ? guildLocaleRoles.get(user.locale) : null;
     guildLocaleRoles.map(async (r) => {
-      if (member.roles.cache.has(r.id) && role !== r)
+      if (member && member.roles.cache.has(r.id) && role !== r)
         await member.roles.remove(r);
     });
-    if (role && !member.roles.cache.has(role.id)) await member.roles.add(role);
+    if (role && member && !member.roles.cache.has(role.id))
+      await member.roles.add(role);
   }
 }
 

@@ -6,16 +6,23 @@ import {
   ComponentType,
   Guild,
   GuildMember,
+  InteractionType,
   SelectMenuInteraction,
 } from "discord.js";
 import app from "../../app";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
-import Response, { MessageResponse, ResponseCodes } from "../../utils/Response";
+import Response, {
+  Action,
+  MessageResponse,
+  ResponseCodes,
+} from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import { AnyMethod, Method } from "../CommandMethod";
+import { AnyInteraction, AnyMethod, Method } from "../CommandMethod";
 import Fuse from "fuse.js";
 import { LocaleTag } from "../../managers/LocaleManager";
+import Util from "../../utils/Util";
+import Constants from "../../utils/Constants";
 
 export default class Languages extends BaseCommand {
   constructor() {
@@ -25,13 +32,14 @@ export default class Languages extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [
         {
+          dmPermission: true,
           name: "user",
-          description: "...",
+          description: "Shows/Edits your user language.",
           type: ApplicationCommandType.ChatInput,
           options: [
             {
               name: "language",
-              description: "Shows/Edits your language on this server",
+              description: "Shows/Edits your user language.",
               type: ApplicationCommandOptionType.Subcommand,
               options: [
                 {
@@ -62,64 +70,73 @@ export default class Languages extends BaseCommand {
     const localeArg = dcm.d.options.getString("locale", false);
     if (localeArg) return Languages.setLocale(dcm, localeArg as LocaleTag);
 
-    return new Response(ResponseCodes.SUCCESS, {
-      ephemeral: true,
-    });
+    return Languages.getLocales(dcm);
   }
 
   protected async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     if (dcm.getValue("languages", false) === "set")
       return Languages.setLocale(dcm, dcm.d.values[0] as LocaleTag);
-    throw new Exception("Unknown Argument", Severity.FAULT, dcm);
   }
 
   public static async setLocale(
-    dcm: AnyMethod,
+    dcm: Method<AnyInteraction>,
     localeTag: LocaleTag
   ): Promise<Response<MessageResponse>> {
     const locale = app.locales.get(localeTag, true);
     await dcm.user.setLocale(locale.tag);
-    //Get locale roles from guild;
-    if (!app.locales.getGuildLocaleRoles(dcm.d.guild as Guild).get(localeTag))
-      return new Response(ResponseCodes.LOCALE_ROLE_NOT_FOUND, {
-        content: "Role not found.",
-        ephemeral: true,
-      }); // related to locale system.
     await app.locales.checkUserRoles(
       dcm.user,
-      dcm.d.guild as Guild,
-      dcm.d.member as GuildMember
+      (dcm.d.guild as Guild) ??
+        app.client.guilds.cache.get(Constants.supportServerId),
+      (dcm.d.member as GuildMember) ??
+        (await app.client.guilds.cache
+          .get(Constants.supportServerId)
+          ?.members.fetch(dcm.user.id))
     );
-    return new Response(ResponseCodes.SUCCESS, {
-      ...locale.origin.language.set,
-      ephemeral: true,
-    });
+    return Languages.getLocales(dcm);
   }
 
-  private getLocales(dcm: AnyMethod): Response<MessageResponse> {
-    return new Response(ResponseCodes.SUCCESS, {
-      content: "\n",
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.SelectMenu,
-              customId: "language:set",
-              placeholder: "Select language you might understand", // related to locale system.
-              minValues: 1,
-              maxValues: app.locales.cache.size,
-              options: app.locales.cache.map((locale) => ({
-                label: locale.origin.name,
-                value: locale.tag,
-                default: dcm.user.locale == locale.tag,
-              })),
-            },
-          ],
-        },
-      ],
-      ephemeral: true,
-    });
+  public static getLocales(
+    dcm: Method<AnyInteraction>,
+    customId?: string
+  ): Response<MessageResponse> {
+    return new Response(
+      ResponseCodes.SUCCESS,
+      {
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.language,
+          0,
+          "color",
+          Constants.defaultColors.BLUE
+        ),
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.SelectMenu,
+                customId: customId ?? "languages:set",
+                placeholder:
+                  dcm.locale.origin.commands.language.selectMenu[0].placeholder,
+                minValues: 1,
+                maxValues: 1,
+                options: app.locales.cache.map((locale) => ({
+                  label: locale.origin.name,
+                  value: locale.tag,
+                  default: dcm.user.locale == locale.tag,
+                })),
+              },
+            ],
+          },
+        ],
+        ephemeral: true,
+      },
+      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
+        dcm.d.type
+      )
+        ? Action.UPDATE
+        : Action.REPLY
+    );
   }
 
   public async autoCompleteInteraction(dcm: Method<AutocompleteInteraction>) {
