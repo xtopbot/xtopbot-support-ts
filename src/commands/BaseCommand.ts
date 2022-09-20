@@ -173,6 +173,11 @@ export abstract class BaseCommand implements BaseCommandType {
     dcm: CommandMethod<Message>
   ): Promise<Response<MessageResponse | null>>;
 
+  public isDMAllowed() {
+    const applicationCommand = this.applicationCommandData[0];
+    return !(applicationCommand?.dmPermission === false);
+  }
+
   public get name(): string | null {
     return this.data.name ?? null;
   }
@@ -228,6 +233,7 @@ interface BaseCommandType extends BaseCommandDataType {
   readonly applicationCommandOnly: boolean;
   messageComponent: (d: ComponentMethod<AnyComponentInteraction>) => boolean;
 
+  isDMAllowed(): boolean;
   setDisable(): void;
 
   setEnable(): void;

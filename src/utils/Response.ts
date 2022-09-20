@@ -20,6 +20,11 @@ export default class Response<T extends AnyResponse = AnyResponse> {
     this.message = message;
     this.action = action ?? Action.REPLY;
   }
+
+  setAction(action: Action | null): this {
+    this.action = action === null ? this.action : action;
+    return this;
+  }
 }
 export type ModalResponse = ModalComponentData;
 export type AutocompleteResponse = ApplicationCommandOptionChoiceData[];
@@ -91,7 +96,7 @@ export enum ResponseCodes {
   MEMBER_CHANNEL_PERMISSIONS_MISSING = 1003,
   BOT_GUILD_PERMISSIONS_MISSING = 1004,
   MEMBER_GUILD_PERMISSIONS_MISSING = 1005,
-  COMMAND_ONLY_USABLE_ON_GUILD = 1006,
+  COMMAND_DM_NOT_ALLOWED = 1006,
   EMPTY_INPUT = 2001,
   UNABLE_TO_FIND_NOTIFICATION_ROLES = 2002,
   INVALID_CHANNEL_TYPE = 2003,
