@@ -5,9 +5,13 @@
   "roleName": "English",
   "helpdeskChannel": "help-desk",
   "requirement": {
-    "insufficientPermission": {
-      "content": "Insufficient permission."
-    }
+    "notInOurSupportServer": "This command can be used in DM, but it is required that you are joined to our official xToP Bot support server!",
+    "dmNotAllowed": "This command is not allowed to be used in DM.",
+    "insufficientPermission": "Insufficient permission.",
+    "botChannelPermissionsMissing": "The **bot permissions** for this **channel** are missing. Please check `{{bot.channel.permissions.missing}}`",
+    "botGuildPermissionsMissing": "The **bot permissions** for this **guild** are missing. Please check `{{bot.guild.permissions.missing}}`",
+    "memberChannelPermissionsMissing": "**Member permissions** for this **channel** are missing. Please check `{{member.channel.permissions.missing}}` **(requires only one of the permissions listed)**",
+    "memberGuildPermissionsMissing": "**Member permissions** for this **guild** are missing. Please check `{{member.channel.permissions.missing}}` **(requires only one of the permissions listed)**"
   },
   "backButton": "Back",
   "helpdesk": {
@@ -27,7 +31,13 @@
     "language": {
       "embeds": [
         {
-          "description": ""
+          "title": "\uD83C\uDF10 Choose the language you prefer",
+          "description": "Choosing your preferred language opens language-related channels for you in the official **xToP Bot** support server."
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "Select language you might understand"
         }
       ],
       "set": {

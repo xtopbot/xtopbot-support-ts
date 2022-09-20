@@ -3,6 +3,7 @@ import Constants from "../utils/Constants";
 import Response, { Action, ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
 import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
+import Locale from "../structures/Locale";
 
 export default class CommandRequirementsHandler {
   private readonly dcm: CommandMethod<CommandMethodTypes>;
@@ -12,11 +13,37 @@ export default class CommandRequirementsHandler {
   }
 
   public async checkAll(): Promise<void> {
+    let message = {
+      embeds: [
+        {
+          color: Constants.defaultColors.RED,
+        },
+      ],
+    };
+    if (!this.dcm.command.isDMAllowed())
+      throw new Response(
+        ResponseCodes.COMMAND_DM_NOT_ALLOWED,
+        {
+          ...Util.addFieldToEmbed(
+            message,
+            0,
+            "description",
+            this.dcm.locale.origin.requirement.dmNotAllowed
+          ),
+          ephemeral: true,
+        },
+        Action.REPLY
+      );
     if (!this.userFlagPolicy())
       throw new Response(
         ResponseCodes.INSUFFICIENT_PERMISSION,
         {
-          ...this.dcm.locale.origin.requirement.insufficientPermission, // related to locale system
+          ...Util.addFieldToEmbed(
+            message,
+            0,
+            "description",
+            this.dcm.locale.origin.requirement.insufficientPermission
+          ),
           ephemeral: true,
         },
         Action.REPLY
@@ -26,9 +53,20 @@ export default class CommandRequirementsHandler {
         throw new Response(
           ResponseCodes.BOT_CHANNEL_PERMISSIONS_MISSING,
           {
-            content: `The bot permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-              this.botChannelPermissionsMissing
-            ).join(", ")}\`.`, // related to locale system
+            ...Util.quickFormatContext(
+              Util.addFieldToEmbed(
+                message,
+                0,
+                "description",
+                this.dcm.locale.origin.requirement.botChannelPermissionsMissing
+              ),
+              {
+                "bot.channel.permissions.missing":
+                  Util.permissionsToStringArray(
+                    this.botChannelPermissionsMissing
+                  ).join(", "),
+              }
+            ),
             ephemeral: true,
           },
           Action.REPLY
@@ -38,9 +76,19 @@ export default class CommandRequirementsHandler {
         throw new Response(
           ResponseCodes.BOT_GUILD_PERMISSIONS_MISSING,
           {
-            content: `The bot permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-              this.botGuildPermissionsMissing
-            ).join(", ")}\`.`, // related to locale system
+            ...Util.quickFormatContext(
+              Util.addFieldToEmbed(
+                message,
+                0,
+                "description",
+                this.dcm.locale.origin.requirement.botGuildPermissionsMissing
+              ),
+              {
+                "bot.guild.permissions.missing": Util.permissionsToStringArray(
+                  this.botGuildPermissionsMissing
+                ).join(", "),
+              }
+            ),
             ephemeral: true,
           },
           Action.REPLY
@@ -50,9 +98,21 @@ export default class CommandRequirementsHandler {
         throw new Response(
           ResponseCodes.MEMBER_CHANNEL_PERMISSIONS_MISSING,
           {
-            content: `Member permissions for this channel are missing. Please check \`${Util.permissionsToStringArray(
-              this.memberChannelPermissionsMissing
-            ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
+            ...Util.quickFormatContext(
+              Util.addFieldToEmbed(
+                message,
+                0,
+                "description",
+                this.dcm.locale.origin.requirement
+                  .memberChannelPermissionsMissing
+              ),
+              {
+                "member.channel.permissions.missing":
+                  Util.permissionsToStringArray(
+                    this.memberChannelPermissionsMissing
+                  ).join(", "),
+              }
+            ),
             ephemeral: true,
           },
           Action.REPLY
@@ -62,9 +122,20 @@ export default class CommandRequirementsHandler {
         throw new Response(
           ResponseCodes.MEMBER_GUILD_PERMISSIONS_MISSING,
           {
-            content: `Member permissions for this guild are missing. Please check \`${Util.permissionsToStringArray(
-              this.memberGuildPermissionsMissing
-            ).join(", ")}\` **(requires only one of the permissions listed)**.`, // related to locale system
+            ...Util.quickFormatContext(
+              Util.addFieldToEmbed(
+                message,
+                0,
+                "description",
+                this.dcm.locale.origin.requirement.memberGuildPermissionsMissing
+              ),
+              {
+                "member.guild.permissions.missing":
+                  Util.permissionsToStringArray(
+                    this.memberGuildPermissionsMissing
+                  ).join(", "),
+              }
+            ),
             ephemeral: true,
           },
           Action.REPLY
@@ -165,5 +236,16 @@ export default class CommandRequirementsHandler {
     return this.memberGuildPermissions.length
       ? this.dcm.member.permissions.any(this.memberGuildPermissions)
       : true;
+  }
+
+  public static insufficientPermissionMessage(locale: Locale) {
+    return {
+      embeds: [
+        {
+          color: Constants.defaultColors.RED,
+          description: locale.origin.requirement.insufficientPermission,
+        },
+      ],
+    };
   }
 }

@@ -32,6 +32,7 @@ import { Diff } from "../../utils/Util";
 import { BaseCommand } from "../BaseCommand";
 import { AnyInteraction, Method } from "../CommandMethod";
 import Languages from "./Languages";
+import CommandRequirementsHandler from "../RequirementHandler";
 
 export default class RequestAssistant extends BaseCommand {
   constructor() {
@@ -41,6 +42,7 @@ export default class RequestAssistant extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageChannels"],
       applicationCommandData: [
         {
+          dmPermission: true,
           name: "request",
           description: "Requests an assistant to help you",
           type: ApplicationCommandType.ChatInput,
@@ -100,7 +102,9 @@ export default class RequestAssistant extends BaseCommand {
         return new Response<MessageResponse>(
           ResponseCodes.INSUFFICIENT_PERMISSION,
           {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           }
         );
@@ -198,7 +202,9 @@ export default class RequestAssistant extends BaseCommand {
         return new Response<MessageResponse>(
           ResponseCodes.INSUFFICIENT_PERMISSION,
           {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           }
         );
@@ -290,10 +296,10 @@ export default class RequestAssistant extends BaseCommand {
         ResponseCodes.REQUIRED_USER_LOCALE,
         {
           ...locale.origin.plugins.pluginRequiredUserLocale,
-          components: app.locales.getMessageWithMenuOfLocales(
-            dcm.user,
+          components: Languages.getLocales(
+            dcm,
             "requestAssistant:create:setLocale"
-          ).components,
+          ).message.components,
           ephemeral: true,
         },
         Action.REPLY
