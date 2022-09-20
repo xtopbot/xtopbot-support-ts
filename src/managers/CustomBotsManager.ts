@@ -262,7 +262,7 @@ export default class CustomBotsManager {
                   {
                     type: ComponentType.Button,
                     style: ButtonStyle.Primary,
-                    customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}`,
+                    customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:reply`,
                     label: Util.textEllipsis(
                       Util.quickFormatContext(
                         locale.origin.commands.subscriptions.manage.one.bot

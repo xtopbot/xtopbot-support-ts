@@ -25,6 +25,7 @@ export default class HelpDesk extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks"],
       applicationCommandData: [
         {
+          dmPermission: true,
           name: "helpdesk",
           description: "How can we help you?",
           type: ApplicationCommandType.ChatInput,

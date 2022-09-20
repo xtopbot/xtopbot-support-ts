@@ -15,7 +15,8 @@ import Response, {
 } from "../../utils/Response";
 import { AnyInteraction, AnyMethod, Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
-
+import app from "../../app";
+import Constants from "../../utils/Constants";
 export default class Notifications extends BaseCommand {
   constructor() {
     super({
@@ -24,14 +25,14 @@ export default class Notifications extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageRoles"],
       applicationCommandData: [
         {
+          dmPermission: true,
           name: "notifications",
           description: "...",
           type: ApplicationCommandType.ChatInput,
         },
       ],
       messageComponent: (d) => {
-        if (d.matches("notifications")) return true;
-        return false;
+        return d.matches("notifications");
       },
     });
   }
@@ -91,7 +92,7 @@ export default class Notifications extends BaseCommand {
                         description:
                           "All the important news regarding the bot!",
                         value: DefaultNotificationRoles.NEWS,
-                        default: !!dcm.member.roles.cache.has(
+                        default: dcm.member.roles.cache.has(
                           notificationRoles.news.id
                         ),
                       }
@@ -102,7 +103,7 @@ export default class Notifications extends BaseCommand {
                         description:
                           "Be the first to know about new commands and new changes in the bot!",
                         value: DefaultNotificationRoles.UPDATES,
-                        default: !!dcm.member.roles.cache.has(
+                        default: dcm.member.roles.cache.has(
                           notificationRoles.updates.id
                         ),
                       }
@@ -113,7 +114,7 @@ export default class Notifications extends BaseCommand {
                         description:
                           "Status updates about xToP. Issues, downtime and maintenances.",
                         value: DefaultNotificationRoles.STATUS,
-                        default: !!dcm.member.roles.cache.has(
+                        default: dcm.member.roles.cache.has(
                           notificationRoles.status.id
                         ),
                       }
@@ -177,7 +178,9 @@ export default class Notifications extends BaseCommand {
   private async getNotificationRoles(
     dcm: AnyMethod
   ): Promise<NotificationRoles> {
-    const roles = await dcm.d.guild?.roles.fetch();
+    const roles = await (
+      dcm.d.guild ?? app.client.guilds.cache.get(Constants.supportServerId)
+    )?.roles.fetch();
     return {
       updates:
         roles?.find(

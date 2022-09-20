@@ -28,7 +28,7 @@ export default class ArticleCreate extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks"],
       applicationCommandData: [
         {
-          dmPermission: true,
+          dmPermission: false,
           defaultMemberPermissions: ["ManageMessages"],
           name: "article",
           description: "Create a useful article for users",
