@@ -36,6 +36,7 @@ export default class Subscriptions extends BaseCommand {
       botPermissions: [],
       applicationCommandData: [
         {
+          dmPermission: true,
           name: "subscriptions",
           description: "Manages your subscriptions",
           type: ApplicationCommandType.ChatInput,
@@ -284,7 +285,9 @@ export default class Subscriptions extends BaseCommand {
         Action.UPDATE
       );
     else if (checker?.path === "MANAGE_CUSTOM_BOT") {
-      return this.manageCustomBot(dcm, checker.subscription, checker.target);
+      return (
+        await this.manageCustomBot(dcm, checker.subscription, checker.target)
+      ).setAction(dcm.getKey("reply") ? Action.REPLY : null);
     } else if (checker?.path === "LEAVE_SERVERS_CUSTOM_BOT") {
       dcm.d.values.slice(0, 3).map(async (value) => {
         await checker.target.leaveGuild(value, dcm.locale.tag);

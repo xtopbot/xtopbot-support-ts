@@ -95,11 +95,10 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
 
   public async fetchUser(locale: LocaleTag | null = null) {
     const data = await this.apiRequest("/users/@me", "get", locale);
-
     if (
       this.id &&
       (data.username !== this.username ||
-        data.discriminator !== this.discriminator ||
+        data.discriminator != this.discriminator ||
         data.avatar !== this.avatar)
     ) {
       this.username = data.username;
@@ -141,6 +140,20 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     await this.apiRequest(`/users/@me/guilds/${id}`, "delete", locale);
   }
 
+  private async invalid() {
+    await db.query(
+      "update `Custom.Bot` set tokenValidation = 0 where BIN_TO_UUID(id) = ?",
+      [this.id]
+    );
+    if (this.getStatus() === CustomBotStatus.RUNNING)
+      await this.stop().catch((err) =>
+        Logger.error(
+          err,
+          "[CustomBot] bot token invalid, error to stop process"
+        )
+      );
+  }
+
   public async validation(
     type: ValidationType.BOT,
     validation: {
@@ -149,7 +162,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       };
     },
     localeTag: LocaleTag | null
-  ): Promise<void>;
+  ): Promise<true>;
   public async validation(
     type: ValidationType.APPLICATION,
     validation: {
@@ -162,7 +175,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       userId: string;
     },
     localeTag: LocaleTag | null
-  ): Promise<void>;
+  ): Promise<true>;
   public async validation(
     type: ValidationType.GUILDS,
     validation: {
@@ -170,7 +183,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       limit: number;
     },
     localeTag: LocaleTag | null
-  ): Promise<void>;
+  ): Promise<true>;
   public async validation(
     type:
       | ValidationType.GUILDS
@@ -178,16 +191,19 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       | ValidationType.APPLICATION,
     validation: any,
     localeTag: LocaleTag | null = null
-  ): Promise<void> {
+  ): Promise<true> {
     const locale = app.locales.get(localeTag, true);
 
     if (type === ValidationType.APPLICATION) {
-      if (validation.data.ownerId !== validation.userId)
+      if (validation.data.ownerId !== validation.userId) {
+        this.invalid();
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.ownedByUser,
           Severity.COMMON
         );
-      if (validation.data.botPublic != false)
+      }
+      if (validation.data.botPublic != false) {
+        this.invalid();
         throw new Exception(
           Util.quickFormatContext(
             locale.origin.commands.subscriptions.manage.one.bot.validations
@@ -196,10 +212,12 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           ),
           Severity.COMMON
         );
+      }
       if (
         validation.data.flags === 0 ||
         (validation.data.flags & (1 << 19)) === 0
-      )
+      ) {
+        this.invalid();
         throw new Exception(
           Util.quickFormatContext(
             locale.origin.commands.subscriptions.manage.one.bot.validations
@@ -208,12 +226,15 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           ),
           Severity.COMMON
         );
+      }
     } else if (type === ValidationType.BOT) {
-      if ((validation.data.flags & (1 << 16)) !== 0)
+      if ((validation.data.flags & (1 << 16)) !== 0) {
+        this.invalid();
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.verified,
           Severity.COMMON
         );
+      }
     } else if (type === ValidationType.GUILDS) {
       if (validation.data.length > validation.data.limit)
         throw new Exception(
@@ -225,13 +246,15 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           Severity.COMMON
         );
     }
+    return true;
   }
 
   private async apiRequest(
     uri: string,
     method: "get" | "post" | "delete" | "put" = "get",
-    localeTag: LocaleTag | null = null
-  ) {
+    localeTag: LocaleTag | null = null,
+    retry: boolean = false
+  ): Promise<any> {
     const locale = app.locales.get(localeTag, true);
 
     if (this.botId && this.tokenValidation != true)
@@ -250,26 +273,33 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       },
     });
 
+    const body = await res.json();
+
     if (!(res.status >= 200 && res.status < 300)) {
       if (res.status === 401) {
-        await db.query(
-          "update `Custom.Bot` set tokenValidation = 0 where BIN_TO_UUID(id) = ?",
-          [this.id]
-        );
-        if (this.getStatus() === CustomBotStatus.RUNNING) this.stop();
+        await this.invalid();
         this.tokenValidation = false;
         throw new Exception(
           locale.origin.commands.subscriptions.manage.one.bot.validations.invalidToken,
           Severity.COMMON
         );
       }
+      if (res.status === 429 && !retry && body?.retry_after) {
+        const retryAfter = Number(String(body.retry_after).replace(".", ""));
+        return new Promise((resolve) =>
+          setTimeout(
+            () => resolve(this.apiRequest(uri, method, localeTag, true)),
+            retryAfter
+          )
+        );
+      }
       throw new Exception(
-        `Unexpected Discord API status code: ${res.status}`,
+        `${uri} Unexpected Discord API status code: ${res.status}`,
         Severity.FAULT,
-        `Unexpected Discord API status code: ${res.status}`
+        body
       );
     }
-    return res.json();
+    return body;
   }
 
   public async start() {

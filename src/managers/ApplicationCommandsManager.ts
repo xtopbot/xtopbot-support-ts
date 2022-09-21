@@ -86,7 +86,10 @@ export default class ApplicationCommandsManager extends CommandsManager {
     );
   }
 
-  public deploy(options?: { guildId: string; commands: any[] }): any {
+  public async deploy(options?: {
+    guildId: string;
+    commands: any[];
+  }): Promise<"Succeed<Guild>" | "Succeed<Global>"> {
     const _acd = this.values
       .map((command) => command.applicationCommandData)
       .flat();
@@ -115,11 +118,14 @@ export default class ApplicationCommandsManager extends CommandsManager {
         return _b;
       });
 
-    if (options?.guildId)
-      return app.client.application?.commands.set(
+    if (options?.guildId) {
+      app.client.application?.commands.set(
         options?.commands ?? acd,
         options?.guildId
       );
-    return app.client.application?.commands.set(options?.commands ?? acd);
+      return "Succeed<Guild>";
+    }
+    await app.client.application?.commands.set(options?.commands ?? acd);
+    return "Succeed<Global>";
   }
 }

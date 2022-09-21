@@ -62,7 +62,7 @@ export default class App {
   private static async initialize(): Promise<void> {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
     this._initialize = true;
-
+    Logger.info(`[Process] process id: ${process.pid}`);
     await mysql.connect();
 
     Logger.info("Fetch all articles & messages built & custom bot process");

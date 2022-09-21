@@ -8,7 +8,7 @@ import User from "../structures/User";
 import { v4 as uuidv4 } from "uuid";
 import pm2, { ProcessDescription } from "pm2";
 import Logger from "../utils/Logger";
-import { Collection } from "discord.js";
+import { ButtonStyle, Collection, ComponentType } from "discord.js";
 import schedule from "node-schedule";
 import Constants from "../utils/Constants";
 
@@ -182,13 +182,17 @@ export default class CustomBotsManager {
       );
     });
     this.listener();
+
     job.invoke();
   }
 
   private listener() {
-    Logger.info("[CustomManager<Process>] listening to processes...");
+    Logger.info("[CustomBotsManager<Process>] listening to processes...");
     process.on("message", async (packet: any) => {
       const data = packet?.data?.data;
+      Logger.info(
+        `[CustomBotsManager<Listener>] Recevied Message From ${data?.process?.name} Process.`
+      );
       if (packet?.data?.op === "CUSTOM_BOT_GUILD_ADDED") {
         const customBot = await this.fetchSingle(data.botId);
         if (!customBot)
@@ -197,8 +201,28 @@ export default class CustomBotsManager {
           customBot.ownerId,
           PatreonTierId.ONE_CUSTOM_BOT
         );
-        if (!subscription)
+        if (!subscription || !subscription.isActive())
           return this.PM2Delete(data.process.name).catch(() => null);
+        const application = await customBot
+          .fetchApplication()
+          .catch(() => null);
+        if (
+          application &&
+          !(await customBot
+            .validation(
+              ValidationType.APPLICATION,
+              { data: application, userId: customBot.ownerId },
+              null
+            )
+            .catch(() => false))
+        )
+          return Logger.info(
+            `[CustomBotsManager<Listener>] ${customBot.username}#${
+              customBot.discriminator
+            } (${Util.getUUIDLowTime(
+              customBot.id
+            )}) Process fails in validation.`
+          );
         if (
           data.guildsSize >
           CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
@@ -213,15 +237,48 @@ export default class CustomBotsManager {
             .createDM()
             .catch(() => null);
           const locale = app.locales.get(user.locale);
-          dm?.send(
-            Util.addFieldToEmbed(
-              locale.origin.commands.subscriptions.manage.one.bot
-                .guildsLimitReached,
+          dm?.send({
+            ...Util.addFieldToEmbed(
+              Util.quickFormatContext(
+                locale.origin.commands.subscriptions.manage.one.bot
+                  .guildsLimitReached,
+                {
+                  "bot.tag": customBot.username + "#" + customBot.discriminator,
+                  "custom.bot.id.short": Util.getUUIDLowTime(customBot.id),
+                  "custom.bot.allowed.servers":
+                    CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+                      subscription.tierId
+                    ),
+                }
+              ),
               0,
               "color",
               Constants.defaultColors.ORANGE
-            )
-          );
+            ),
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Primary,
+                    customId: `subscription:tier:${subscription.tierId}:bots:${customBot.id}:reply`,
+                    label: Util.textEllipsis(
+                      Util.quickFormatContext(
+                        locale.origin.commands.subscriptions.manage.one.bot
+                          .guildsLimitReached.buttons[0],
+                        {
+                          "bot.tag":
+                            customBot.username + "#" + customBot.discriminator,
+                        }
+                      ),
+                      40
+                    ),
+                  },
+                ],
+              },
+            ],
+          });
         }
       }
     });

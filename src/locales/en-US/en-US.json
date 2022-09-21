@@ -5,9 +5,13 @@
   "roleName": "English",
   "helpdeskChannel": "help-desk",
   "requirement": {
-    "insufficientPermission": {
-      "content": "Insufficient permission."
-    }
+    "notInOurSupportServer": "This command can be used in DM, but it is required that you are joined to our official xToP Bot support server!",
+    "dmNotAllowed": "This command is not allowed to be used in DM.",
+    "insufficientPermission": "Insufficient permission.",
+    "botChannelPermissionsMissing": "The **bot permissions** for this **channel** are missing. Please check `{{bot.channel.permissions.missing}}`",
+    "botGuildPermissionsMissing": "The **bot permissions** for this **guild** are missing. Please check `{{bot.guild.permissions.missing}}`",
+    "memberChannelPermissionsMissing": "**Member permissions** for this **channel** are missing. Please check `{{member.channel.permissions.missing}}` **(requires only one of the permissions listed)**",
+    "memberGuildPermissionsMissing": "**Member permissions** for this **guild** are missing. Please check `{{member.channel.permissions.missing}}` **(requires only one of the permissions listed)**"
   },
   "backButton": "Back",
   "helpdesk": {
@@ -27,12 +31,38 @@
     "language": {
       "embeds": [
         {
-          "description": ""
+          "title": "\uD83C\uDF10 Choose the language you prefer",
+          "description": "Choosing your preferred language opens language-related channels for you in the official **xToP Bot** support server."
         }
       ],
-      "set": {
-        "embeds": []
-      }
+      "selectMenu": [
+        {
+          "placeholder": "Select language you might understand"
+        }
+      ]
+    },
+    "notification": {
+      "embeds": [
+        {
+          "title": "\uD83D\uDCE2 Notification Announcements",
+          "description": "Choose the type of announcements you want to be notified about so you don't miss them!"
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "Select notifications you prefer",
+          "options": [
+            {
+              "label": "News",
+              "description": "All the important news regarding the bot/service"
+            },
+            {
+              "label": "Status",
+              "description": "Status updates about bot/service. Issues, outages, and maintenance."
+            }
+          ]
+        }
+      ]
     },
     "subscriptions": {
       "notSubscribedYet": {
@@ -183,7 +213,7 @@
               "embeds": [
                 {
                   "title": "It must be terminated!",
-                  "description": "Since the bot token is invalid, you must **terminate** and setup your custom bot with another valid token again!"
+                  "description": "Since the bot token is invalid or a custom bot validation fails according to the case of our custom bot terms, you must **terminate** and setup your custom bot with another valid token again!"
                 }
               ]
             },
@@ -191,9 +221,13 @@
               "embeds": [
                 {
                   "title": "Alert!",
-                  "description": "Your bot **{{bot.tag}}** ({{custom.bot.id}}) maxed out the servers limit `{{custom.bot.allowed.servers}}`."
+                  "description": "Your bot **{{bot.tag}}** ({{custom.bot.id.short}}) maxed out the servers limit `{{custom.bot.allowed.servers}}`.",
+                  "footer": {
+                    "text": "If you want to manage your bot servers, click the button below!"
+                  }
                 }
-              ]
+              ],
+              "buttons": ["Manage {{bot.tag}}"]
             },
             "status": ["Running", "Pending", "Offline", "Invalid Token"],
             "embeds": [

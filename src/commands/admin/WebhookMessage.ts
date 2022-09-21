@@ -31,6 +31,7 @@ export default class WebhookMessage extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageWebhooks"],
       applicationCommandData: [
         {
+          dmPermission: false,
           name: "webhook",
           description:
             "Send/edit a message on a specific webhook (only bot webhook)",

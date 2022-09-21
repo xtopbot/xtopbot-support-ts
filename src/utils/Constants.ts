@@ -28,6 +28,11 @@ export default class Constants {
     UserFlagsPolicy.DEVELOPER;
 
   public static readonly DEFAULT_PREFIX: string = "!";
+  public static readonly supportServerId = process.argv.find(
+    (arg) => arg === "--dev"
+  )
+    ? "884642692980690975"
+    : "664657102551121961";
 
   public static readonly CHANNEL_PERMISSIONS: Array<PermissionsString> = [
     "ManageChannels",

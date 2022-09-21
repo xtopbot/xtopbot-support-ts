@@ -27,6 +27,7 @@ import Exception, { Severity } from "../../utils/Exception";
 import { LocaleTag } from "../../managers/LocaleManager";
 import ArticleLocalization from "../../structures/ArticleLocalization";
 import Constants from "../../utils/Constants";
+import CommandRequirementsHandler from "../RequirementHandler";
 
 export default class ArticleManage extends BaseCommand {
   constructor() {
@@ -40,7 +41,7 @@ export default class ArticleManage extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks"],
       applicationCommandData: [
         {
-          dmPermission: true,
+          dmPermission: false,
           defaultMemberPermissions: ["ManageMessages"],
           name: "article",
           description: "Manages your articles or all articles.",
@@ -194,7 +195,9 @@ export default class ArticleManage extends BaseCommand {
       if (dcm.getKey("editNote")) {
         if (article.creatorId !== dcm.user.id)
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           });
         return new Response(
@@ -232,7 +235,9 @@ export default class ArticleManage extends BaseCommand {
             0
         )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           });
         dcm.cf.formats.set("article.id", article.id);
@@ -360,7 +365,9 @@ export default class ArticleManage extends BaseCommand {
             0
         )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           });
         await articleLocalization.edit(dcm.user.id, {
@@ -378,7 +385,9 @@ export default class ArticleManage extends BaseCommand {
             0
         )
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           });
         dcm.cf.formats.set(
@@ -462,7 +471,9 @@ export default class ArticleManage extends BaseCommand {
       if (dcm.getKey("editNote")) {
         if (article.creatorId !== dcm.user.id)
           return new Response(ResponseCodes.INSUFFICIENT_PERMISSION, {
-            ...dcm.locale.origin.requirement.insufficientPermission,
+            ...CommandRequirementsHandler.insufficientPermissionMessage(
+              dcm.locale
+            ),
             ephemeral: true,
           });
 

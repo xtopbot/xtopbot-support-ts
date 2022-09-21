@@ -48,14 +48,6 @@ export default class CommandHandler {
     dcm: AnyMethod,
     checkRequirements: boolean = true
   ): Promise<Response<AnyResponse>> {
-    if (!dcm.d.inGuild())
-      return new Response(
-        ResponseCodes.COMMAND_ONLY_USABLE_ON_GUILD,
-        {
-          content: "This command is not allowed to be used in DM.", // related to locale system
-        },
-        Action.REPLY
-      );
     await dcm.fetch();
     if (checkRequirements) {
       //Check command Requirements to continue to execute command

@@ -22,6 +22,7 @@ export default class WebhookCreate extends BaseCommand {
       botPermissions: ["SendMessages", "EmbedLinks", "ManageWebhooks"],
       applicationCommandData: [
         {
+          dmPermission: false,
           name: "webhook",
           description: "Creates a bot webhook through a specified text channel",
           type: ApplicationCommandType.ChatInput,
