@@ -1,11 +1,11 @@
 import {
-  Role,
   ApplicationCommandType,
+  ChatInputCommandInteraction,
   ComponentType,
+  InteractionType,
+  Role,
   SelectMenuComponentOptionData,
   SelectMenuInteraction,
-  ChatInputCommandInteraction,
-  ButtonInteraction,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Response, {
@@ -17,6 +17,9 @@ import { AnyInteraction, AnyMethod, Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import Constants from "../../utils/Constants";
+import Exception, { Severity } from "../../utils/Exception";
+import Util from "../../utils/Util";
+
 export default class Notifications extends BaseCommand {
   constructor() {
     super({
@@ -27,7 +30,8 @@ export default class Notifications extends BaseCommand {
         {
           dmPermission: true,
           name: "notifications",
-          description: "...",
+          description:
+            "Manage your notifications for type of our announcements you prefer.",
           type: ApplicationCommandType.ChatInput,
         },
       ],
@@ -45,32 +49,33 @@ export default class Notifications extends BaseCommand {
 
   protected async selectMenuInteraction(dcm: Method<SelectMenuInteraction>) {
     const selectedRoles = dcm.d.values as DefaultNotificationRoles[];
-    await dcm.d.deferReply({ ephemeral: true });
+    //await dcm.d.deferReply({ ephemeral: true });
     return this.setMemberNotificationRole(dcm, selectedRoles);
   }
 
   private async getMessageNotificationRoles(
-    dcm: Method<ChatInputCommandInteraction | ButtonInteraction>
+    dcm: Method<AnyInteraction>
   ): Promise<Response<MessageResponse>> {
     const notificationRoles: NotificationRoles =
       await this.getNotificationRoles(dcm);
     if (
       !notificationRoles.news &&
-      !notificationRoles.updates &&
+      //!notificationRoles.updates &&
       !notificationRoles.status
     )
-      return new Response(
-        ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES,
-        {
-          content: "Uanble to find notification roles in this server.", // related to locale system
-          ephemeral: true,
-        },
-        Action.REPLY
+      throw new Exception(
+        "Unable to find notification roles in the support server",
+        Severity.SUSPICIOUS
       );
     return new Response(
       ResponseCodes.SUCCESS,
       {
-        content: `select notifications`, // related to locale system
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.notification,
+          0,
+          "color",
+          Constants.defaultColors.BLUE
+        ),
         ephemeral: true,
         components: [
           {
@@ -81,23 +86,28 @@ export default class Notifications extends BaseCommand {
                 customId: "notifications",
                 maxValues:
                   Number(!!notificationRoles.news) +
-                  Number(!!notificationRoles.updates) +
+                  //Number(!!notificationRoles.updates) +
                   Number(!!notificationRoles.status),
                 minValues: 0,
-                placeholder: "Select your own notifications",
+                placeholder:
+                  dcm.locale.origin.commands.notification.selectMenu[0]
+                    .placeholder,
                 options: [
                   notificationRoles.news
                     ? {
-                        label: "NEWS",
+                        label:
+                          dcm.locale.origin.commands.notification.selectMenu[0]
+                            .options[0].label,
                         description:
-                          "All the important news regarding the bot!",
+                          dcm.locale.origin.commands.notification.selectMenu[0]
+                            .options[0].description,
                         value: DefaultNotificationRoles.NEWS,
                         default: dcm.member.roles.cache.has(
                           notificationRoles.news.id
                         ),
                       }
                     : null,
-                  notificationRoles.updates
+                  /* notificationRoles.updates
                     ? {
                         label: "UPDATES",
                         description:
@@ -107,12 +117,15 @@ export default class Notifications extends BaseCommand {
                           notificationRoles.updates.id
                         ),
                       }
-                    : null,
+                    : null,*/
                   notificationRoles.status
                     ? {
-                        label: "STATUS",
+                        label:
+                          dcm.locale.origin.commands.notification.selectMenu[0]
+                            .options[1].label,
                         description:
-                          "Status updates about xToP. Issues, downtime and maintenances.",
+                          dcm.locale.origin.commands.notification.selectMenu[0]
+                            .options[1].description,
                         value: DefaultNotificationRoles.STATUS,
                         default: dcm.member.roles.cache.has(
                           notificationRoles.status.id
@@ -127,7 +140,11 @@ export default class Notifications extends BaseCommand {
           },
         ],
       },
-      Action.REPLY
+      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
+        dcm.d.type
+      )
+        ? Action.UPDATE
+        : Action.REPLY
     );
   }
 
@@ -139,40 +156,29 @@ export default class Notifications extends BaseCommand {
       await this.getNotificationRoles(dcm);
     if (
       !notificationRoles.news &&
-      !notificationRoles.updates &&
+      //!notificationRoles.updates &&
       !notificationRoles.status
     )
-      return new Response(
-        ResponseCodes.UNABLE_TO_FIND_NOTIFICATION_ROLES,
-        {
-          content: "Uanble to find notification roles in this server.", // related to locale system
-          ephemeral: true,
-        },
-        Action.REPLY
+      throw new Exception(
+        "Unable to find notification roles in the support server",
+        Severity.SUSPICIOUS
       );
     if (notificationRoles.news) {
       if (roles.includes(DefaultNotificationRoles.NEWS))
         await dcm.member.roles.add(notificationRoles.news);
       else await dcm.member.roles.remove(notificationRoles.news);
     }
-    if (notificationRoles.updates) {
+    /*if (notificationRoles.updates) {
       if (roles.includes(DefaultNotificationRoles.UPDATES))
         await dcm.member.roles.add(notificationRoles.updates);
       else await dcm.member.roles.remove(notificationRoles.updates);
-    }
+    }*/
     if (notificationRoles.status) {
       if (roles.includes(DefaultNotificationRoles.STATUS))
         await dcm.member.roles.add(notificationRoles.status);
       else await dcm.member.roles.remove(notificationRoles.status);
     }
-    return new Response(
-      ResponseCodes.SUCCESS,
-      {
-        content: "Roles: " + roles.join(", "),
-        ephemeral: true,
-      },
-      Action.REPLY
-    );
+    return this.getMessageNotificationRoles(dcm);
   }
 
   private async getNotificationRoles(
@@ -182,13 +188,13 @@ export default class Notifications extends BaseCommand {
       dcm.d.guild ?? app.client.guilds.cache.get(Constants.supportServerId)
     )?.roles.fetch();
     return {
-      updates:
+      /* updates:
         roles?.find(
           (role) =>
             dcm.me.roles.highest.position > role.position &&
             role.name.toLowerCase() ===
               DefaultNotificationRoles.UPDATES.toLowerCase()
-        ) ?? null,
+        ) ?? null,*/
       news:
         roles?.find(
           (role) =>
@@ -208,13 +214,13 @@ export default class Notifications extends BaseCommand {
 }
 
 interface NotificationRoles {
-  updates: Role | null;
+  //updates: Role | null;
   news: Role | null;
   status: Role | null;
 }
 
 enum DefaultNotificationRoles {
-  UPDATES = "updates",
+  //UPDATES = "updates",
   NEWS = "news",
   STATUS = "status",
 }

@@ -39,10 +39,30 @@
         {
           "placeholder": "Select language you might understand"
         }
+      ]
+    },
+    "notification": {
+      "embeds": [
+        {
+          "title": "\uD83D\uDCE2 Notification Announcements",
+          "description": "Choose the type of announcements you want to be notified about so you don't miss them!"
+        }
       ],
-      "set": {
-        "embeds": []
-      }
+      "selectMenu": [
+        {
+          "placeholder": "Select notifications you prefer",
+          "options": [
+            {
+              "label": "News",
+              "description": "All the important news regarding the bot/service"
+            },
+            {
+              "label": "Status",
+              "description": "Status updates about bot/service. Issues, outages, and maintenance."
+            }
+          ]
+        }
+      ]
     },
     "subscriptions": {
       "notSubscribedYet": {
