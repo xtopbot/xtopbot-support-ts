@@ -45,10 +45,10 @@ export default class SubscriptionsManager {
 
     const raws: any[] = await db.query(
       `select BIN_TO_UUID(id) as id, chargeStatus + 0 as chargeStatus, unix_timestamp(chargeDate) as chargeTimestamp, unix_timestamp(createdAt) as createdTimestamp, unix_timestamp(updatedAt) as updatedTimestamp, subscriptionPeriodTerm, userId, amountCents, discordUserId, email, tierId, BIN_TO_UUID(memberId) as memberId
-               from \`Patreon.Pledges\`
+               from \`Patreon.Pledges\` where discordUserId is not null
                ${
                  where.length > 0
-                   ? "where " + where.map((w) => w.name).join(" and ")
+                   ? "and  " + where.map((w) => w.name).join(" and ")
                    : ""
                }
            group by chargeDate, chargeStatus`,
@@ -62,7 +62,23 @@ export default class SubscriptionsManager {
         (raw, index) =>
           raws.map((raw) => raw.tierId).indexOf(raw.tierId) === index
       )
-      .map((raw) => this.resolve(raws.filter((r) => r.tierId === raw.tierId)));
+      .flatMap((raw) =>
+        raws
+          .filter(
+            (r, index) =>
+              raws.map((raw) => raw.discordUserId).indexOf(r.discordUserId) ===
+              index
+          )
+          .map((raw2) =>
+            this.resolve(
+              raws.filter(
+                (r) =>
+                  r.tierId === raw.tierId &&
+                  r.discordUserId === raw2.discordUserId
+              )
+            )
+          )
+      );
 
     return tierFetchType === "ONE_TIER" && fetchType === "USER_SUBSCRIPTION"
       ? subscriptions[0]
