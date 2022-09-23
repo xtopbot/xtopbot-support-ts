@@ -31,12 +31,8 @@ import InteractionOnly from "../plugins/InteractionOnly";
 
 export default class CommandHandler {
   public static async process(d: Message): Promise<void> {
-    Logger.info("[MessageCreate] Received.");
     const command = this.matchesCommand(d.content);
-    if (!(command instanceof BaseCommand))
-      return Logger.warn(
-        `[CommandHandler] Unable to find matches command from ${d.author.tag}<${d.author.id}>;`
-      );
+    if (!(command instanceof BaseCommand)) return;
     if (await InteractionOnly.isExecutable(d, d.author)) return;
 
     Logger.info(`[CommandHandler] Found Command Macthes ${command.name}`);
@@ -83,11 +79,10 @@ export default class CommandHandler {
       )
         this.commandFollowUp(dcm);
     } catch (err) {
-      Logger.error("Error in command handler");
-      console.log(err);
+      Logger.error(err, "Error in command handler");
       if (err instanceof Exception) {
         // just reply to requster
-        this.response(
+        await this.response(
           dcm,
           new Response(ResponseCodes.EXCEPTION, err.message),
           false
@@ -95,7 +90,7 @@ export default class CommandHandler {
       } else {
         // reply to requester and debugging error
         if (dcm.d instanceof Message) return;
-        this.response(
+        await this.response(
           dcm,
           new Response(
             ResponseCodes.UNKNOWN,
