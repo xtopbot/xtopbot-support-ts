@@ -9,7 +9,7 @@ export default class Ready {
     /**
      * Setup Helpdesk Schedule
      */
-    Logger.info("Setup helpdesk channels");
+    Logger.info("Setup helpdesk channels...");
     client.guilds.cache.forEach((guild) => {
       app.locales.cache.forEach((locale) => {
         let channel = guild.channels.cache.find(
@@ -18,7 +18,6 @@ export default class Ready {
               locale.origin.helpdeskChannel.toLowerCase() &&
             channel.type === ChannelType.GuildText
         );
-        console.log("Not found for", locale.tag);
         if (!channel) return;
         Logger.info(
           `Server[${guild.name}(${guild.id})] Helpdesk[${channel.name}(${channel.id})] Scheduled For Language ${locale.tag}`

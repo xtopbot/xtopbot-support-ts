@@ -90,7 +90,7 @@ export default class App {
   public static async launch(): Promise<void> {
     if (process.argv.find((arg) => arg === "--test")) return this.shutdown();
     await this.initialize();
-    Logger.info("App launched!");
+    Logger.info(`App launched! [mode: ${this.mode}]`);
   }
 
   public static shutdown(): void {
