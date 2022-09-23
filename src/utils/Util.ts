@@ -18,6 +18,14 @@ export default class Util {
     };
   }
 
+  public static jsonToString(input: any): string {
+    try {
+      return JSON.stringify(input, null, 2);
+    } catch (err: any) {
+      return err?.message ?? ("Unknown error" as string);
+    }
+  }
+
   public static getUUIDLowTime(uuid: string) {
     return uuid.substring(0, 8);
   }

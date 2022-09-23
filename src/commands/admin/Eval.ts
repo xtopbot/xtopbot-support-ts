@@ -10,6 +10,7 @@ import CommandMethod, { Method } from "../CommandMethod";
 import { BaseCommand } from "../BaseCommand";
 import app from "../../app";
 import { VM } from "vm2";
+import Util from "../../utils/Util";
 
 export default class Eval extends BaseCommand {
   constructor() {
@@ -50,11 +51,10 @@ export default class Eval extends BaseCommand {
           dcm: dcm,
         },
       });
-      var res: string = JSON.stringify(
-        await vm.run(`(async () =>${rd.input})()`),
-        null,
-        2
+      let res: string = Util.jsonToString(
+        await vm.run(`(async () =>${rd.input.replace(/;$/, "")})()`)
       );
+
       if (rd.flags.includes(EvalFlags.OUTPUT))
         return new Response(ResponseCodes.SUCCESS, null);
       return new Response(
