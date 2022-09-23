@@ -323,7 +323,7 @@ export default class CustomBotsManager {
               )}]) Process Running`
             );
           } else {
-            Logger.info(
+            Logger.warn(
               `[CustomBotsManager<Process>] ${Util.getUUIDLowTime(
                 p.name as string
               )} Process destroyed`
@@ -333,6 +333,33 @@ export default class CustomBotsManager {
         }
       }
     });
+
+    //Start bots that not running.
+    if (app.mode === "STABLE")
+      customBots.items.map(async (customBot) => {
+        if (!this.processes.get(customBot.id)) {
+          await customBot
+            .start()
+            .catch((err) =>
+              Logger.error(
+                `[CustomBotsManager<Process>] ${customBot.username}#${
+                  customBot.discriminator
+                }(${customBot.botId}[${Util.getUUIDLowTime(
+                  customBot.id
+                )}]) Failed to auto start process for custom bot: ${
+                  err?.message ?? err?.reason
+                }`
+              )
+            );
+          Logger.info(
+            `\`[CustomBotsManager<Process>] ${customBot.username}#${
+              customBot.discriminator
+            }(${customBot.botId}[${Util.getUUIDLowTime(
+              customBot.id
+            )}]) Auto started successfuly\``
+          );
+        }
+      });
   }
 
   private async PM2Connect() {
@@ -386,13 +413,15 @@ export default class CustomBotsManager {
     );
   }
 
-  public async PM2Delete(process: number | string) {
+  public async PM2Delete(name: number | string) {
     if (!this.PM2Connected)
       throw new Exception("PM2 is not connected", Severity.FAULT);
     return new Promise((resolve, reject) =>
-      pm2.delete(process, (err, process) =>
-        err ? reject(err) : resolve(process)
-      )
+      pm2.delete(name, (err, process) => {
+        if (err) return reject(err);
+        if (typeof name === "string") this.processes.delete(name);
+        return resolve(process);
+      })
     );
   }
 

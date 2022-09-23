@@ -24,6 +24,13 @@ export default class App {
     .toString()
     .trim();
   public static safe: boolean = !!process.argv.find((arg) => arg === "--safe");
+  public static mode: "SAFE" | "DEV" | "STABLE" = process.argv.find(
+    (arg) => arg === "--safe"
+  )
+    ? "SAFE"
+    : process.argv.find((arg) => arg === "--dev")
+    ? "DEV"
+    : "STABLE";
   public static client: Client = new Client({
     intents: [
       "Guilds",
