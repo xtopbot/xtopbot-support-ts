@@ -57,30 +57,42 @@ export default class CustomBotsManager {
     );
   }
 
-  public async fetchSingle(id: string): Promise<CustomBot<"GET"> | null> {
+  public async fetchBots(ids: string[]): Promise<CustomBot<"GET">[]>;
+  public async fetchBots(id: string): Promise<CustomBot<"GET"> | null>;
+  public async fetchBots(
+    id: string | string[]
+  ): Promise<CustomBot<"GET"> | CustomBot<"GET">[] | null> {
+    const fetchType: "SINGLE" | "MULTIPLE" = Array.isArray(id)
+      ? "MULTIPLE"
+      : "SINGLE";
     let raws: any[] = await db.query(
       `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
               from \`Custom.Bot\`
-              where botId = ? OR BIN_TO_UUID(id) = ?`,
-      [id, id]
+              where botId in (?) OR ownerId in (?) OR BIN_TO_UUID(id) in (?)`,
+      [id, id, id]
     );
     const raw = raws[0];
-    if (!raw) return null;
+    if (!raw) return fetchType === "MULTIPLE" ? [] : null;
 
-    return new CustomBot<"GET">(
-      raw.id,
-      raw.token,
-      raw.botId,
-      raw.username,
-      raw.discriminator,
-      raw.avatar,
-      raw.ownerId,
-      raw.botStatus ?? null,
-      raw.activityType ?? null,
-      raw.activityName ?? null,
-      raw.tokenValidation === 1,
-      new Date(Math.round(raw.createdTimestampAt * 1000))
+    const resolved = raws.map(
+      (r) =>
+        new CustomBot<"GET">(
+          r.id,
+          r.token,
+          r.botId,
+          r.username,
+          r.discriminator,
+          r.avatar,
+          r.ownerId,
+          r.botStatus ?? null,
+          r.activityType ?? null,
+          r.activityName ?? null,
+          r.tokenValidation === 1,
+          new Date(Math.round(r.createdTimestampAt * 1000))
+        )
     );
+
+    return fetchType === "MULTIPLE" ? resolved : resolved[0];
   }
 
   public async create(
@@ -194,7 +206,7 @@ export default class CustomBotsManager {
         `[CustomBotsManager<Listener>] Recevied Message From ${data?.process?.name} Process.`
       );
       if (packet?.data?.op === "CUSTOM_BOT_GUILD_ADDED") {
-        const customBot = await this.fetchSingle(data.botId);
+        const customBot = await this.fetchBots(data.botId as string);
         if (!customBot)
           return this.PM2Delete(data.process.name).catch(() => null);
         const subscription = await app.subscriptions.fetch(
@@ -299,18 +311,17 @@ export default class CustomBotsManager {
     );
 
     Logger.info("[CustomBotsManager<Process>] Fetch All Active Custom Bots...");
-    const customBots = await this.fetch(
-      activeSubscriptions.map((sub) => sub.discordUserId),
-      PatreonTierId.ONE_CUSTOM_BOT
+    const customBots = await this.fetchBots(
+      activeSubscriptions.map((sub) => sub.discordUserId)
     );
     Logger.info(
-      `[CustomBotsManager<Process>] All Custom Bots Fetched (${activeSubscriptions.length})`
+      `[CustomBotsManager<Process>] All Custom Bots Fetched (${customBots.length})`
     );
     //Destroy expired subscription process and add running process to cache.
     processes.map(async (p) => {
       if (Util.isUUID(p.name)) {
         if (p.pm2_env?.status === "online") {
-          const customBot = customBots.items.find(
+          const customBot = customBots.find(
             (item) => item.id === (p.name as string)
           );
           if (customBot) {
@@ -336,7 +347,7 @@ export default class CustomBotsManager {
 
     //Start bots that not running.
     if (app.mode === "STABLE")
-      customBots.items.map(async (customBot) => {
+      customBots.map(async (customBot) => {
         if (!this.processes.get(customBot.id)) {
           await customBot
             .start()
