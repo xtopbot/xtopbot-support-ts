@@ -31,12 +31,17 @@ export default class SubscriptionsManager {
       : "ALL_TIERS";
 
     const where: { name: string; value?: any }[] = [];
-    if (fetchType === "USER_SUBSCRIPTION") {
+    if (fetchType === "USER_SUBSCRIPTION")
       where.push({ name: "discordUserId = ?", value: input });
-    }
-    if (tierFetchType === "ONE_TIER") {
+
+    if (tierFetchType === "ONE_TIER")
       where.push({ name: "tierId = ?", value: tierId });
-    }
+    else
+      where.push({
+        name: "tierId in (?)",
+        value: Object.values(PatreonTierId),
+      });
+
     if (fetchType === "ALL_ACTIVE_SUBSCRIPTIONS")
       where.push({
         name: "unix_timestamp(createdAt) > unix_timestamp() - subscriptionPeriodTerm",
@@ -56,7 +61,6 @@ export default class SubscriptionsManager {
     );
     if (!raws?.length)
       return fetchType === "ALL_ACTIVE_SUBSCRIPTIONS" ? [] : null;
-
     const subscriptions = raws
       .filter(
         (raw, index) =>
@@ -69,15 +73,14 @@ export default class SubscriptionsManager {
               raws.map((raw) => raw.discordUserId).indexOf(r.discordUserId) ===
               index
           )
-          .map((raw2) =>
-            this.resolve(
-              raws.filter(
-                (r) =>
-                  r.tierId === raw.tierId &&
-                  r.discordUserId === raw2.discordUserId
-              )
-            )
-          )
+          .flatMap((raw2) => {
+            let a = raws.filter(
+              (r) =>
+                r.tierId === raw.tierId &&
+                r.discordUserId === raw2.discordUserId
+            );
+            return a.length ? this.resolve(a) : [];
+          })
       );
 
     return tierFetchType === "ONE_TIER" && fetchType === "USER_SUBSCRIPTION"

@@ -86,6 +86,7 @@ export default class Subscription {
 
 export enum PatreonTierId {
   ONE_CUSTOM_BOT = "7764503",
+  THREE_CUSTOM_BOT = "9125562",
 }
 
 interface Patreon {
