@@ -24,13 +24,13 @@ export default class App {
     .toString()
     .trim();
   public static safe: boolean = !!process.argv.find((arg) => arg === "--safe");
-  public static mode: "SAFE" | "DEV" | "STABLE" = process.argv.find(
+  public static mode: "SAFE" | "DEV" | "PRODUCTION" = process.argv.find(
     (arg) => arg === "--safe"
   )
     ? "SAFE"
-    : process.argv.find((arg) => arg === "--dev")
-    ? "DEV"
-    : "STABLE";
+    : process.argv.find((arg) => arg === "--production")
+    ? "PRODUCTION"
+    : "DEV";
   public static client: Client = new Client({
     intents: [
       "Guilds",
@@ -81,9 +81,9 @@ export default class App {
 
     Logger.info("[Discord] <>Bot connecting...");
     await this.client.login(
-      process.argv.find((arg) => arg === "--dev")
-        ? process.env.DISCORD_TEST_BOT_TOKEN
-        : process.env.DISCORD_BOT_TOKEN
+      process.argv.find((arg) => arg === "--production")
+        ? process.env.DISCORD_BOT_TOKEN
+        : process.env.DISCORD_TEST_BOT_TOKEN
     );
   }
 

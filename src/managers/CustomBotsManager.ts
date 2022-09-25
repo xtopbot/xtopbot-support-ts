@@ -29,7 +29,7 @@ export default class CustomBotsManager {
     )
       return this.result([], tierId);
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
               from \`Custom.Bot\`
               where ownerId in (?) and tierId = ? OR botId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
       [id, tierId, id, tierId, id, tierId]
@@ -46,6 +46,7 @@ export default class CustomBotsManager {
             raw.discriminator,
             raw.avatar,
             raw.ownerId,
+            raw.tierId,
             raw.botStatus ?? null,
             raw.activityType ?? null,
             raw.activityName ?? null,
@@ -66,7 +67,7 @@ export default class CustomBotsManager {
       ? "MULTIPLE"
       : "SINGLE";
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
               from \`Custom.Bot\`
               where botId in (?) OR ownerId in (?) OR BIN_TO_UUID(id) in (?)`,
       [id, id, id]
@@ -84,6 +85,7 @@ export default class CustomBotsManager {
           r.discriminator,
           r.avatar,
           r.ownerId,
+          r.tierId,
           r.botStatus ?? null,
           r.activityType ?? null,
           r.activityName ?? null,
@@ -110,6 +112,7 @@ export default class CustomBotsManager {
       null,
       null,
       null,
+      tierId,
       null,
       null,
       null,
@@ -139,20 +142,37 @@ export default class CustomBotsManager {
           Severity.COMMON
         );
     }
-    await db.query(
-      "insert into `Custom.Bot` (id, token, botId, ownerId, username, discriminator, avatar, tokenValidation, tierId) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        token,
-        botData.id,
-        user.id,
-        botData.username,
-        botData.discriminator,
-        botData.avatar,
-        true,
-        tierId,
-      ]
-    );
+    let err: any = null;
+    await db
+      .query(
+        "insert into `Custom.Bot` (id, token, botId, ownerId, username, discriminator, avatar, tokenValidation, tierId) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          id,
+          token,
+          botData.id,
+          user.id,
+          botData.username,
+          botData.discriminator,
+          botData.avatar,
+          true,
+          tierId,
+        ]
+      )
+      .catch((error) => {
+        err = error;
+      });
+    if (err) {
+      if (err?.cause?.code == "ER_DUP_ENTRY")
+        throw new Exception(
+          "This bot is already entered, try another bot.",
+          Severity.COMMON
+        );
+      throw new Exception(
+        err?.cause?.message ?? "Unknown",
+        Severity.FAULT,
+        err
+      );
+    }
     return new CustomBot<"GET">(
       id,
       token,
@@ -161,6 +181,7 @@ export default class CustomBotsManager {
       botData.discriminator,
       botData.avatar,
       user.id,
+      tierId,
       null,
       null,
       null,
@@ -199,8 +220,9 @@ export default class CustomBotsManager {
   }
 
   private listener() {
-    Logger.info("[CustomBotsManager<Process>] listening to processes...");
+    Logger.info("[CustomBotsManager<Process>] Listening to processes...");
     process.on("message", async (packet: any) => {
+      console.log("Received message from process", packet);
       const data = packet?.data?.data;
       Logger.info(
         `[CustomBotsManager<Listener>] Recevied Message From ${data?.process?.name} Process.`
@@ -211,7 +233,7 @@ export default class CustomBotsManager {
           return this.PM2Delete(data.process.name).catch(() => null);
         const subscription = await app.subscriptions.fetch(
           customBot.ownerId,
-          PatreonTierId.ONE_CUSTOM_BOT
+          customBot.tierId
         );
         if (!subscription || !subscription.isActive())
           return this.PM2Delete(data.process.name).catch(() => null);
@@ -303,9 +325,9 @@ export default class CustomBotsManager {
     Logger.info(
       "[CustomBotsManager<Process>] Fetch All Active Subscriptions..."
     );
-    const activeSubscriptions = (
-      await app.subscriptions.fetch(true, PatreonTierId.ONE_CUSTOM_BOT)
-    ).filter((sub) => sub.isActive());
+    const activeSubscriptions = (await app.subscriptions.fetch(true)).filter(
+      (sub) => sub.isActive()
+    );
     Logger.info(
       `[CustomBotsManager<Process>] All Active Subscription Fetched (${activeSubscriptions.length})`
     );
@@ -346,7 +368,7 @@ export default class CustomBotsManager {
     });
 
     //Start bots that not running.
-    if (app.mode === "STABLE")
+    if (app.mode === "PRODUCTION")
       customBots.map(async (customBot) => {
         if (!this.processes.get(customBot.id)) {
           await customBot
@@ -361,14 +383,16 @@ export default class CustomBotsManager {
                   err?.message ?? err?.reason
                 }`
               )
-            );
-          Logger.info(
-            `\`[CustomBotsManager<Process>] ${customBot.username}#${
-              customBot.discriminator
-            }(${customBot.botId}[${Util.getUUIDLowTime(
-              customBot.id
-            )}]) Auto started successfuly\``
-          );
+            )
+            .finally(() => {
+              Logger.info(
+                `\`[CustomBotsManager<Process>] ${customBot.username}#${
+                  customBot.discriminator
+                }(${customBot.botId}[${Util.getUUIDLowTime(
+                  customBot.id
+                )}]) Auto started successfuly\``
+              );
+            });
         }
       });
   }
@@ -401,7 +425,6 @@ export default class CustomBotsManager {
       throw new Exception("PM2 is not connected", Severity.FAULT);
     this.processes.set(name, "PROCESSING");
     await this.PM2Delete(name).catch(() => null);
-    console.log(options?.args?.join(" "));
     return new Promise((resolve, reject) =>
       pm2.start(
         {
@@ -474,13 +497,20 @@ export default class CustomBotsManager {
   public static getCustomBotQuantityBySubscriptionTierId(
     tierId: PatreonTierId
   ): number {
-    return PatreonTierId.ONE_CUSTOM_BOT ? 1 : 0;
+    return tierId === PatreonTierId.ONE_CUSTOM_BOT
+      ? 1
+      : tierId === PatreonTierId.THREE_CUSTOM_BOT
+      ? 3
+      : 0;
   }
 
   public static getCustomBotAccessServersSizeBySubscriptionTierId(
     tierId: PatreonTierId
   ): number {
-    return PatreonTierId.ONE_CUSTOM_BOT ? 3 : 0;
+    return tierId === PatreonTierId.ONE_CUSTOM_BOT ||
+      tierId === PatreonTierId.THREE_CUSTOM_BOT
+      ? 3
+      : 0;
   }
 
   private result<T extends "GET" | "CREATION">(

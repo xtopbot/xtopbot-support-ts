@@ -17,6 +17,9 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
   public discriminator: T extends "GET" ? number : number | null;
   public avatar: T extends "GET" ? string : string | null;
   public readonly ownerId: T extends "GET" ? string : string | null;
+  public readonly tierId: T extends "GET"
+    ? PatreonTierId
+    : PatreonTierId | null;
   public presence: {
     status: BotStatus | null;
     activity: {
@@ -34,6 +37,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     discriminator: T extends "GET" ? number : number | null,
     avatar: T extends "GET" ? string : string | null,
     ownerId: T extends "GET" ? string : string | null,
+    tierId: T extends "GET" ? PatreonTierId : PatreonTierId | null,
     botStatus: T extends "GET" ? BotStatus | null : null,
     activityType: T extends "GET" ? ActivityType | null : null,
     activityName: T extends "GET" ? string | null : null,
@@ -47,6 +51,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     this.discriminator = discriminator;
     this.avatar = avatar;
     this.ownerId = ownerId;
+    this.tierId = tierId;
     this.tokenValidation = tokenValidation;
     this.presence = {
       status: botStatus,
@@ -203,7 +208,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
         );
       }
       if (validation.data.botPublic != false) {
-        this.invalid();
+        //this.invalid();
         throw new Exception(
           Util.quickFormatContext(
             locale.origin.commands.subscriptions.manage.one.bot.validations
@@ -217,7 +222,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
         validation.data.flags === 0 ||
         (validation.data.flags & (1 << 19)) === 0
       ) {
-        this.invalid();
+        //this.invalid();
         throw new Exception(
           Util.quickFormatContext(
             locale.origin.commands.subscriptions.manage.one.bot.validations
@@ -227,6 +232,9 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           Severity.COMMON
         );
       }
+      Logger.info(
+        "[CustomBot<Validation>] Application Type validation succeed"
+      );
     } else if (type === ValidationType.BOT) {
       if ((validation.data.flags & (1 << 16)) !== 0) {
         this.invalid();
@@ -235,16 +243,18 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           Severity.COMMON
         );
       }
+      Logger.info("[CustomBot<Validation>] Bot Type validation succeed");
     } else if (type === ValidationType.GUILDS) {
-      if (validation.data.length > validation.data.limit)
+      if (validation.data.length > validation.limit)
         throw new Exception(
           Util.quickFormatContext(
             locale.origin.commands.subscriptions.manage.one.bot.validations
               .maximumServers,
-            { "custom.bot.allowed.servers": validation.data.limit }
+            { "custom.bot.allowed.servers": validation.limit }
           ),
           Severity.COMMON
         );
+      Logger.info("[CustomBot<Validation>] Guild limit validation succeed");
     }
     return true;
   }
@@ -273,7 +283,10 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       },
     });
 
-    const body = await res.json();
+    const body =
+      res.headers.get("content-type") === "application/json"
+        ? await res.json()
+        : null;
 
     if (!(res.status >= 200 && res.status < 300)) {
       if (res.status === 401) {
@@ -314,13 +327,13 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       `[CustomBot<Process>] ${this.botId} Starting(Section: validation)...`
     );
     app.customBots.processes.set(this.id, "PROCESSING");
-    let valid = true;
+    let valid = null;
     let user, application, guilds;
     user = await this.fetchUser();
     await this.validation(ValidationType.BOT, { data: user }, null).catch(
-      () => (valid = false)
+      (err) => (valid = err)
     );
-    if (valid) {
+    if (!valid) {
       application = await this.fetchApplication();
       await this.validation(
         ValidationType.APPLICATION,
@@ -329,26 +342,26 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
           userId: this.ownerId as string,
         },
         null
-      ).catch(() => (valid = false));
+      ).catch((err) => (valid = err));
     }
-    if (valid) {
+    if (!valid) {
       guilds = await this.fetchGuilds();
       await this.validation(
         ValidationType.GUILDS,
         {
           data: guilds,
-          limit: CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
-            PatreonTierId.ONE_CUSTOM_BOT
-          ),
+          limit:
+            CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+              this.tierId as PatreonTierId
+            ),
         },
         null
-      ).catch(() => (valid = false));
+      ).catch((err) => (valid = err));
     }
-    if (!valid) {
+    if (valid) {
       app.customBots.processes.delete(this.id);
-      return Logger.info(
-        `[CustomBot<Process>] ${this.botId} Validation failed!`
-      );
+      Logger.info(`[CustomBot<Process>] ${this.botId} Validation failed!`);
+      throw valid;
     }
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Validation completed successfully. Starting<Process>`
@@ -377,8 +390,8 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     Logger.info(`[CustomBot<Process>] ${this.botId} Processed successfully`);
     return {
       user,
-      application: application,
-      guilds: guilds,
+      application,
+      guilds,
     };
   }
 

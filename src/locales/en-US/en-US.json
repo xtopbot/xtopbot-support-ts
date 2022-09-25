@@ -65,6 +65,35 @@
       ]
     },
     "subscriptions": {
+      "embeds": [
+        {
+          "title": "Manage your subscriptions",
+          "description": "We see that you have more than one active subscription at the same time. You can choose the subscription you want to manage below."
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "Manage your active subscription",
+          "options": [
+            {
+              "description": "Expires in {{subscription.expired.in}}"
+            }
+          ]
+        }
+      ],
+      "sync": {
+        "modals": [
+          {
+            "title": "Sync your Patreon account",
+            "textInput": [
+              {
+                "label": "Email",
+                "placeholder": "Enter you Patreon Email"
+              }
+            ]
+          }
+        ]
+      },
       "notSubscribedYet": {
         "embeds": [
           {
@@ -340,7 +369,8 @@
         "expired": "Expired"
       },
       "tierDescription": {
-        "7764503": "In this subscription, there is `1` **Custom Bot** that can be entered into a maximum of `3` **Servers**."
+        "7764503": "In this subscription, there is `1` **Custom Bot** that can be entered into a maximum of `3` **Servers**.",
+        "9125562": "In this subscription, there is `3` **Custom Bot** that can be entered into a maximum of `3` **Servers**."
       }
     },
     "help": {
