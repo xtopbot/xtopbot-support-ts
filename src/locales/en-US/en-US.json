@@ -76,19 +76,26 @@
           "placeholder": "Manage your active subscription",
           "options": [
             {
-              "description": "Expires in {{subscription.expired.in}}"
+              "description": "Expires in {{subscription.expiredTime}}"
+            },
+            {
+              "description": "Expired on {{subscription.expiredTime}}"
             }
           ]
         }
       ],
-      "sync": {
+      "verify": {
+        "emailNotSubscribed": "Unable to find a subscription not associated with a user for this email.",
+        "notSameEmail": "Your email in Patreon is not the same as the one we subscribed with, please contact support.",
+        "notSameDiscordAccount": "The Discord account linked to your Patreon is not the same as this Discord account!",
+        "requiredDiscordLinkedToPatreonAccount": "The Patreon account is not linked to your Discord account.\nLinking Steps:\nGo to [`Patreon Account Settings` → `Connect Apps`](https://www.patreon.com/settings/apps) → `connect your Discord account`. ([How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-))",
         "modals": [
           {
-            "title": "Sync your Patreon account",
+            "title": "Verify your Patreon account",
             "textInput": [
               {
                 "label": "Email",
-                "placeholder": "Enter you Patreon Email"
+                "placeholder": "Enter your Patreon Email"
               }
             ]
           }
@@ -98,10 +105,10 @@
         "embeds": [
           {
             "title": "We haven't seen any subscriptions you've made.",
-            "description": "[Check out our Patreon page to get one of the subscription plans.](https://www.patreon.com/xtopbot)\n\nIf you subscribed and haven't linked your Discord account to your Patreon account, you **must**. Check [How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) complete the steps, click on the `sync` button below and enter your **Patreon email** you have subscribed to."
+            "description": "[Check out our Patreon page to get one of the subscription plans.](https://www.patreon.com/xtopbot)\n\nIf you subscribed and haven't linked your Discord account to your Patreon account, you **must**. Check [How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) complete the steps, and click on the `Verify` button below and enter your **Patreon email** you have subscribed to."
           }
         ],
-        "buttons": ["Subscribe"]
+        "buttons": ["Subscribe", "Verify"]
       },
       "unknownSubscriptionTier": {
         "embeds": [
@@ -335,6 +342,10 @@
                   },
                   {
                     "label": "Listening",
+                    "description": "Ability to add describe"
+                  },
+                  {
+                    "label": "Watching",
                     "description": "Ability to add describe"
                   }
                 ]

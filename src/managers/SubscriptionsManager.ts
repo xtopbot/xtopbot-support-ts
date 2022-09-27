@@ -1,7 +1,9 @@
 import db from "../providers/Mysql";
 import Subscription, { PatreonTierId } from "../structures/Subscription";
-import { raw } from "mysql";
 import Exception, { Severity } from "../utils/Exception";
+import { LocaleTag } from "./LocaleManager";
+import app from "../app";
+import Util from "../utils/Util";
 
 export default class SubscriptionsManager {
   public static readonly SUBSCRIPTION_PERIOD_TERM: number = 2_678_399 * 1_000; // 30 day 23 hours 59 min 59 sec
@@ -86,6 +88,85 @@ export default class SubscriptionsManager {
     return tierFetchType === "ONE_TIER" && fetchType === "USER_SUBSCRIPTION"
       ? subscriptions[0]
       : subscriptions;
+  }
+
+  public async verifyUserEmail(
+    userId: string,
+    email: string,
+    localeTag: LocaleTag | null = null
+  ) {
+    const locale = app.locales.get(localeTag);
+    const raws: any[] = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)
+      ? await db.query(
+          `select BIN_TO_UUID(id) as id, BIN_TO_UUID(memberId) as memberId from \`Patreon.Pledges\` where email = ? and discordUserId is null and unix_timestamp(createdAt) > unix_timestamp() - subscriptionPeriodTerm`,
+          [email]
+        )
+      : null;
+    if (!raws?.length)
+      throw new Exception(
+        locale.origin.commands.subscriptions.verify.emailNotSubscribed,
+        Severity.COMMON
+      );
+    if (
+      raws.filter(
+        (raw, index) =>
+          Util.isUUID(raw.memberId) &&
+          raws.map((r) => r.memberId).indexOf(raw.memberId) === index
+      ).length !== 1
+    )
+      throw new Exception(
+        "Suspicious email, please contact support",
+        Severity.SUSPICIOUS
+      );
+    let uri = `/api/oauth2/v2/members/${raws[0].memberId}`;
+    const res = await fetch(
+      `https://www.patreon.com${uri}?include=user&fields%5Bmember%5D=email&fields%5Buser%5D=social_connections`,
+      {
+        method: "get",
+        headers: {
+          authorization: `Bearer ${process.env.PATREON_ACCESS_TOKEN}`,
+        },
+      }
+    );
+    if (!(res.status >= 200 && res.status < 300)) {
+      if (res.status === 404)
+        throw new Exception(
+          "The member ID cannot be found on the Patreon API. Please contact support.",
+          Severity.SUSPICIOUS
+        );
+      throw new Exception(
+        `${uri} Unexpected Patreon API status code: ${res.status}`,
+        Severity.FAULT,
+        res
+      );
+    }
+    const body = await res.json();
+    if (body.data.attributes.email !== email)
+      throw new Exception(
+        locale.origin.commands.subscriptions.verify.notSameEmail,
+        Severity.COMMON
+      );
+    if (!body.included[0]?.attributes?.social_connections)
+      throw new Exception(
+        "Unable to get social_connections field from response. Please contact support.",
+        Severity.SUSPICIOUS
+      );
+    if (!body.included[0].attributes.social_connections.discord)
+      throw new Exception(
+        locale.origin.commands.subscriptions.verify.requiredDiscordLinkedToPatreonAccount,
+        Severity.COMMON
+      );
+    if (
+      body.included[0].attributes.social_connections.discord?.user_id !== userId
+    )
+      throw new Exception(
+        locale.origin.commands.subscriptions.verify.notSameDiscordAccount,
+        Severity.COMMON
+      );
+    await db.query(
+      `update \`Patreon.Pledges\` set discordUserId = ? where BIN_TO_UUID(id) in (?)`,
+      [userId, raws.map((raw) => raw.id)]
+    );
   }
 
   private resolve(raws: any[]): Subscription {
