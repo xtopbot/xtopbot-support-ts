@@ -1,14 +1,14 @@
-import { PermissionsString } from "discord.js";
+import { ChannelType, PermissionsString } from "discord.js";
 import Constants from "../utils/Constants";
 import Response, { Action, ResponseCodes } from "../utils/Response";
 import Util from "../utils/Util";
-import CommandMethod, { CommandMethodTypes } from "./CommandMethod";
+import CommandMethod, { AnyMethod } from "./CommandMethod";
 import Locale from "../structures/Locale";
 
 export default class CommandRequirementsHandler {
-  private readonly dcm: CommandMethod<CommandMethodTypes>;
+  private readonly dcm: AnyMethod;
 
-  public constructor(dcm: CommandMethod<CommandMethodTypes>) {
+  public constructor(dcm: AnyMethod) {
     this.dcm = dcm;
   }
 
@@ -20,7 +20,10 @@ export default class CommandRequirementsHandler {
         },
       ],
     };
-    if (!this.dcm.command.isDMAllowed())
+    if (
+      !this.dcm.command.isDMAllowed() &&
+      this.dcm.d.channel?.type === ChannelType.DM
+    )
       throw new Response(
         ResponseCodes.COMMAND_DM_NOT_ALLOWED,
         {
