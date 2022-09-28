@@ -98,6 +98,11 @@ export default class RequestHumanAssistantPlugin {
       return this.requestAssistantValidation(at, true);
     }*/
   }
+  public static async onThreadDeleted(thread: ThreadChannel) {
+    const requestAssistant = await app.requests.fetch(thread.id);
+    if (!requestAssistant) return;
+    requestAssistant.closeThread(RequestAssistantStatus.CLOSED);
+  }
 
   private static async requestAssistantValidation(
     requestAssistant: RequestAssistant,

@@ -901,7 +901,9 @@ export default class Subscriptions extends BaseCommand {
         ].filter((c) => c !== null),
         ephemeral: true,
       },
-      Action.UPDATE
+      dcm instanceof ComponentMethod && dcm.getKey("reply")
+        ? Action.REPLY
+        : Action.UPDATE
     );
   }
 
@@ -1041,9 +1043,12 @@ export default class Subscriptions extends BaseCommand {
         components,
         ephemeral: true,
       },
-      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
-        dcm.d.type
-      ) && !(dcm.d as any)?.deferred
+      dcm instanceof ComponentMethod && dcm.getKey("reply")
+        ? Action.REPLY
+        : [
+            InteractionType.MessageComponent,
+            InteractionType.ModalSubmit,
+          ].includes(dcm.d.type) && !(dcm.d as any)?.deferred
         ? Action.UPDATE
         : Action.REPLY
     );
@@ -1117,10 +1122,12 @@ export default class Subscriptions extends BaseCommand {
           ],
           ephemeral: true,
         },
-        [
-          InteractionType.MessageComponent,
-          InteractionType.ModalSubmit,
-        ].includes(dcm.d.type) && !(dcm.d as any)?.deferred
+        dcm instanceof ComponentMethod && dcm.getKey("reply")
+          ? Action.REPLY
+          : [
+              InteractionType.MessageComponent,
+              InteractionType.ModalSubmit,
+            ].includes(dcm.d.type) && !(dcm.d as any)?.deferred
           ? Action.UPDATE
           : Action.REPLY
       );
