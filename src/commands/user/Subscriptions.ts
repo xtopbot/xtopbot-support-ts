@@ -13,7 +13,11 @@ import {
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import { BaseCommand } from "../BaseCommand";
-import CommandMethod, { AnyInteraction, Method } from "../CommandMethod";
+import CommandMethod, {
+  AnyInteraction,
+  AnyMethod,
+  Method,
+} from "../CommandMethod";
 import app from "../../app";
 import Subscription, { PatreonTierId } from "../../structures/Subscription";
 import Response, {
@@ -60,17 +64,21 @@ export default class Subscriptions extends BaseCommand {
     dcm: ComponentMethod<ModalSubmitInteraction>
   ) {
     if (dcm.getKey("subscriptions")) {
-      if (dcm.getKey("sync")) {
+      if (dcm.getKey("verify")) {
+        await dcm.d.deferReply({
+          ephemeral: true,
+        });
         const subscriptions = await app.subscriptions.fetch(dcm.user.id);
-        if (subscriptions) return this.manageSubscriptions(dcm);
+        if (subscriptions && subscriptions.length > 0)
+          return this.manageSubscriptions(dcm, subscriptions);
 
         const email = dcm.d.fields.getTextInputValue("email");
-        const subscriptionsEmail = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(
-          email
-        )
-          ? await app.subscriptions.fetch(email)
-          : null;
-        if (!subscriptionsEmail) return;
+        await app.subscriptions.verifyUserEmail(
+          dcm.user.id,
+          email,
+          dcm.locale.tag
+        );
+        return this.manageSubscriptions(dcm);
       }
       return;
     }
@@ -123,7 +131,7 @@ export default class Subscriptions extends BaseCommand {
       );
     } else if (checker?.path === "UPDATE_ACTIVITY_CUSTOM_BOT") {
       const activityType = dcm.getValue("activity", true);
-      if (!["PLAYING", "LISTENING"].includes(activityType))
+      if (!["PLAYING", "LISTENING", "WATCHING"].includes(activityType))
         throw new Exception("Invalid Value.", Severity.SUSPICIOUS);
 
       await checker.target.updatePresence(checker.target.presence.status, {
@@ -136,37 +144,40 @@ export default class Subscriptions extends BaseCommand {
   }
 
   protected async buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
-    //Sync
-    if (dcm.getKey("sync")) {
-      const subscriptions = await app.subscriptions.fetch(dcm.user.id);
-      if (subscriptions) return this.manageSubscriptions(dcm);
+    //Verify
+    if (dcm.getKey("subscriptions")) {
+      if (dcm.getKey("verify")) {
+        const subscriptions = await app.subscriptions.fetch(dcm.user.id);
+        if (subscriptions) return this.manageSubscriptions(dcm);
 
-      return new Response(
-        ResponseCodes.SUCCESS,
-        {
-          title: dcm.locale.origin.commands.subscriptions.sync.modals[0].title,
-          customId: "subscriptions:sync",
-          components: [
-            {
-              type: ComponentType.ActionRow,
-              components: [
-                {
-                  type: ComponentType.TextInput,
-                  style: TextInputStyle.Short,
-                  customId: "email",
-                  label:
-                    dcm.locale.origin.commands.subscriptions.sync.modals[0]
-                      .textInput[0].label,
-                  placeholder:
-                    dcm.locale.origin.commands.subscriptions.sync.modals[0]
-                      .textInput[0].placeholder,
-                },
-              ],
-            },
-          ],
-        },
-        Action.MODAL
-      );
+        return new Response(
+          ResponseCodes.SUCCESS,
+          {
+            title:
+              dcm.locale.origin.commands.subscriptions.verify.modals[0].title,
+            customId: "subscriptions:verify",
+            components: [
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.TextInput,
+                    style: TextInputStyle.Short,
+                    customId: "email",
+                    label:
+                      dcm.locale.origin.commands.subscriptions.verify.modals[0]
+                        .textInput[0].label,
+                    placeholder:
+                      dcm.locale.origin.commands.subscriptions.verify.modals[0]
+                        .textInput[0].placeholder,
+                  },
+                ],
+              },
+            ],
+          },
+          Action.MODAL
+        );
+      }
     }
     //Manage single subscription
     const checker = await this.subscriptionComponentChecker(dcm);
@@ -346,7 +357,7 @@ export default class Subscriptions extends BaseCommand {
       return this.manageCustomBot(dcm, checker.subscription, checker.target);
     } else if (checker?.path === "UPDATE_ACTIVITY_CUSTOM_BOT") {
       const value = dcm.d.values[0];
-      if (!["PLAYING", "LISTENING"].includes(value))
+      if (!["PLAYING", "LISTENING", "WATCHING"].includes(value))
         throw new Exception("Invalid Value.", Severity.SUSPICIOUS);
 
       return new Response(
@@ -426,16 +437,7 @@ export default class Subscriptions extends BaseCommand {
         dcm.user.id,
         tierId as PatreonTierId
       );
-      if (!subscription)
-        return new Response(
-          ResponseCodes.NOT_SUBSCRIBED_YET,
-          {
-            ...dcm.locale.origin.commands.subscriptions.notSubscribedYet,
-            components: [],
-            ephemeral: true,
-          },
-          Action.UPDATE
-        );
+      if (!subscription) return this.notHaveSubscriptions(dcm);
 
       dcm.cf.formats.set("subscription.tier.name", subscription.getTierName());
       dcm.cf.formats.set(
@@ -853,6 +855,18 @@ export default class Subscriptions extends BaseCommand {
                       typeof customBot.presence.activity.name === "string" &&
                       customBot.presence.activity.type === "LISTENING",
                   },
+                  {
+                    label:
+                      dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .selectMenu[2].options[2].label, // WATCHING
+                    description:
+                      dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .selectMenu[2].options[2].description,
+                    value: "WATCHING",
+                    default:
+                      typeof customBot.presence.activity.name === "string" &&
+                      customBot.presence.activity.type === "WATCHING",
+                  },
                 ],
                 disabled:
                   customBot.getStatus() === CustomBotStatus.TOKEN_INVALID,
@@ -887,7 +901,9 @@ export default class Subscriptions extends BaseCommand {
         ].filter((c) => c !== null),
         ephemeral: true,
       },
-      Action.UPDATE
+      dcm instanceof ComponentMethod && dcm.getKey("reply")
+        ? Action.REPLY
+        : Action.UPDATE
     );
   }
 
@@ -1027,9 +1043,12 @@ export default class Subscriptions extends BaseCommand {
         components,
         ephemeral: true,
       },
-      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
-        dcm.d.type
-      )
+      dcm instanceof ComponentMethod && dcm.getKey("reply")
+        ? Action.REPLY
+        : [
+            InteractionType.MessageComponent,
+            InteractionType.ModalSubmit,
+          ].includes(dcm.d.type) && !(dcm.d as any)?.deferred
         ? Action.UPDATE
         : Action.REPLY
     );
@@ -1042,75 +1061,118 @@ export default class Subscriptions extends BaseCommand {
     const subscriptions =
       _subscriptions ?? (await app.subscriptions.fetch(dcm.user.id));
 
-    if (!subscriptions || subscriptions?.length < 1)
-      return new Response(ResponseCodes.NOT_SUBSCRIBED_YET, {
-        ...Util.addFieldToEmbed(
-          dcm.locale.origin.commands.subscriptions.notSubscribedYet,
-          0,
-          "color",
-          Constants.defaultColors.ORANGE
-        ),
-        ephemeral: true,
-      });
-    const activeSubscription = subscriptions.filter((sub) => sub.isActive());
-    if (activeSubscription.length >= 1) {
-      return new Response(ResponseCodes.SUCCESS, {
-        ...Util.addFieldToEmbed(
-          dcm.locale.origin.commands.subscriptions,
-          0,
-          "color",
-          Constants.defaultColors.BLUE
-        ),
-        components: [
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              {
-                type: ComponentType.SelectMenu,
-                customId: `subscription:tier`,
-                placeholder:
-                  dcm.locale.origin.commands.subscriptions.selectMenu[0]
-                    .placeholder,
-                options: activeSubscription.map((sub) => ({
-                  label: sub.getTierName(),
-                  description: Util.quickFormatContext(
+    if (!subscriptions || subscriptions.length < 1)
+      return this.notHaveSubscriptions(dcm);
+    //const activeSubscription = subscriptions.filter((sub) => sub.isActive());
+    if (subscriptions.length > 1) {
+      return new Response(
+        ResponseCodes.SUCCESS,
+        {
+          ...Util.addFieldToEmbed(
+            dcm.locale.origin.commands.subscriptions,
+            0,
+            "color",
+            Constants.defaultColors.BLUE
+          ),
+          components: [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.SelectMenu,
+                  customId: `subscription:tier`,
+                  placeholder:
                     dcm.locale.origin.commands.subscriptions.selectMenu[0]
-                      .options[0].description,
-                    {
-                      "subscription.expired.in": moment(sub.getExpires())
-                        .locale(dcm.locale.tag)
-                        .format("lll"),
-                    }
-                  ),
-                  value: sub.tierId,
-                })),
-              },
-            ],
-          },
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              {
-                type: ComponentType.Button,
-                label:
-                  dcm.locale.origin.commands.subscriptions.manage.one
-                    .buttons[0],
-                style: ButtonStyle.Link,
-                url: "https://www.patreon.com/join/xtopbot/checkout?edit=1",
-              },
-            ],
-          },
-        ],
-        ephemeral: true,
-      });
+                      .placeholder,
+                  options: subscriptions.map((sub) => ({
+                    label: sub.getTierName(),
+                    description: Util.quickFormatContext(
+                      sub.isActive()
+                        ? dcm.locale.origin.commands.subscriptions.selectMenu[0]
+                            .options[0].description
+                        : dcm.locale.origin.commands.subscriptions.selectMenu[0]
+                            .options[1].description,
+                      {
+                        "subscription.expiredTime": moment(sub.getExpires())
+                          .locale(dcm.locale.tag)
+                          .format("lll"),
+                      }
+                    ),
+                    emoji: {
+                      name: sub.isActive() ? "🟢" : "🔴",
+                    },
+                    value: sub.tierId,
+                  })),
+                },
+              ],
+            },
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.Button,
+                  label:
+                    dcm.locale.origin.commands.subscriptions.manage.one
+                      .buttons[0],
+                  style: ButtonStyle.Link,
+                  url: "https://www.patreon.com/join/xtopbot/checkout?edit=1",
+                },
+              ],
+            },
+          ],
+          ephemeral: true,
+        },
+        dcm instanceof ComponentMethod && dcm.getKey("reply")
+          ? Action.REPLY
+          : [
+              InteractionType.MessageComponent,
+              InteractionType.ModalSubmit,
+            ].includes(dcm.d.type) && !(dcm.d as any)?.deferred
+          ? Action.UPDATE
+          : Action.REPLY
+      );
     }
 
-    const subscription =
-      activeSubscription[0] ??
+    const subscription = subscriptions[0]; /*??
       subscriptions.sort(
         (a, b) => b.getExpires().getTime() - a.getExpires().getTime()
-      )[0];
+      )[0]*/
 
     return this.manageSubscription(dcm, subscription);
+  }
+
+  private notHaveSubscriptions(dcm: AnyMethod) {
+    return new Response(ResponseCodes.NOT_SUBSCRIBED_YET, {
+      ...Util.addFieldToEmbed(
+        dcm.locale.origin.commands.subscriptions.notSubscribedYet,
+        0,
+        "color",
+        Constants.defaultColors.ORANGE
+      ),
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.Button,
+              style: ButtonStyle.Link,
+              label:
+                dcm.locale.origin.commands.subscriptions.notSubscribedYet
+                  .buttons[0],
+              url: "https://www.patreon.com/join/xtopbot",
+            },
+            {
+              type: ComponentType.Button,
+              style: ButtonStyle.Primary,
+              customId: "subscriptions:verify",
+              label:
+                dcm.locale.origin.commands.subscriptions.notSubscribedYet
+                  .buttons[1],
+            },
+          ],
+        },
+      ],
+      ephemeral: true,
+    });
   }
 }

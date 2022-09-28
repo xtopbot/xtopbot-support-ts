@@ -76,19 +76,26 @@
           "placeholder": "Manage your active subscription",
           "options": [
             {
-              "description": "Expires in {{subscription.expired.in}}"
+              "description": "Expires in {{subscription.expiredTime}}"
+            },
+            {
+              "description": "Expired on {{subscription.expiredTime}}"
             }
           ]
         }
       ],
-      "sync": {
+      "verify": {
+        "emailNotSubscribed": "Unable to find a subscription not associated with a user for this email.",
+        "notSameEmail": "Your email in Patreon is not the same as the one we subscribed with, please contact support.",
+        "notSameDiscordAccount": "The Discord account linked to your Patreon is not the same as this Discord account!",
+        "requiredDiscordLinkedToPatreonAccount": "The Patreon account is not linked to your Discord account.\nLinking Steps:\nGo to [`Patreon Account Settings` → `Connect Apps`](https://www.patreon.com/settings/apps) → `connect your Discord account`. ([How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-))",
         "modals": [
           {
-            "title": "Sync your Patreon account",
+            "title": "Verify your Patreon account",
             "textInput": [
               {
                 "label": "Email",
-                "placeholder": "Enter you Patreon Email"
+                "placeholder": "Enter your Patreon Email"
               }
             ]
           }
@@ -98,10 +105,10 @@
         "embeds": [
           {
             "title": "We haven't seen any subscriptions you've made.",
-            "description": "[Check out our Patreon page to get one of the subscription plans.](https://www.patreon.com/xtopbot)\n\nIf you subscribed and haven't linked your Discord account to your Patreon account, you **must**. Check [How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) complete the steps, click on the `sync` button below and enter your **Patreon email** you have subscribed to."
+            "description": "[Check out our Patreon page to get one of the subscription plans.](https://www.patreon.com/xtopbot)\n\nIf you subscribed and haven't linked your Discord account to your Patreon account, you **must**. Check [How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) complete the steps, and click on the `Verify` button below and enter your **Patreon email** you have subscribed to."
           }
         ],
-        "buttons": ["Subscribe"]
+        "buttons": ["Subscribe", "Verify"]
       },
       "unknownSubscriptionTier": {
         "embeds": [
@@ -335,6 +342,10 @@
                   },
                   {
                     "label": "Listening",
+                    "description": "Ability to add describe"
+                  },
+                  {
+                    "label": "Watching",
                     "description": "Ability to add describe"
                   }
                 ]
@@ -633,11 +644,14 @@
   },
   "plugins": {
     "pluginRequiredUserLocale": {
-      "content": "This action requires that you select one of the available languages."
+      "embeds": [
+        {
+          "title": "Require To Select Language",
+          "description": "This action requires that you select one of the available languages."
+        }
+      ]
     },
-    "serverNotMeetPluginCriteria": {
-      "content": "This server does not meet the criteria for this plugin. Please contact the bot developer"
-    },
+    "serverNotMeetPluginCriteria": "This server does not meet the criteria for this plugin. Please contact the bot developer",
     "welcomer": {
       "memberJoin": {
         "content": "Hey {{user.tag}}, Welcome!",
@@ -654,9 +668,16 @@
       "buttons": ["I need assistance"]
     },
     "requestHumanAssistant": {
-      "exceededLimitation": {
-        "content": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!"
-      },
+      "failedCancelRequestDueStatus": "Cancel assistant request `{{request.uid}}` failed due to status.",
+      "failedCancelRequest": "Cancel assistant request `{{request.uid}}` failed.",
+      "noLongerExits": "Assistant request `{{request.uuid.short}}` no longer exists",
+      "mustBeOnSearchingStatusToBeAccepted": "Assistant request `{{request.uuid.short}}` cannot be accepted for one of the following reasons:\n- Assistant request was accepted by you or another assistant\n- The requester canceled the request\n- Assistant request has expired",
+      "cannotAcceptByRequester": "Assistant request `{{request.uuid.short}}` cannot be accepted by the requester.",
+      "requesterNotExistOnServer": "Assistant request `{{request.uuid.short}}`cannot be accepted due requester is not on the support server.",
+      "alreadyClosedWithReason": "Assistant request `{{request.uuid.short}}` has been closed with the reason already!",
+      "mustBeWhoAcceptTheAssistantRequestDoThisAction": "You cannot do this action to assistant `{{request.uuid.short}}`. This action is for <@{{request.assistant.id}}>.",
+      "exceededLimitation": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!",
+      "unableToFindAssistantsForSpecificLanguage": "We apologize, but the language you want to receive assistance in is not available depending on the assistants currently on board",
       "publicThread": {
         "notBelongToHim": {
           "warning": {
@@ -667,6 +688,33 @@
           }
         }
       },
+      "threadClosed": {
+        "admin": {
+          "embeds": [
+            {
+              "title": "Thread Closed Successfully",
+              "description": "{{user.username}} Thank you for your help, <@{{request.userId}}>! It took {{request.closed.period}}!",
+              "footer": {
+                "text": "{{request.uuid}}"
+              }
+            }
+          ]
+        },
+        "thread": {
+          "content": "**This thread has been closed.** Request short id: `{{request.uuid.short}}`"
+        }
+      },
+      "modals": [
+        {
+          "title": "Request Assistant",
+          "textInput": [
+            {
+              "label": "Issue",
+              "placeholder": "Briefly describe your issue"
+            }
+          ]
+        }
+      ],
       "requestCreated": {
         "interaction": {
           "embeds": [
@@ -674,6 +722,11 @@
               "title": "Assistant Request Created!",
               "description": "Looking for an available assistant... **(Wait time: {{request.expires.in.minutes}} minutes)**",
               "fields": [
+                {
+                  "name": "Issue",
+                  "value": "{{request.issue}}",
+                  "inline": true
+                },
                 {
                   "name": "Language",
                   "value": "{{locale.name}}",
@@ -751,14 +804,14 @@
       },
       "acceptedRequest": {
         "thread": {
-          "content": "<@{{requester.id}}>, <@{{assistant.id}}> has come to help you!"
+          "content": "Hey <@{{requester.id}}>,\n\nDescribe your issue to <@{{assistant.id}}> in an understandable and accurate way in this thread, you can attach a picture of your issue in this thread.\nPlease make sure the issue you encountered has been completely resolved. You may not be able to request an assistant again in the coming hours.\n\n**Issue: **{{request.issue}}**\nRequest Id:** {{request.uuid}}"
         },
         "interaction": {
           "update": {
             "embeds": [
               {
                 "title": "Assistant Request Accepted!",
-                "description": "<@{{assistant.id}}> came to help you!",
+                "description": "<@{{assistant.id}}> came to assistance you!",
                 "fields": [
                   {
                     "name": "Thread",
@@ -777,14 +830,19 @@
                   }
                 ],
                 "footer": {
-                  "text": "Request Id: {{request.uuid}}\nWould you mind taking a minute to tell us how we did? (Available when thread is closed)"
+                  "text": "{{request.uuid}}"
                 }
               }
             ],
             "buttons": ["Feedback"]
           },
           "followUp": {
-            "content": "Hey <@{{requester.id}}>, your request has been accepted by <@{{assistant.id}}>, please go to <#{{thread.id}}> thread and specify your issue in detail.!"
+            "embeds": [
+              {
+                "description": "Your request has been accepted by <@{{assistant.id}}>, please go to <#{{thread.id}}> thread and specify your issue in detail."
+              }
+            ],
+            "buttons": ["Go to thread"]
           }
         }
       },
@@ -848,14 +906,34 @@
           ]
         },
         "followUp": {
-          "content": "**Request Accepted Successfully.** \nGo to <#{{thread.id}}> thread and assistance the customer!"
+          "embeds": [
+            {
+              "title": "Request Accepted Successfully",
+              "description": "Go to <#{{thread.id}}> thread and assistance the requester!",
+              "footer": {
+                "text": "{{request.id}}"
+              }
+            }
+          ],
+          "buttons": ["Go to thread"]
         }
       },
       "activeThread": {
-        "content": "You have an active thread in the assistance channel, please contact technical support through <#{{thread.id}}>"
+        "embeds": [
+          {
+            "title": "You Have Active Thread",
+            "description": "The thread is in the assistance channel. Please contact assistance through <#{{request.thread.id}}> thread."
+          }
+        ],
+        "buttons": ["Go to thread"]
       },
-      "activeRequset": {
-        "content": "You have active request"
+      "activeRequest": {
+        "embeds": [
+          {
+            "title": "You Have Active Request",
+            "description": "Wait a few minutes for your request to be accepted by one of our amazing assistants!"
+          }
+        ]
       },
       "solvedIssue": {
         "interaction": {

@@ -151,7 +151,7 @@ export default class AuditLog {
       })
     ).map((request) => {
       if (request.getStatus(false) === RequestAssistantStatus.SEARCHING)
-        request.cancelRequest();
+        request.cancelRequest(null);
     }); // Cancel Active Request When the member left the server
 
     const user = await app.users.fetch(member.user, false);

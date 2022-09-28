@@ -44,4 +44,16 @@ export default class {
       )
     );
   }
+
+  public static async onThreadDeleted(thread: ThreadChannel) {
+    await RequestHumanAssistantPlugin.onThreadDeleted(thread).catch(
+      (err: unknown) =>
+        Logger.error(
+          err,
+          `[App](Event: onThreadDeleted (RequestHumanAssistantPlugin)) Error while execute: ${
+            (err as Error)?.message
+          }`
+        )
+    );
+  }
 }

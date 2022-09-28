@@ -16,6 +16,7 @@ import Util from "../../utils/Util";
 import ArticleLocalization from "../../structures/ArticleLocalization";
 import Locale from "../../structures/Locale";
 import ComponentMethod from "../ComponentMethod";
+import Constants from "../../utils/Constants";
 
 export default class HelpDesk extends BaseCommand {
   constructor() {
@@ -190,7 +191,7 @@ export default class HelpDesk extends BaseCommand {
         }),
         0,
         "color",
-        3092790
+        Constants.defaultColors.EMBED_GRAY
       ),
       components: [
         {

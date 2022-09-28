@@ -597,8 +597,8 @@ export default class ArticleManage extends BaseCommand {
       "article.localization.lastUpdatedTimestamp",
       String(
         Math.round(
-          message?.updatedAt.getTime() ??
-            articleLocalization.createdAt.getTime() / 1000
+          (message?.updatedAt.getTime() ??
+            articleLocalization.createdAt.getTime()) / 1000
         )
       )
     );
@@ -634,17 +634,21 @@ export default class ArticleManage extends BaseCommand {
     return new Response(
       ResponseCodes.SUCCESS,
       {
-        ...dcm.locale.origin.commands.article.manage.localization,
-        embeds:
-          dcm.locale.origin.commands.article.manage.localization.embeds.concat([
-            {
-              author: {
-                name: dcm.locale.origin.commands.article.manage.localization
-                  .extra[0],
-              },
-              ...dcm.locale.origin.article.embeds[0],
-            } as any,
-          ]),
+        embeds: Util.addFieldToEmbed(
+          dcm.locale.origin.commands.article.manage.localization,
+          0,
+          "color",
+          Constants.defaultColors.BLUE
+        ).embeds.concat([
+          {
+            author: {
+              name: dcm.locale.origin.commands.article.manage.localization
+                .extra[0],
+            },
+            color: Constants.defaultColors.EMBED_GRAY,
+            ...dcm.locale.origin.article.embeds[0],
+          } as any,
+        ]),
         components: [
           {
             type: ComponentType.ActionRow,
@@ -811,7 +815,12 @@ export default class ArticleManage extends BaseCommand {
     return new Response(
       ResponseCodes.SUCCESS,
       {
-        ...dcm.locale.origin.commands.article.manage.all,
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.article.manage.all,
+          0,
+          "color",
+          Constants.defaultColors.BLUE
+        ),
         ephemeral: true,
         components: [
           {
@@ -885,7 +894,12 @@ export default class ArticleManage extends BaseCommand {
     return new Response<MessageResponse>(
       ResponseCodes.SUCCESS,
       {
-        ...dcm.locale.origin.commands.article.manage.single,
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.article.manage.single,
+          0,
+          "color",
+          Constants.defaultColors.BLUE
+        ),
         ephemeral: true,
 
         components: [
@@ -925,6 +939,10 @@ export default class ArticleManage extends BaseCommand {
           {
             type: ComponentType.ActionRow,
             components: [
+              Util.backButton(
+                dcm.locale,
+                `articleManage:manageAll:refresh`
+              ) as any,
               {
                 type: ComponentType.Button,
                 label:

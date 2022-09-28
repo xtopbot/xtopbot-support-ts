@@ -1,4 +1,5 @@
 import {
+  ButtonStyle,
   ChannelType,
   ComponentType,
   DiscordAPIError,
@@ -288,17 +289,42 @@ export default class RequestAssistant {
     );
     this.webhook.editMessage("@original", {
       ...cfx.resolve(
-        locale.origin.plugins.requestHumanAssistant.acceptedRequest.interaction
-          .update
+        Util.addFieldToEmbed(
+          locale.origin.plugins.requestHumanAssistant.acceptedRequest
+            .interaction.update,
+          0,
+          "color",
+          Constants.defaultColors.GREEN
+        )
       ),
       components: [],
       ephemeral: true,
     });
     this.webhook.send({
       ...cfx.resolve(
-        locale.origin.plugins.requestHumanAssistant.acceptedRequest.interaction
-          .followUp
+        Util.addFieldToEmbed(
+          locale.origin.plugins.requestHumanAssistant.acceptedRequest
+            .interaction.followUp,
+          0,
+          "color",
+          Constants.defaultColors.GREEN
+        )
       ),
+      components: [
+        {
+          type: ComponentType.ActionRow,
+          components: [
+            {
+              type: ComponentType.Button,
+              style: ButtonStyle.Link,
+              label:
+                locale.origin.plugins.requestHumanAssistant.acceptedRequest
+                  .interaction.followUp.buttons[0],
+              url: thread.url,
+            },
+          ],
+        },
+      ],
       ephemeral: true,
     });
 
@@ -381,10 +407,11 @@ export default class RequestAssistant {
     return thread;
   }
 
-  public async cancelRequest(): Promise<void> {
+  public async cancelRequest(localeTag: LocaleTag | null): Promise<void> {
+    const locale = app.locales.get(localeTag);
     if (this.getStatus(false) !== RequestAssistantStatus.SEARCHING)
       throw new Exception(
-        "This request cannot be cancel due to status",
+        locale.origin.plugins.requestHumanAssistant.failedCancelRequest,
         Severity.COMMON
       );
     this.closedAt = new Date();
@@ -433,11 +460,7 @@ export default class RequestAssistant {
 
     await db.query(
       "INSERT INTO `Request.Human.Assistant.Thread.Status` (uuid, status, closedAt) values (UUID_TO_BIN(?), ?, ?)",
-      [
-        this.id,
-        status,
-        Math.round((options?.threadClosedAt?.getTime() ?? Date.now()) / 1000),
-      ]
+      [this.id, status, options?.threadClosedAt ?? new Date()]
     );
 
     this.closedAt = new Date();
@@ -473,10 +496,15 @@ export default class RequestAssistant {
     )
       await member.roles.remove(guildAssistants.role);
     if (!thread.archived) {
+      const tLocale = app.locales.get(this.locale, true);
       await thread.send(
-        options?.messageToThread ?? {
-          content: "**Thread closed.**",
-        }
+        options?.messageToThread ??
+          Util.quickFormatContext(
+            tLocale.origin.plugins.requestHumanAssistant.threadClosed.thread,
+            {
+              "request.uuid.short": Util.getUUIDLowTime(this.id),
+            }
+          )
       );
       await thread.edit({ archived: true, locked: true });
     }
