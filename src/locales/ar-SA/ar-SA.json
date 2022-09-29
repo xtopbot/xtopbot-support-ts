@@ -4,9 +4,931 @@
   "tags": ["ar", "arabic", "arab", "عربي"],
   "roleNames": [],
   "helpdeskChannel": "مكتب-المساعدة",
-  "exceptions": {
-    "unknownError": {
-      "content": "An error occurred while executing the request.\n```{{error}}```\n `Request Id:` `**{{request.id}}**`"
+  "requirement": {
+    "notInOurSupportServer": "يمكن استخدام هذا الأمر في الخاص ، ولكن يلزم أن تنضم إلى سيرفر دعم xToP Bot الرسمي!",
+    "dmNotAllowed": "لا يُسمح باستخدام هذا الأمر في في الخاص.",
+    "insufficientPermission": "إذن غير كاف.",
+    "botChannelPermissionsMissing": "** أذونات البوت** لهذه ** القناة ** مفقودة. يُرجى التحقق من ` {{bot.channel.permissions.missing}}`",
+    "botGuildPermissionsMissing": "** أذونات البوت ** لهذا ** السيرفر** مفقودة. يُرجى التحقق من ` {{bot.guild.permissions.missing}}`",
+    "memberChannelPermissionsMissing": "**أذونات الأعضاء** لهذه **القناة** مفقودة. يُرجى التحقق من \"{{member.channel.permissions.missing}}\" ** (يتطلب واحدًا فقط من الأذونات المدرجة) **",
+    "memberGuildPermissionsMissing": "**أذونات الأعضاء** لهذه **السيرفر** مفقودة. يُرجى التحقق من \"{{member.channel.permissions.missing}}\" ** (يتطلب واحدًا فقط من الأذونات المدرجة) **"
+  },
+  "backButton": "خلف",
+  "helpdesk": {
+    "title": "مكتب المساعدة",
+    "thereNoPublishedArticle": "لم أجد أي مقال منشور"
+  },
+  "article": {
+    "embeds": [
+      {
+        "title": "{{article.localization.title}}",
+        "description": "{{article.localization.description}}"
+      }
+    ],
+    "buttons": ["هل هذه المقالة حل المشكلة؟", "نعم", "لا"]
+  },
+  "commands": {
+    "language": {
+      "embeds": [
+        {
+          "title": "\uD83C\uDF10 اختر اللغة التي تفضلها",
+          "description": "يؤدي اختيار لغتك المفضلة إلى فتح القنوات المتعلقة باللغة في سيرفر الدعم ** xToP Bot ** الرسمي."
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "حدد اللغة التي قد تفهمها"
+        }
+      ]
+    },
+    "notification": {
+      "embeds": [
+        {
+          "title": "\uD83D\uDCE2 إعلانات الإخطار",
+          "description": "اختر نوع الإعلانات التي تريد أن يتم إعلامك بها حتى لا تفوتك!"
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "حدد الإشعارات التي تفضلها",
+          "options": [
+            {
+              "label": "أخبار",
+              "description": "كل الأخبار المهمة بخصوص البوت / الخدمة"
+            },
+            {
+              "label": "حالة",
+              "description": "تحديثات الحالة حول البوت / الخدمة. مشاكل وانقطاعات وصيانة."
+            }
+          ]
+        }
+      ]
+    },
+    "subscriptions": {
+      "embeds": [
+        {
+          "title": "ادر اشتراكاتك",
+          "description": "نرى أن لديك أكثر من اشتراك نشط في نفس الوقت. يمكنك اختيار الاشتراك الذي تريد إدارته أدناه."
+        }
+      ],
+      "selectMenu": [
+        {
+          "placeholder": "إدارة اشتراكك النشط",
+          "options": [
+            {
+              "description": "ينتهي في {{subscription.expiredTime}}"
+            },
+            {
+              "description": "انتهت في {{subscription.expiredTime}}"
+            }
+          ]
+        }
+      ],
+      "verify": {
+        "emailNotSubscribed": "تعذر العثور على اشتراك غير مرتبط بمستخدم لهذا البريد الإلكتروني.",
+        "notSameEmail": "بريدك الإلكتروني في Patreon ليس هو نفسه الذي اشتركت به ، يرجى الاتصال بالدعم.",
+        "notSameDiscordAccount": "حساب Discord المرتبط بحساب Patreon الخاص بك ليس هو نفسه حساب Discord هذا!",
+        "requiredDiscordLinkedToPatreonAccount": "حساب Patreon غير مرتبط بحساب Discord الخاص بك.\nخطوات التوصيل:\nانتقل إلى [`إعدادات حساب Patreon` →` Connect Apps`](https://www.patreon.com/settings/apps) → `ربط حسابك على Discord`. ([كيف أربط Discord بـ Patreon؟ (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-))",
+        "modals": [
+          {
+            "title": "تحقق من حسابك الـ Patreon",
+            "textInput": [
+              {
+                "label": "البريد الإلكتروني",
+                "placeholder": "أدخل بريدك الإلكتروني الخاص بـ Patreon"
+              }
+            ]
+          }
+        ]
+      },
+      "notSubscribedYet": {
+        "embeds": [
+          {
+            "title": "لم نر أي اشتراكات قمت بها.",
+            "description": "[راجع صفحة Patreon الخاصة بنا للحصول على إحدى خطط الاشتراك.](https://www.patreon.com/xtopbot)\n\nإذا قمت بالاشتراك ولم تقم بربط حساب Discord الخاص بك بحساب Patreon الخاص بك ، فيجب عليك ** **. تحقق من [كيف أقوم بتوصيل Discord بـ Patreon؟ (المستفيد)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-) أكمل الخطوات وانقر على الزر `تحقق` أدناه وأدخل ** بريدك الإلكتروني على Patreon ** الذي اشتركت فيه."
+          }
+        ],
+        "buttons": ["إشترك", "تحقق"]
+      },
+      "unknownSubscriptionTier": {
+        "embeds": [
+          {
+            "description": "فئة الاشتراك هذه غير معروفة ، أو تمت إزالتها."
+          }
+        ]
+      },
+      "subscriptionExpired": {
+        "embeds": [
+          {
+            "title": "انتهت صلاحية اشتراكك",
+            "description": "انتهت صلاحية الاشتراك في ** {{subscription.tier.name}} ** في <t: {{subscription.expiredTimestamp}}:D> ، يجب أن تدفع مقابل تجديد الاشتراك عبر [Patreon]({{subscription. tier.checkout.url}})"
+          }
+        ],
+        "buttons": ["التجديد"]
+      },
+      "createCustomBotLimitReached": {
+        "embeds": [
+          {
+            "description": "لقد وصلت إلى الحد الأقصى لإنشاء روبوت مخصص في **{{subscription.tier.name}}**."
+          }
+        ]
+      },
+      "manage": {
+        "one": {
+          "status": {
+            "expires": "ينتهي في <t:{{subscription.expiresTimestamp}}:D> (<t:{{subscription.expiresTimestamp}}:R>)",
+            "expired": "أنتهت في <t:{{subscription.expiresTimestamp}}:D> (<t:{{subscription.expiresTimestamp}}:R>)"
+          },
+          "embeds": [
+            {
+              "author": {
+                "name": "الاشتراك"
+              },
+              "title": "{{subscription.tier.name}}",
+              "description": "{{subscription.description}}",
+              "fields": [
+                {
+                  "name": "أنشئت في",
+                  "value": "<t:{{subscription.createdTimestamp}}:D>",
+                  "inline": true
+                },
+                {
+                  "name": "مجموع المبالغ المدفوعة",
+                  "value": "${{subscription.totalPaid}}",
+                  "inline": true
+                },
+                {
+                  "name": "الحالة `{{subscription.status}}`",
+                  "value": "{{subscription.status.description}}",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "{{subscription.id}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "إدارة البوتات المخصصة الخاصة بك",
+              "options": [
+                {
+                  "description": "البوت لم يتم إعداده بعد!"
+                },
+                {
+                  "description": "رمز البوت صالح ، يعمل الروبوت بشكل طبيعي."
+                },
+                {
+                  "description": "رمز البوت غير صالح ، يجب عليك إعداده مرة أخرى!"
+                },
+                {
+                  "description": "رمز البوت صالح ، وهو غير متصل."
+                }
+              ]
+            }
+          ],
+          "buttons": ["إدارة تعهد Patreon", "تحديث"],
+          "bot": {
+            "notLongerAvailable": {
+              "embeds": [
+                {
+                  "description": "لم يعد البوت متاحًا لك."
+                }
+              ]
+            },
+            "validations": {
+              "invalidToken": "رمز بوت غير صالح.",
+              "ownedByUser": "يجب أن يكون مالك البوت مملوكًا لك.",
+              "verified": "يجب أن يكون البوت **لم يتم التحقق منه**.",
+              "public": "يجب أن يكون الروبوت ** غير عام **.\n\nلجعل برنامج الروبوت الخاص بك غير عام ، انتقل إلى [`Application` →` Bot`](https://discord.com/developers/applications/{{bot.id}}/bot) وقم بتعطيل `PUBLIC BOT`.",
+              "messageContentIntent": "يجب تمكين الروبوت ** هدف محتوى الرسالة **.\n\nلتمكين ** هدف محتوى الرسالة ** ، انتقل إلى [`Application` →` Bot`](https://discord.com/developers/applications/{{bot.id}}bot) واجعل `MESSAGE CONTENT INTENT` مفعل.",
+              "maximumServers": "يجب أن يحتوي البوت على **3** سيرفرات أو أقل."
+            },
+            "setup": {
+              "completed": {
+                "embeds": [
+                  {
+                    "title": "اكتمل إعداد البوت المخصص!",
+                    "description": "تمت إضافة **{{bot.tag}}** ({{bot.shortUUID}}) إلى اشتراك `{{subscription.tier.name}}` ونظام التشغيل لدينا. يمكنك الآن بدء البوت المخصص الخاص بك!\n\nإذا واجهت مشاكل تشغيلية أو مشاكل أخرى ، فلا تتردد في طلب المساعدة في قناة مكتب المساعدة!"
+                  }
+                ],
+                "buttons": ["إدارة {{bot.tag}}"]
+              },
+              "embeds": [
+                {
+                  "title": "إعداد بوت مخصص",
+                  "description": "اتبع هذه الخطوات للحصول على رمز الروبوت الخاص بك:\nاذهب إلى [`Discord Developer Portal`](https://discord.com/developers/applications) → `Applications` → `New Application` → `Bot` → `Add bot` → `Reset Token` → `Copy Token`"
+                }
+              ],
+              "buttons": ["خلف", "أضف رمز البوت الخاص بك"]
+            },
+            "terminate": {
+              "confirmed": {
+                "embeds": [
+                  {
+                    "title": "تم الإنهاء بنجاح!",
+                    "description": "**{{bot.tag}}** (`{{custom.bot.id.short}}`) تم إنهاء"
+                  }
+                ]
+              },
+              "embeds": [
+                {
+                  "title": "لا يمكن التراجع عن هذا الإجراء!",
+                  "description": "أنت تطلب إنهاء **{{bot.tag}}** (`{{custom.bot.id.short}}`). هل أنت متأكد أنك تريد متابعة معالجة هذا الإجراء؟"
+                }
+              ],
+              "buttons": ["الغاء", "تأكيد الإنهاء"]
+            },
+            "invalidToken": {
+              "embeds": [
+                {
+                  "title": "يجب إنهاؤه!",
+                  "description": "نظرًا لأن رمز البوت غير صالح أو فشل التحقق من صحة البوت المخصص وفقًا لحالة شروط البوتات المخصصة الخاصة بنا ، يجب عليك **إنهاء** وإعداد البوت المخصص الخاص بك برمز مميز آخر صالح مرة أخرى!"
+                }
+              ]
+            },
+            "guildsLimitReached": {
+              "embeds": [
+                {
+                  "title": "تنبية!!",
+                  "description": "بلغ البوت الخاص بك **{{bot.tag}}** ({{custom.bot.id.short}}) حد السيرفرات `{{custom.bot.allowed.servers}}`.",
+                  "footer": {
+                    "text": "إذا كنت ترغب في إدارة سيرفرات البوت الخاصة بك ، فانقر على الزر أدناه!"
+                  }
+                }
+              ],
+              "buttons": ["إدارة {{bot.tag}}"]
+            },
+            "status": ["يعمل", "قيد الانتظار", "غير متصل", "رمز غير صالح"],
+            "embeds": [
+              {
+                "title": "إدارة البوت المخصص الخاص بك",
+                "author": {
+                  "name": "{{bot.tag}} ({{bot.id}})"
+                },
+                "thumbnail": {
+                  "url": "{{bot.avatar}}"
+                },
+                "description": "يمكن إضافة هذا البوت بحد أقصى `{{custom.bot.allowed.servers}}` أو أقل من السيرفرات.",
+                "fields": [
+                  {
+                    "name": "النشاط",
+                    "value": "{{bot.activity.name}}",
+                    "inline": true
+                  },
+                  {
+                    "name": "الحالة",
+                    "value": "{{custom.bot.status}}",
+                    "inline": true
+                  },
+                  {
+                    "name": "سيرفرات البوت الحالي `{{bot.servers.size}}/{{custom.bot.allowed.servers}}`",
+                    "value": "{{bot.servers}}",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "{{custom.bot.id}}"
+                }
+              }
+            ],
+            "buttons": [
+              "إنهاء",
+              "تشغيل البوت",
+              "قيد الانتظار",
+              "يعمل",
+              "تحديث",
+              "إضافة بوت إلى سيرفر",
+              "إدارة ملف تعريف البوت"
+            ],
+            "selectMenu": [
+              {
+                "placeholder": "حدد السيرفرات التي تريد المغادرة منها",
+                "options": []
+              },
+              {
+                "placeholder": "حدد حالة البوت التي تفضلها",
+                "options": [
+                  {
+                    "label": "Online",
+                    "description": null
+                  },
+                  {
+                    "label": "Idle",
+                    "description": null
+                  },
+                  {
+                    "label": "Dnd",
+                    "description": null
+                  },
+                  {
+                    "label": "Invisible",
+                    "description": null
+                  }
+                ]
+              },
+              {
+                "placeholder": "حدد نوع النشاط وأضف وصفًا",
+                "options": [
+                  {
+                    "label": "Playing",
+                    "description": "القدرة على إضافة وصف"
+                  },
+                  {
+                    "label": "Listening",
+                    "description": "القدرة على إضافة وصف"
+                  },
+                  {
+                    "label": "Watching",
+                    "description": "القدرة على إضافة وصف"
+                  }
+                ]
+              }
+            ],
+            "modals": [
+              {
+                "title": "أضف رمز البوت الخاص بك",
+                "textInput": [
+                  {
+                    "label": "الرمز",
+                    "placeholder": "انسخ رمز بوت الخاص بك من Discord Developer Portal"
+                  }
+                ]
+              },
+              {
+                "title": "تحديث نشاط البوت",
+                "textInput": [
+                  {
+                    "label": "اسم",
+                    "placeholder": "صف النشاط."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "subscriptionStatus": {
+        "active": "نشط",
+        "cancelled": "ألغيت",
+        "expired": "منتهي الصلاحية"
+      },
+      "tierDescription": {
+        "7764503": "في هذا الاشتراك ، يوجد `1` **بوت مخصص** يمكن إدخاله في ` 3` ** سيرفرات** كحد أقصى.",
+        "9125562": "في هذا الاشتراك ، يوجد `3` **بوت مخصص** يمكن إدخاله في ` 3` ** سيرفرات** كحد أقصى."
+      }
+    },
+    "help": {
+      "getArticle": {
+        "articleNoLongerExits": {
+          "embeds": [
+            {
+              "description": "المقال لم تعد متوفر أو لم يعد موجود"
+            }
+          ]
+        }
+      },
+      "noResultsFound": {
+        "embeds": [
+          {
+            "description": "لم يتم العثور على نتائج"
+          }
+        ]
+      }
+    },
+    "article": {
+      "notFound": {
+        "single": {
+          "content": "لم يتم العثور على المقال."
+        },
+        "localization": {
+          "content": "معذرةً ، لم أتمكن من العثور على مقالة الترجمة الخاصة بـ `{{article.localization.id}}`"
+        }
+      },
+      "manage": {
+        "localization": {
+          "revoke": {
+            "embeds": [
+              {
+                "title": "المقال {{article.localization.tag}} تم إبطال الترجمة",
+                "description": "ترجمة هذا المقال ذات الصلة بمقال {{article.id}}",
+                "footer": {
+                  "text": "{{article.localization.id}}"
+                }
+              }
+            ]
+          },
+          "embeds": [
+            {
+              "title": "إدارة الترجمة لمقال {{article.localization.tag}}",
+              "fields": [
+                {
+                  "name": "لغة",
+                  "value": "{{article.localization.tag}}",
+                  "inline": true
+                },
+                {
+                  "name": "المساهمون",
+                  "value": "{{article.localization.contributors.mention}}",
+                  "inline": true
+                },
+                {
+                  "name": "آخر تحديث",
+                  "value": "<t:{{article.localization.lastUpdatedTimestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "متعلق بـ",
+                  "value": "{{article.note}} ({{article.id}})",
+                  "inline": true
+                },
+                {
+                  "name": "العلامات `{{article.localization.tags.size}}`",
+                  "value": "يمكن أن تكون العلامات مفيدة إذا كانت هناك عناوين أو كلمات أخرى مشابهة مرتبطة بهذه المقالة لمساعدة العملاء في العثور على المقالة بشكل أسرع."
+                }
+              ],
+              "footer": {
+                "text": "{{article.localization.id}}"
+              }
+            }
+          ],
+          "buttons": [
+            "العودة إلى المقال الرئيسي",
+            "تحرير الرسالة",
+            "إبطال",
+            "نشر",
+            "نشرت",
+            "إضافة علامة"
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "ستتم إزالة العلامة غير المحددة",
+              "options": [
+                {
+                  "description": "أنشئت في {{tag.createdAt}}"
+                }
+              ]
+            }
+          ],
+          "extra": ["(وضعية المعاينة)", "(تم الوصول إلى الحد الأقصى)"],
+          "modal": [
+            {
+              "title": "تحرير رسالة الترجمة لمقال {{article.localization.tag}}",
+              "textInput": [
+                {
+                  "label": "عنوان",
+                  "placeholder": "عن ماذا تتحدث هذه المقال؟"
+                },
+                {
+                  "label": "وصف",
+                  "placeholder": "ما الذي يجب أن يعرفه العملاء عن هذه المقال؟"
+                }
+              ]
+            },
+            {
+              "title": "أضف علامة لترجمة مقال {{article.localization.tag}}",
+              "textInput": [
+                {
+                  "label": "العلامة",
+                  "placeholder": "ما هي العلامات المناسبة لهذه المقالة لمساعدة العملاء في العثور على المقال بشكل أسرع؟"
+                }
+              ]
+            },
+            {
+              "title": "أنشئ ترجمة لمقال {{locale.tag}}",
+              "textInput": [
+                {
+                  "label": "عنوان",
+                  "placeholder": "عن ماذا تتحدث هذه المقال؟"
+                }
+              ]
+            }
+          ]
+        },
+        "all": {
+          "embeds": [
+            {
+              "title": "إدارة المقالات",
+              "description": "من هنا ، يمكنك إدارة جميع المقالات التي تم إنشاؤها."
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "إنشاء / إدارة المقال",
+              "options": [
+                {
+                  "label": "{{note}}",
+                  "description": "غير مترجم بعد"
+                },
+                {
+                  "label": "{{note}}",
+                  "description": "آخر تحديث {{article.lastUpdate}}"
+                },
+                {
+                  "label": "قم بإنشاء مقال جديد"
+                },
+                {
+                  "label": "انتقل إلى الخيارات السابقة",
+                  "description": "{{articles.previous.length}} مقالاً في الخيارات السابقة"
+                },
+                {
+                  "label": "Go to next options",
+                  "description": "{{articles.next.length}} مقالاً في الخيارات التالية"
+                }
+              ]
+            }
+          ],
+          "buttons": ["تحديث", "مملوك لي"]
+        },
+        "single": {
+          "delete": {
+            "embeds": [
+              {
+                "title": "حذف المقال",
+                "description": "هل أنت متأكد من أنك تريد حذف هذه المقال و **{{article.localization.size}}** الترجمات المرتبطة بهذه المقال؟\nلا يمكن التراجع عن هذا الأجراء",
+                "footer": {
+                  "text": "{{article.id}}"
+                }
+              }
+            ],
+            "buttons": ["تأكيد الحذف", "يلغي"],
+            "confirmed": {
+              "embeds": [
+                {
+                  "title": "المقال محذوفة",
+                  "footer": {
+                    "text": "{{article.id}}"
+                  }
+                }
+              ]
+            }
+          },
+          "embeds": [
+            {
+              "title": "إدارة المقال",
+              "description": "{{article.note}}",
+              "fields": [
+                {
+                  "name": "الترجمات المتاحة",
+                  "value": "{{article.localizations}}",
+                  "inline": true
+                },
+                {
+                  "name": "المنشئ",
+                  "value": "<@{{article.creator.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "أنشئت في",
+                  "value": "<t:{{article.createdTimestampAt}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "معلومات",
+                  "value": "يمكن للموظفين إنشاء ترجمة لمقالك!"
+                }
+              ],
+              "footer": {
+                "text": "{{article.id}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "إنشاء / إدارة الترجمات",
+              "options": ["غير مترجم بعد", "آخر تحديث"]
+            }
+          ],
+          "buttons": ["تحرير مذكرة", "تحديث", "حذف"],
+          "modals": [
+            {
+              "title": "{{article.id}} تعديل ملاحظة المقال",
+              "textInput": [
+                {
+                  "label": "ملحوظة",
+                  "placeholder": "أخبر الموظفين بما يحتاجون لمعرفته حول مقالك"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "created": {
+        "embeds": [
+          {
+            "title": "تم إنشاء المقال بنجاح!",
+            "description": "يمكنك إنشاء العديد من ترجمات هذه المقالة كما هو متاح. لا يوصى بإنشاء مقالات ذات موضيع موجوده مسبقًا!",
+            "footer": {
+              "text": "{{article.id}}"
+            }
+          }
+        ],
+        "button": ["إدارة"]
+      },
+      "create": {
+        "title": "إنشاء مقال",
+        "textInput": [
+          {
+            "label": "ملحوظة",
+            "placeholder": "أخبر الموظفين بما يحتاجون لمعرفته حول مقالك"
+          }
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "pluginRequiredUserLocale": {
+      "embeds": [
+        {
+          "title": "يتطلب تحديد اللغة",
+          "description": "يتطلب هذا الإجراء تحديد إحدى اللغات المتاحة."
+        }
+      ]
+    },
+    "serverNotMeetPluginCriteria": "هذا الخادم لا يفي بمعايير هذا البرنامج المساعد. يرجى الاتصال بمطور البوت",
+    "welcomer": {
+      "memberJoin": {
+        "content": "اهلًا {{user.tag}} ، مرحبًا!",
+        "button": [
+          {
+            "label": "عربي",
+            "emoji": ""
+          }
+        ]
+      }
+    },
+    "interactionOnly": {
+      "content": "مرحبًا <@{{user.id}}> ، هذه القناة لـ {{emoji.slash}}**Slash Commands** فقط ، ولا يمكنك استخدام الأوامر العادية أو بدء محادثة.",
+      "buttons": ["أحتاج إلى مساعدة"]
+    },
+    "requestHumanAssistant": {
+      "failedCancelRequestDueStatus": "إلغاء طلب المساعد `{{request.uid}}` فشل بسبب الحالة.",
+      "failedCancelRequest": "إلغاء طلب المساعد فشل `{{request.uid}}`.",
+      "noLongerExits": "طلب المساعد `{{request.uuid.short}}` لم يعد موجودًا",
+      "mustBeOnSearchingStatusToBeAccepted": "طلب المساعد لا يمكن قبوله `{{request.uuid.short}}` لأحد الأسباب التالية:\n- تم قبول طلب المساعد من قبلك أو من قبل مساعد آخر\n- ألغى المستدعي الطلب\n- انتهت صلاحية طلب المساعد",
+      "cannotAcceptByRequester": "طلب المساعد `{{request.uuid.short}}` لا يمكن قبوله من قبل المستدعي.",
+      "requesterNotExistOnServer": "لا يمكن قبول طلب المساعد \"{{request.uuid.short}}\" لأن المستدعي ليس موجودًا على سيرفر الدعم.",
+      "alreadyClosedWithReason": "تم إغلاق طلب المساعد `{{request.uuid.short}}` بسبب مع السبب بالفعل!",
+      "mustBeWhoAcceptTheAssistantRequestDoThisAction": "لا يمكنك القيام بهذا الإجراء للمساعد `{{request.uuid.short}}`. هذا الإجراء يخص <@{{request.assistant.id}}>.",
+      "exceededLimitation": "لقد أنشأت عددًا كبيرًا جدًا من الطلبات التي لم يتم قبولها أو تجاوزت حد طلبات المساعد في هذا اليوم!",
+      "unableToFindAssistantsForSpecificLanguage": "نعتذر ، لكن اللغة التي تريد تلقي المساعدة بها غير متوفرة اعتمادًا على المساعدين الموجودين حاليًا",
+      "publicThread": {
+        "notBelongToHim": {
+          "warning": {
+            "content": "مرحبًا <@{{user.id}}> ،\nيبدو أنك ترسل رسالة في ثريد خاطئ. توجه إلى ثريدك <#{{active.thread.id}}> وابدأ في إرسال الرسالة هناك!"
+          },
+          "timeout": {
+            "content": "مرحبًا <@{{user.id}}> ،\nلقد أرسلت الكثير من الرسائل في ثريد ليس لك! اضطررت إلى إقصائك لبعض الوقت. (تم إغلاق ثريدك بسبب سلوكك الغير لائق)"
+          }
+        }
+      },
+      "threadClosed": {
+        "admin": {
+          "embeds": [
+            {
+              "title": "تم إغلاق الثريد بنجاح",
+              "description": "{{user.username}} شكرًا لك على المساعدة ، <@ {{request.userId}}>! استغرق الأمر {{request.closed.period}}!",
+              "footer": {
+                "text": "{{request.uuid}}"
+              }
+            }
+          ]
+        },
+        "thread": {
+          "content": "** تم إغلاق هذا الثريد. ** معرف مختصر للطلب: `{{request.uuid.short}}`"
+        }
+      },
+      "modals": [
+        {
+          "title": "طلب مساعد",
+          "textInput": [
+            {
+              "label": "المشكلة",
+              "placeholder": "صف بإيجاز مشكلتك"
+            }
+          ]
+        }
+      ],
+      "requestCreated": {
+        "interaction": {
+          "embeds": [
+            {
+              "title": "تم إنشاء طلب المساعد!",
+              "description": "أبحث عن مساعد متاح... **(وقت الانتظار: {{request.expires.in.minutes}} دقيقة)**",
+              "fields": [
+                {
+                  "name": "المشكلة",
+                  "value": "{{request.issue}}",
+                  "inline": true
+                },
+                {
+                  "name": "اللغة",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "أنشئت في",
+                  "value": "<t:{{request.timestamp}}:f>",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "طلب معرف: {{request.uuid}}"
+              }
+            }
+          ],
+          "buttons": ["إلغاء"]
+        },
+        "admins": {
+          "embeds": [
+            {
+              "title": "طلب وارد يحتاج إلى مساعدة!",
+              "description": "{{request.issue}}",
+              "fields": [
+                {
+                  "name": "المستخدم",
+                  "value": "{{user.tag}} (<@{{user.id}}>)",
+                  "inline": true
+                },
+                {
+                  "name": "اللغة",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "ينتهي في",
+                  "value": "<t:{{request.expires.timestamp}}:R>",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "طلب معرف: {{request.uuid}}"
+              }
+            }
+          ],
+          "buttons": ["قبول"]
+        }
+      },
+      "requestCanceled": {
+        "userRequested": {
+          "embeds": [
+            {
+              "title": "تم إلغاء طلب المساعد بواسطتك",
+              "footer": {
+                "text": "طلب معرف: {{request.uuid}}"
+              }
+            }
+          ]
+        },
+        "expired": {
+          "update": {
+            "embeds": [
+              {
+                "title": "تم إلغاء طلب المساعد",
+                "footer": {
+                  "text": "طلب معرف: {{request.uuid}}"
+                }
+              }
+            ]
+          },
+          "followUp": {
+            "content": "نأسف لعدم توفر المساعدين لمساعدتك في الوقت الحالي. عد مرة أخرى شكرا لتفهمك"
+          }
+        }
+      },
+      "acceptedRequest": {
+        "thread": {
+          "content": "مرحبًا <@{{requester.id}}> ،\n\nصِف مشكلتك لـ <@{{assistant.id}}> بطريقة مفهومة ودقيقة في هذا الثريد، يمكنك إرفاق صورة لمشكلتك في هذا الثريد.\nيرجى التأكد من حل المشكلة التي واجهتها بالكامل. قد لا تتمكن من طلب مساعد مرة أخرى في الساعات القادمة.\n\n المشكلة: ** {{request.issue}} **\nمعرّف الطلب: ** {{request.uid}}**"
+        },
+        "interaction": {
+          "update": {
+            "embeds": [
+              {
+                "title": "تم قبول طلب المساعد!",
+                "description": "جاء <@{{Assistant.id}}> لمساعدتك!",
+                "fields": [
+                  {
+                    "name": "الثريد",
+                    "value": "<#{{thread.id}}>",
+                    "inline": true
+                  },
+                  {
+                    "name": "اللغة",
+                    "value": "{{locale.name}}",
+                    "inline": true
+                  },
+                  {
+                    "name": "أنشئت في",
+                    "value": "<t:{{request.timestamp}}:f>",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "{{request.uuid}}"
+                }
+              }
+            ],
+            "buttons": ["Feedback"]
+          },
+          "followUp": {
+            "embeds": [
+              {
+                "description": "تم قبول طلبك من قبل <@{{assistant.id}}> ، الرجاء الانتقال إلى <#{thread.id}}> وتحديد مشكلتك بالتفصيل."
+              }
+            ],
+            "buttons": ["اذهب إلى الثريد"]
+          }
+        }
+      },
+      "assistantAcceptsRequest": {
+        "update": {
+          "embeds": [
+            {
+              "title": "تم قبول طلب المساعد بواسطة {{assistant.tag}}!",
+              "description": "{{request.issue}}",
+              "fields": [
+                {
+                  "name": "المستخدم",
+                  "value": "{{requester.tag}} (<@{{requester.id}}>)",
+                  "inline": true
+                },
+                {
+                  "name": "اللغة",
+                  "value": "{{locale.name}}",
+                  "inline": true
+                },
+                {
+                  "name": "أنشئت في",
+                  "value": "<t:{{request.timestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "المساعد",
+                  "value": "<@{{assistant.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "الثريد",
+                  "value": "<#{{thread.id}}>",
+                  "inline": true
+                },
+                {
+                  "name": "قبلت في",
+                  "value": "<t:{{thread.timestamp}}:f>",
+                  "inline": true
+                }
+              ],
+              "footer": {
+                "text": "طلب معرف: {{request.uuid}}"
+              }
+            }
+          ],
+          "selectMenu": [
+            {
+              "placeholder": "إغلاق الثريد مع السبب...",
+              "options": [
+                {
+                  "label": "تم حلها",
+                  "description": "تم حل مشكلة العميل"
+                },
+                {
+                  "label": "غير نشط",
+                  "description": "العميل غير نشط لأكثر من دقيقة"
+                }
+              ]
+            }
+          ]
+        },
+        "followUp": {
+          "embeds": [
+            {
+              "title": "تم قبول الطلب بنجاح",
+              "description": "انتقل إلى <#{{thread.id}}> وساعد الطالب!",
+              "footer": {
+                "text": "{{request.id}}"
+              }
+            }
+          ],
+          "buttons": ["اذهب إلى الثريد"]
+        }
+      },
+      "activeThread": {
+        "embeds": [
+          {
+            "title": "لديك ثريد نشط",
+            "description": "الثريد في قناة المساعدة. يرجى التواصل بالمساعدة من خلال الثريد <#{{request.thread.id}}>."
+          }
+        ],
+        "buttons": ["اذهب إلى الثريد"]
+      },
+      "activeRequest": {
+        "embeds": [
+          {
+            "title": "لديك طلب نشط",
+            "description": "انتظر بضع دقائق حتى يتم قبول طلبك من قبل أحد مساعدينا الرائعين!"
+          }
+        ]
+      }
     }
   }
 }

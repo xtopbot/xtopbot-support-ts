@@ -86,7 +86,7 @@
       ],
       "verify": {
         "emailNotSubscribed": "Unable to find a subscription not associated with a user for this email.",
-        "notSameEmail": "Your email in Patreon is not the same as the one we subscribed with, please contact support.",
+        "notSameEmail": "Your email in Patreon is not the same as the one you subscribed with, please contact support.",
         "notSameDiscordAccount": "The Discord account linked to your Patreon is not the same as this Discord account!",
         "requiredDiscordLinkedToPatreonAccount": "The Patreon account is not linked to your Discord account.\nLinking Steps:\nGo to [`Patreon Account Settings` → `Connect Apps`](https://www.patreon.com/settings/apps) → `connect your Discord account`. ([How do I connect Discord to Patreon? (Patron)](https://support.patreon.com/hc/en-us/articles/212052266-How-do-I-connect-Discord-to-Patreon-Patron-))",
         "modals": [
@@ -134,12 +134,6 @@
         ]
       },
       "manage": {
-        "embeds": [
-          {
-            "title": "Manage Subscriptions",
-            "description": ""
-          }
-        ],
         "one": {
           "status": {
             "expires": "Expires in <t:{{subscription.expiresTimestamp}}:D> (<t:{{subscription.expiresTimestamp}}:R>)",
@@ -243,7 +237,7 @@
                   "description": "You are requesting the termination of **{{bot.tag}}** (`{{custom.bot.id.short}}`) custom bot. Are you sure you want to continue processing this action?"
                 }
               ],
-              "buttons": ["Cancel", "Terminate"]
+              "buttons": ["Cancel", "Confirm Termination"]
             },
             "invalidToken": {
               "embeds": [
@@ -608,7 +602,7 @@
           "buttons": ["Edit Note", "Refresh", "Delete"],
           "modals": [
             {
-              "title": "{{article.id}} Article Edit Note",
+              "title": "{{article.id}} Edit Article Note",
               "textInput": [
                 {
                   "label": "Note",
@@ -934,59 +928,7 @@
             "description": "Wait a few minutes for your request to be accepted by one of our amazing assistants!"
           }
         ]
-      },
-      "solvedIssue": {
-        "interaction": {
-          "content": "**Would you mind taking a minute to tell us how we did?**\njust two quick questions if you don't mind.",
-          "buttons": ["Give Feedback"]
-        },
-        "thread": {}
-      },
-      "summonerLeftTheThread": {
-        "interaction": {
-          "content": "You left the thread and no assistant came to help you with your issue. Can you provide a reason for leaving the thread?",
-          "selectMenu": [
-            {
-              "placeholder": "The reason for leaving thread",
-              "options": [
-                {
-                  "label": "I solved the issue"
-                },
-                {
-                  "label": "Assistant delayed"
-                },
-                {
-                  "label": "Other"
-                }
-              ]
-            }
-          ]
-        },
-        "thread": {}
-      },
-      "survey": {
-        "thread": {
-          "content": "How would you rate your overall thread experience with **{{assistant.tag}}**?"
-        },
-        "service": {
-          "content": "How satisfied are you with our services?"
-        }
       }
-    },
-    "article": {
-      "noLongerExists": {}
-    }
-  },
-  "language": {
-    "welcome": {
-      "embeds": [
-        {
-          "title": "Welcome to the XTOP BOT Support Server!"
-        }
-      ]
-    },
-    "set": {
-      "content": "English language has been set. You will be shown the helpdesk channel and it will be presented in English."
     }
   }
 }
