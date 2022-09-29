@@ -56,7 +56,11 @@ export default class Util {
   }
 
   public static stringToJson(value: string): JSON | null {
-    return JSON.parse(value).catch(() => null);
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      return null;
+    }
   }
 
   public static addFieldToEmbed(

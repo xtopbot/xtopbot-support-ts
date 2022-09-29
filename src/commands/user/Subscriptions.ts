@@ -178,6 +178,7 @@ export default class Subscriptions extends BaseCommand {
           Action.MODAL
         );
       }
+      if (dcm.getKey("manage")) return this.manageSubscriptions(dcm);
     }
     //Manage single subscription
     const checker = await this.subscriptionComponentChecker(dcm);
@@ -1142,37 +1143,43 @@ export default class Subscriptions extends BaseCommand {
   }
 
   private notHaveSubscriptions(dcm: AnyMethod) {
-    return new Response(ResponseCodes.NOT_SUBSCRIBED_YET, {
-      ...Util.addFieldToEmbed(
-        dcm.locale.origin.commands.subscriptions.notSubscribedYet,
-        0,
-        "color",
-        Constants.defaultColors.ORANGE
-      ),
-      components: [
-        {
-          type: ComponentType.ActionRow,
-          components: [
-            {
-              type: ComponentType.Button,
-              style: ButtonStyle.Link,
-              label:
-                dcm.locale.origin.commands.subscriptions.notSubscribedYet
-                  .buttons[0],
-              url: "https://www.patreon.com/join/xtopbot",
-            },
-            {
-              type: ComponentType.Button,
-              style: ButtonStyle.Primary,
-              customId: "subscriptions:verify",
-              label:
-                dcm.locale.origin.commands.subscriptions.notSubscribedYet
-                  .buttons[1],
-            },
-          ],
-        },
-      ],
-      ephemeral: true,
-    });
+    return new Response(
+      ResponseCodes.NOT_SUBSCRIBED_YET,
+      {
+        ...Util.addFieldToEmbed(
+          dcm.locale.origin.commands.subscriptions.notSubscribedYet,
+          0,
+          "color",
+          Constants.defaultColors.ORANGE
+        ),
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Link,
+                label:
+                  dcm.locale.origin.commands.subscriptions.notSubscribedYet
+                    .buttons[0],
+                url: "https://www.patreon.com/join/xtopbot",
+              },
+              {
+                type: ComponentType.Button,
+                style: ButtonStyle.Primary,
+                customId: "subscriptions:verify",
+                label:
+                  dcm.locale.origin.commands.subscriptions.notSubscribedYet
+                    .buttons[1],
+              },
+            ],
+          },
+        ],
+        ephemeral: true,
+      },
+      dcm instanceof ComponentMethod && dcm.getKey("reply")
+        ? Action.REPLY
+        : Action.UPDATE
+    );
   }
 }

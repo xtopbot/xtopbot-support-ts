@@ -10,6 +10,7 @@ import {
   ModalSubmitInteraction,
   Webhook,
   TextInputStyle,
+  AttachmentBuilder,
 } from "discord.js";
 import { UserFlagsPolicy } from "../../structures/User";
 import Exception, { Severity } from "../../utils/Exception";
@@ -133,7 +134,8 @@ export default class WebhookMessage extends BaseCommand {
       );
     const message = dcm.d.options.getString("message", false);
     const messageId = dcm.d.options.getString("message_id", false);
-    if (message) return this.sendMessageToWebhook(webhook, message, messageId);
+    if (message)
+      return this.sendMessageToWebhook(webhook, message, null, messageId);
     return new Response<ModalResponse>(
       ResponseCodes.SUCCESS,
       {
@@ -151,7 +153,19 @@ export default class WebhookMessage extends BaseCommand {
                 customId: "messageData",
                 required: true,
                 style: TextInputStyle.Paragraph,
-                label: "Message",
+                label: "Message JSON",
+              },
+            ],
+          },
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.TextInput,
+                customId: "mediaUrl",
+                required: false,
+                style: TextInputStyle.Short,
+                label: "Media Url",
               },
             ],
           },
@@ -180,6 +194,7 @@ export default class WebhookMessage extends BaseCommand {
     return this.sendMessageToWebhook(
       webhook,
       dcm.d.fields.getTextInputValue("messageData"),
+      dcm.d.fields.getTextInputValue("mediaUrl") ?? null,
       dcm.getValue("messageId", false)
     );
   }
@@ -187,6 +202,7 @@ export default class WebhookMessage extends BaseCommand {
   private async sendMessageToWebhook(
     webhook: Webhook,
     message: string,
+    mediaUrl: string | null,
     message_id?: string | null
   ) {
     const messageData = Util.stringToJson(message);
@@ -199,13 +215,23 @@ export default class WebhookMessage extends BaseCommand {
         },
         Action.REPLY
       );
+    let files: any[] = [];
+    if (mediaUrl)
+      files.push(
+        new AttachmentBuilder(mediaUrl.trim(), {
+          name: "0.gif",
+        })
+      );
     try {
       const post = !message_id
-        ? await webhook.send(messageData as unknown as MessagePayload)
-        : await webhook.editMessage(
-            message_id,
-            messageData as unknown as MessagePayload
-          );
+        ? await webhook.send({
+            ...(messageData as any),
+            files,
+          })
+        : await webhook.editMessage(message_id, {
+            ...(messageData as any),
+            files,
+          });
       return new Response(
         ResponseCodes.SUCCESS,
         {
