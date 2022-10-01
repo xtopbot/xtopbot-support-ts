@@ -35,14 +35,7 @@ export default class Eval extends BaseCommand {
     if (dcm.author.id !== "247519134080958464")
       throw new Exception("This error should not occur!", Severity.FAULT); // to be safe :)
     const rd = this.checkFlags(input.replace(/token/gi, ""));
-    if (!rd.input)
-      return new Response(
-        ResponseCodes.EMPTY_INPUT,
-        {
-          content: "Empty Input",
-        },
-        Action.REPLY
-      );
+    if (!rd.input) throw new Exception("Empty input", Severity.COMMON);
     try {
       const vm = new VM({
         timeout: 3000,
@@ -54,26 +47,26 @@ export default class Eval extends BaseCommand {
       let res: string = Util.jsonToString(
         await vm.run(`(async () =>${rd.input.replace(/;$/, "")})()`)
       );
-
-      if (rd.flags.includes(EvalFlags.OUTPUT))
+      if (rd.flags.includes(EvalFlags.WITHOUT_OUTPUT))
         return new Response(ResponseCodes.SUCCESS, null);
+      let files = [];
+      if (res.length >= 1900 || rd.flags.includes(EvalFlags.FILE))
+        files.push(
+          new AttachmentBuilder(Buffer.from(res), {
+            name: "output.json",
+          })
+        );
       return new Response(
         ResponseCodes.SUCCESS,
-        res.length >= 1900 || rd.flags.includes(EvalFlags.FILE)
-          ? {
-              content:
-                res.length >= 1900
-                  ? `File Output (Large content) `
-                  : `File Output (Flag)`,
-              files: [
-                new AttachmentBuilder(Buffer.from(res), {
-                  name: "output.json",
-                }),
-              ],
-            }
-          : {
-              content: `\`\`\`${res}\`\`\``,
-            },
+        {
+          content:
+            files.length === 0
+              ? `\`\`\`${res}\`\`\``
+              : res.length >= 1900
+              ? `File Output (Large content) `
+              : `File Output (Flag)`,
+          files,
+        },
         Action.REPLY
       );
     } catch (error) {
@@ -81,7 +74,7 @@ export default class Eval extends BaseCommand {
         ResponseCodes.SUCCESS,
         {
           content: `Failed to compile script: \`\`\`${
-            (error as Error).message
+            (error as Error)?.message
           }\`\`\``,
         },
         Action.REPLY
@@ -94,10 +87,10 @@ export default class Eval extends BaseCommand {
       input: input,
       flags: [],
     };
-    const REGEX_OUTPUT_FLAG = /(--\!output|-\!o)/i;
-    if (REGEX_OUTPUT_FLAG.test(input)) {
-      data.input = data.input.replace(REGEX_OUTPUT_FLAG, "").trim();
-      data.flags.push(EvalFlags.OUTPUT);
+    const REGEX_WITHOUT_OUTPUT_FLAG = /(--without-output)/i;
+    if (REGEX_WITHOUT_OUTPUT_FLAG.test(input)) {
+      data.input = data.input.replace(REGEX_WITHOUT_OUTPUT_FLAG, "").trim();
+      data.flags.push(EvalFlags.WITHOUT_OUTPUT);
     }
     const REGEX_FILE_FLAG = /(--file|-f)/i;
     if (REGEX_FILE_FLAG.test(input)) {
@@ -114,6 +107,6 @@ interface DataEvalFlags {
 }
 
 enum EvalFlags {
-  OUTPUT,
+  WITHOUT_OUTPUT,
   FILE,
 }

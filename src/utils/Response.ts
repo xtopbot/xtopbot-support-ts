@@ -38,7 +38,7 @@ export type AnyResponse =
   | MessageResponse
   | null;
 type ActionResponse<T extends AnyResponse> = T extends MessageResponse
-  ? Action.REPLY | Action.UPDATE
+  ? Action.REPLY | Action.UPDATE | Action.UPDATE_WHILE_EPHEMERAL
   : T extends ModalResponse
   ? Action.MODAL
   : T extends AutocompleteResponse
@@ -82,6 +82,7 @@ export enum Action {
   DEFER,
   UPDATE,
   MODAL,
+  UPDATE_WHILE_EPHEMERAL,
 }
 
 export enum ResponseCodes {

@@ -1,14 +1,14 @@
 import {
   AutocompleteInteraction,
   ButtonInteraction,
-  ClientUser,
   ChatInputCommandInteraction,
-  Message,
-  SelectMenuInteraction,
-  ModalSubmitInteraction,
-  UserContextMenuCommandInteraction,
-  MessageContextMenuCommandInteraction,
+  ClientUser,
   InteractionType,
+  Message,
+  MessageContextMenuCommandInteraction,
+  ModalSubmitInteraction,
+  SelectMenuInteraction,
+  UserContextMenuCommandInteraction,
 } from "discord.js";
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
@@ -22,11 +22,7 @@ import Response, {
   ResponseCodes,
 } from "../utils/Response";
 import Exception, { Severity } from "../utils/Exception";
-import CommandMethod, {
-  AnyMethod,
-  CommandMethodTypes,
-  Method,
-} from "./CommandMethod";
+import CommandMethod, { AnyMethod, Method } from "./CommandMethod";
 import ComponentMethod, { AnyComponentInteraction } from "./ComponentMethod";
 import InteractionOnly from "../plugins/InteractionOnly";
 
@@ -70,8 +66,8 @@ export default class CommandHandler {
     Logger.info(
       `[Command<Activity>] User: ${dcm.author.tag} (${
         dcm.author.id
-      }). Command Name: ${dcm.command.name}. Type Interaction: ${
-        InteractionType[dcm.d.type]
+      }). Command Name/CustomId: ${dcm.getFocusCommandName()}. Type Interaction: ${
+        dcm.d instanceof Message ? "Message" : InteractionType[dcm.d.type]
       }`
     );
     try {
@@ -134,20 +130,29 @@ export default class CommandHandler {
       dcm.d.followUp(message);
       return;
     } else if (dcm.d instanceof ChatInputCommandInteraction) {
-      if (response.action === Action.REPLY) {
-        if (dcm.d.deferred) dcm.d.editReply(message);
-        else dcm.d.reply(message);
-        return;
-      }
       if (response.action === Action.MODAL) {
         dcm.d.showModal(message);
+        return;
+      } else {
+        if (dcm.d.deferred) dcm.d.editReply(message);
+        else dcm.d.reply(message);
         return;
       }
     } else if (
       dcm.d instanceof SelectMenuInteraction ||
       dcm.d instanceof ButtonInteraction
     ) {
-      if (response.action === Action.REPLY) {
+      if (
+        response.action === Action.UPDATE_WHILE_EPHEMERAL &&
+        dcm.d.ephemeral
+      ) {
+        dcm.d.update(message);
+        return;
+      }
+      if (
+        response.action === Action.REPLY ||
+        response.action === Action.UPDATE_WHILE_EPHEMERAL
+      ) {
         if (dcm.d.deferred) dcm.d.editReply(message);
         else dcm.d.reply(message);
         return;
@@ -178,7 +183,18 @@ export default class CommandHandler {
         return;
       }
     } else if (dcm.d instanceof ModalSubmitInteraction) {
-      if (response.action === Action.REPLY) {
+      if (
+        response.action === Action.UPDATE_WHILE_EPHEMERAL &&
+        dcm.d.ephemeral &&
+        dcm.d.isFromMessage()
+      ) {
+        dcm.d.update(message);
+        return;
+      }
+      if (
+        response.action === Action.REPLY ||
+        response.action === Action.UPDATE_WHILE_EPHEMERAL
+      ) {
         if (dcm.d.deferred) dcm.d.editReply(message);
         else dcm.d.reply(message);
         return;

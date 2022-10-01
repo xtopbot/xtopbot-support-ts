@@ -2,6 +2,7 @@ import {
   ApplicationCommandOptionType,
   ApplicationCommandType,
   AutocompleteInteraction,
+  ButtonInteraction,
   ChatInputCommandInteraction,
   ComponentType,
   Guild,
@@ -11,18 +12,18 @@ import {
 } from "discord.js";
 import app from "../../app";
 import { UserFlagsPolicy } from "../../structures/User";
-import Exception, { Severity } from "../../utils/Exception";
 import Response, {
   Action,
   MessageResponse,
   ResponseCodes,
 } from "../../utils/Response";
 import { BaseCommand } from "../BaseCommand";
-import { AnyInteraction, AnyMethod, Method } from "../CommandMethod";
+import { AnyInteraction, Method } from "../CommandMethod";
 import Fuse from "fuse.js";
 import { LocaleTag } from "../../managers/LocaleManager";
 import Util from "../../utils/Util";
 import Constants from "../../utils/Constants";
+import ComponentMethod from "../ComponentMethod";
 
 export default class Languages extends BaseCommand {
   constructor() {
@@ -70,6 +71,10 @@ export default class Languages extends BaseCommand {
     const localeArg = dcm.d.options.getString("locale", false);
     if (localeArg) return Languages.setLocale(dcm, localeArg as LocaleTag);
 
+    return Languages.getLocales(dcm);
+  }
+
+  protected async buttonInteraction(dcm: Method<ButtonInteraction>) {
     return Languages.getLocales(dcm);
   }
 
@@ -131,11 +136,7 @@ export default class Languages extends BaseCommand {
         ],
         ephemeral: true,
       },
-      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
-        dcm.d.type
-      )
-        ? Action.UPDATE
-        : Action.REPLY
+      Action.UPDATE_WHILE_EPHEMERAL
     );
   }
 

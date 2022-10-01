@@ -1,5 +1,6 @@
 import {
   ApplicationCommandType,
+  ButtonInteraction,
   ChatInputCommandInteraction,
   ComponentType,
   InteractionType,
@@ -19,6 +20,7 @@ import app from "../../app";
 import Constants from "../../utils/Constants";
 import Exception, { Severity } from "../../utils/Exception";
 import Util from "../../utils/Util";
+import ComponentMethod from "../ComponentMethod";
 
 export default class Notifications extends BaseCommand {
   constructor() {
@@ -44,6 +46,10 @@ export default class Notifications extends BaseCommand {
   protected async chatInputCommandInteraction(
     dcm: Method<ChatInputCommandInteraction>
   ) {
+    return this.getMessageNotificationRoles(dcm);
+  }
+
+  protected buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
     return this.getMessageNotificationRoles(dcm);
   }
 
@@ -140,11 +146,7 @@ export default class Notifications extends BaseCommand {
           },
         ],
       },
-      [InteractionType.MessageComponent, InteractionType.ModalSubmit].includes(
-        dcm.d.type
-      )
-        ? Action.UPDATE
-        : Action.REPLY
+      Action.UPDATE_WHILE_EPHEMERAL
     );
   }
 

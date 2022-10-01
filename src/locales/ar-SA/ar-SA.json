@@ -121,7 +121,7 @@
         "embeds": [
           {
             "title": "انتهت صلاحية اشتراكك",
-            "description": "انتهت صلاحية الاشتراك في ** {{subscription.tier.name}} ** في <t: {{subscription.expiredTimestamp}}:D> ، يجب أن تدفع مقابل تجديد الاشتراك عبر [Patreon]({{subscription. tier.checkout.url}})"
+            "description": "انتهت صلاحية الاشتراك في ** {{subscription.tier.name}} ** في <t:{{subscription.expiredTimestamp}}:D> ، يجب أن تدفع مقابل تجديد الاشتراك عبر [Patreon]({{subscription.tier.checkout.url}})"
           }
         ],
         "buttons": ["التجديد"]

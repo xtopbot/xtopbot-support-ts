@@ -16,7 +16,7 @@ export default class User {
     this._patch(data);
   }
 
-  public _patch(data: UserData): void {
+  public _patch(data: any): void {
     if ("locale" in data)
       this.locale =
         data.locale == "ar-SA"
@@ -26,7 +26,10 @@ export default class User {
           : null;
     if ("flags" in data) this.flags = Number(data.flags);
     if ("createdAt" in data)
-      this.createdAt = new Date(Math.round(data.createdAt * 1000));
+      this.createdAt =
+        data.createdAt instanceof Date
+          ? data.createdAt
+          : new Date(Math.round(data.createdAt * 1000));
   }
 
   public get lastVotedTimestampAt(): number {
