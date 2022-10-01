@@ -70,6 +70,7 @@ export default class App {
     if (this._initialize) return Logger.debug("Cannot initialize twice");
     this._initialize = true;
     Logger.info(`[Process] process id: ${process.pid}`);
+    Logger.info(`[Node] version: ${process.versions.node}`);
     await mysql.connect();
 
     Logger.info("Fetch all articles & messages built & custom bot process");

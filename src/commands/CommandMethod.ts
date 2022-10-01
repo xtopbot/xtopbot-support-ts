@@ -3,9 +3,11 @@ import {
   ButtonInteraction,
   ChannelType,
   ChatInputCommandInteraction,
+  ContextMenuCommandInteraction,
   DMChannel,
   GuildMember,
   Message,
+  MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
   ModalSubmitInteraction,
   NewsChannel,
@@ -49,6 +51,18 @@ export default class CommandMethod<T extends CommandMethodTypes> {
       this.d.channel instanceof VoiceChannel
         ? this.d.channel
         : null;
+  }
+
+  public getFocusCommandName(): string | null {
+    return this.d instanceof ChatInputCommandInteraction ||
+      this.d instanceof ContextMenuCommandInteraction
+      ? this.d.commandName
+      : this.d instanceof Message
+      ? this.command.name
+      : this.d instanceof MessageComponentInteraction ||
+        this.d instanceof ModalSubmitInteraction
+      ? this.d.customId
+      : null;
   }
 
   public async fetch(): Promise<void> {

@@ -22,7 +22,7 @@ export default class Util {
     try {
       return JSON.stringify(input, null, 2);
     } catch (err: any) {
-      return err?.message ?? ("Unknown error" as string);
+      return err?.message ?? ("Failed to stringify" as string);
     }
   }
 

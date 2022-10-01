@@ -18,7 +18,15 @@ export default class ContextFormats {
   }
 
   public resolve(response: Response<AnyResponse> | any): any {
-    return this.resolveObject(response.message || response);
+    let files: any[] = [];
+    if (response?.message?.files) {
+      files = files.concat(response.message.files);
+      delete response.message.file;
+    }
+    return {
+      ...this.resolveObject(response.message || response),
+      files,
+    };
   }
 
   private resolveObject(input: any): any {
