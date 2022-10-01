@@ -8,6 +8,7 @@ import {
   ModalSubmitInteraction,
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
+  InteractionType,
 } from "discord.js";
 import Constants from "../utils/Constants";
 import Util from "../utils/Util";
@@ -66,6 +67,13 @@ export default class CommandHandler {
     dcm: AnyMethod,
     followUp: boolean = false
   ): Promise<void> {
+    Logger.info(
+      `[Command<Activity>] User: ${dcm.author.tag} (${
+        dcm.author.id
+      }). Command Name: ${dcm.command.name}. Type Interaction: ${
+        InteractionType[dcm.d.type]
+      }`
+    );
     try {
       const response = await this.executeCommand(
         dcm,
