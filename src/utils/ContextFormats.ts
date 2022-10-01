@@ -23,10 +23,13 @@ export default class ContextFormats {
       files = files.concat(response.message.files);
       delete response.message.file;
     }
-    return {
-      ...this.resolveObject(response.message || response),
-      files,
-    };
+    const resolved = this.resolveObject(response.message || response);
+    return files.length > 0
+      ? {
+          ...resolved,
+          files,
+        }
+      : resolved;
   }
 
   private resolveObject(input: any): any {
