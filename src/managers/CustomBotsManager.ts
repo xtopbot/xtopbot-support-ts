@@ -346,7 +346,14 @@ export default class CustomBotsManager {
           const customBot = customBots.find(
             (item) => item.id === (p.name as string)
           );
-          if (customBot) {
+          if (
+            customBot &&
+            activeSubscriptions.find(
+              (sub) =>
+                sub.discordUserId === customBot.ownerId &&
+                sub.tierId === customBot.tierId
+            )
+          ) {
             this.processes.set(p.name as string, "PROCESSED");
             Logger.info(
               `[CustomBotsManager<Process>] ${customBot.username}#${
