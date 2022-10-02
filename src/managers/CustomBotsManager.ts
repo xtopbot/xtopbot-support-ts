@@ -377,7 +377,14 @@ export default class CustomBotsManager {
     //Start bots that not running.
     if (app.mode === "PRODUCTION")
       customBots.map(async (customBot) => {
-        if (!this.processes.get(customBot.id)) {
+        if (
+          !this.processes.get(customBot.id) &&
+          activeSubscriptions.find(
+            (sub) =>
+              sub.discordUserId === customBot.ownerId &&
+              sub.tierId === customBot.tierId
+          )
+        ) {
           await customBot
             .start()
             .catch((err) =>
