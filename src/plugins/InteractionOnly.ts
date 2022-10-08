@@ -35,8 +35,7 @@ export default class InteractionOnly {
         const m = await d.channel.send(
           cfx.resolve({
             ...locale.origin.plugins.interactionOnly,
-            // Temporarily suspended
-            /*components: [
+            components: [
               {
                 type: ComponentType.ActionRow,
                 components: [
@@ -51,7 +50,7 @@ export default class InteractionOnly {
                   },
                 ],
               },
-            ],*/
+            ],
           })
         );
         setTimeout(
