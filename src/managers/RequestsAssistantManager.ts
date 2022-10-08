@@ -21,6 +21,7 @@ import Locale from "../structures/Locale";
 import Exception, { Severity } from "../utils/Exception";
 import ContextFormats from "../utils/ContextFormats";
 import Constants from "../utils/Constants";
+import RequestHumanAssistantPlugin from "../plugins/RequestHumanAssistant";
 
 export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
   constructor() {
@@ -71,6 +72,9 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     user: DiscordUser,
     locale: Locale
   ): Promise<Message> {
+    const guildAssistants =
+      RequestHumanAssistantPlugin.getGuildAssistants(guild);
+    const guildAssistantLocale = guildAssistants.assistants.get(locale.tag);
     const requestsChannel = guild.channels.cache.find(
       (channel) =>
         channel.type === ChannelType.GuildText && channel.name == "active-rha"
@@ -116,6 +120,9 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
           "color",
           15710560
         ),
+        content: guildAssistantLocale
+          ? `<@&${guildAssistantLocale.role.id}>`
+          : null,
         components: [
           {
             type: ComponentType.ActionRow,

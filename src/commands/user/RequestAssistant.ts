@@ -184,6 +184,7 @@ export default class RequestAssistant extends BaseCommand {
       }
       const thread = await request.createThread(dcm.d.user);
       dcm.cf.formats.set("thread.id", thread.id);
+      dcm.cf.formats.set("requester.id", request.userId);
       dcm.cf.formats.set("request.id", request.id);
       return new Response(ResponseCodes.SUCCESS, {
         ...Util.addFieldToEmbed(
@@ -292,8 +293,11 @@ export default class RequestAssistant extends BaseCommand {
       await request.closeThread(reason);
       dcm.cf.formats.set(
         "request.closed.period",
-        String(moment(request.closedAt).fromNow(true))
+        String(
+          moment(request.threadCreatedAt).locale(dcm.locale.tag).fromNow(true)
+        )
       );
+      dcm.cf.formats.set("request.userId", request.userId);
       return new Response(ResponseCodes.SUCCESS, {
         ...Util.addFieldToEmbed(
           dcm.locale.origin.plugins.requestHumanAssistant.threadClosed.admin,
