@@ -4,6 +4,7 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   ButtonStyle,
+  ChannelType,
   ChatInputCommandInteraction,
   ComponentType,
 } from "discord.js";
@@ -17,6 +18,8 @@ import ArticleLocalization from "../../structures/ArticleLocalization";
 import Locale from "../../structures/Locale";
 import ComponentMethod from "../ComponentMethod";
 import Constants from "../../utils/Constants";
+import { RequestAssistantStatus } from "../../structures/RequestAssistant";
+import Exception, { Severity } from "../../utils/Exception";
 
 export default class HelpDesk extends BaseCommand {
   constructor() {
@@ -50,6 +53,7 @@ export default class HelpDesk extends BaseCommand {
   public async chatInputCommandInteraction(
     dcm: CommandMethod<ChatInputCommandInteraction>
   ) {
+    let article = null;
     const issue = dcm.d.options.getString("issue");
     if (Util.isUUID(issue)) {
       const articleLocalization = await app.articles.fetchLocalization(
@@ -57,36 +61,41 @@ export default class HelpDesk extends BaseCommand {
       );
 
       if (!articleLocalization || !articleLocalization.published)
-        return new Response(ResponseCodes.SUCCESS, {
-          ephemeral: true,
-          ...dcm.locale.origin.commands.help.getArticle.articleNoLongerExits,
-        });
-
-      return new Response(ResponseCodes.SUCCESS, {
-        ephemeral: true,
-        ...(await HelpDesk.getArticleMessage(
-          dcm.locale,
-          articleLocalization,
-          dcm.user.id
-        )),
-      });
+        throw new Exception(
+          dcm.locale.origin.commands.help.getArticle.articleNoLongerExits,
+          Severity.COMMON
+        );
+      article = articleLocalization;
     } else {
       const searchArticles = await app.articles.search(issue ?? "");
       if (!searchArticles.length)
-        return new Response(ResponseCodes.NO_RESULTS_FOUND, {
-          ephemeral: true,
-          ...dcm.locale.origin.commands.help.noResultsFound,
-        });
-
-      return new Response(ResponseCodes.SUCCESS, {
-        ephemeral: true,
-        ...(await HelpDesk.getArticleMessage(
-          dcm.locale,
-          searchArticles[0],
-          dcm.user.id
-        )),
-      });
+        throw new Exception(
+          dcm.locale.origin.commands.help.getArticle.noResultsFound,
+          Severity.COMMON
+        );
+      article = searchArticles[0];
     }
+    let message = {
+      ephemeral: true,
+      ...(await HelpDesk.getArticleMessage(dcm.locale, article, dcm.user.id)),
+    };
+    if (
+      (dcm.d.channel?.type === ChannelType.GuildPrivateThread ||
+        dcm.d.channel?.type === ChannelType.GuildPublicThread) &&
+      (dcm.user.flags & Constants.StaffBitwise) !== 0
+    ) {
+      const requestAssistant = await app.requests.fetch(dcm.d.channel.id);
+      if (
+        requestAssistant &&
+        requestAssistant.getStatus(false) === RequestAssistantStatus.ACTIVE
+      ) {
+        requestAssistant.relatedArticleId = article.id;
+        message.components = [];
+        message.ephemeral = false;
+      }
+    }
+
+    return new Response(ResponseCodes.SUCCESS, message);
   }
 
   public async buttonInteraction(dcm: ComponentMethod<ButtonInteraction>) {
@@ -97,10 +106,10 @@ export default class HelpDesk extends BaseCommand {
       );
 
       if (!articleLocalization || !articleLocalization.published)
-        return new Response(ResponseCodes.SUCCESS, {
-          ephemeral: true,
-          ...dcm.locale.origin.commands.help.getArticle.articleNoLongerExits,
-        });
+        throw new Exception(
+          dcm.locale.origin.commands.help.getArticle.articleNoLongerExits,
+          Severity.COMMON
+        );
 
       if (dcm.getKey("feedback")) {
         if (dcm.getKey("solved")) {

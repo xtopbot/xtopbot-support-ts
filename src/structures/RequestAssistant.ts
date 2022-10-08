@@ -46,6 +46,7 @@ export default class RequestAssistant {
   private assistantRequestsChannelId: string | null = null;
   private assistantRequestMessageId: string | null = null;
   private timeoutRequest: NodeJS.Timeout | null = null;
+  public relatedArticleId: string | null = null;
 
   constructor(
     issue: string,
@@ -276,6 +277,7 @@ export default class RequestAssistant {
     cfx.formats.set("assistant.tag", assistant.tag);
     cfx.setObject("assistant", assistant);
     cfx.formats.set("request.uuid", this.id);
+    cfx.formats.set("request.uuid.short", Util.getUUIDLowTime(this.id));
     cfx.formats.set("thread.id", thread.id);
     cfx.formats.set("locale.name", locale.origin.name);
     cfx.formats.set("request.issue", this.issue);
@@ -459,8 +461,15 @@ export default class RequestAssistant {
       );
 
     await db.query(
-      "INSERT INTO `Request.Human.Assistant.Thread.Status` (uuid, status, closedAt) values (UUID_TO_BIN(?), ?, ?)",
-      [this.id, status, options?.threadClosedAt ?? new Date()]
+      `INSERT INTO \`Request.Human.Assistant.Thread.Status\` (uuid, status, relatedArticleId, closedAt) values (UUID_TO_BIN(?), ?, ${
+        Util.isUUID(this.relatedArticleId) ? "UUID_TO_BIN(?)" : "?"
+      }, ?)`,
+      [
+        this.id,
+        status,
+        Util.isUUID(this.relatedArticleId) ? this.relatedArticleId : null,
+        options?.threadClosedAt ?? new Date(),
+      ]
     );
 
     this.closedAt = new Date();
