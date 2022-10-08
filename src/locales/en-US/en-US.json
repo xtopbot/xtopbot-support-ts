@@ -380,20 +380,8 @@
     },
     "help": {
       "getArticle": {
-        "articleNoLongerExits": {
-          "embeds": [
-            {
-              "description": "The article is no longer available or does not exist"
-            }
-          ]
-        }
-      },
-      "noResultsFound": {
-        "embeds": [
-          {
-            "description": "No result found"
-          }
-        ]
+        "articleNoLongerExits": "The article is no longer available or does not exist",
+        "noResultsFound": "No result found"
       }
     },
     "article": {
@@ -687,7 +675,7 @@
           "embeds": [
             {
               "title": "Thread Closed Successfully",
-              "description": "{{user.username}} Thank you for your help, <@{{request.userId}}>! It took {{request.closed.period}}!",
+              "description": "{{user.username}} Thank you for your help, <@{{request.userId}}>. It took **{{request.closed.period}}**!",
               "footer": {
                 "text": "{{request.uuid}}"
               }
@@ -798,7 +786,7 @@
       },
       "acceptedRequest": {
         "thread": {
-          "content": "Hey <@{{requester.id}}>,\n\nDescribe your issue to <@{{assistant.id}}> in an understandable and accurate way in this thread, you can attach a picture of your issue in this thread.\nPlease make sure the issue you encountered has been completely resolved. You may not be able to request an assistant again in the coming hours.\n\n**Issue: **{{request.issue}}**\nRequest Id:** {{request.uuid}}"
+          "content": "Hey <@{{requester.id}}>,\n\nDescribe your issue to <@{{assistant.id}}> in an understandable and accurate way in this thread, you can attach a picture of your issue in this thread.\nPlease make sure the issue you encountered has been completely resolved. You may not be able to request an assistant again in the coming hours.\n\n**Issue: **{{request.issue}}**\nRequest short id:** {{request.uuid.short}}"
         },
         "interaction": {
           "update": {
@@ -903,7 +891,7 @@
           "embeds": [
             {
               "title": "Request Accepted Successfully",
-              "description": "Go to <#{{thread.id}}> thread and assistance the requester!",
+              "description": "Go to <#{{thread.id}}> thread and help <@{{requester.id}}>!",
               "footer": {
                 "text": "{{request.id}}"
               }
