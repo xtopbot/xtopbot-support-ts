@@ -31,12 +31,11 @@ export default class WelcomerPlugin {
     if (userLocaleRole) {
       // Auto role when this user he selected locale before.
       Logger.info(
-        `[Welcomer](Auto) Add ${userLocaleRole.locale}(@${userLocaleRole.role?.name}) to user ${member.user.tag} (${member.id}) [GuildId: ${member.guild.id}] `
+        `[Welcomer](Auto) Add ${userLocaleRole.locale}(@${userLocaleRole.role?.name}) to user ${member.user.tag} (${member.id}) [GuildName: ${member.guild.name}] `
       );
-      console.log(userLocaleRole);
       await member.roles.add(userLocaleRole.role as Role);
     } else {
-      const content: string = localeRoles
+      /*const content: string = localeRoles
         .filter((localeRole) => !!localeRole.content)
         .map((localeRole) => localeRole.content)
         .join("\n\n");
@@ -69,7 +68,7 @@ export default class WelcomerPlugin {
         }
       );
       const response = await channel.send(cfx.resolve(_response));
-      this.manager.cache.set(member.id, response);
+      this.manager.cache.set(member.id, response);*/
     }
   }
 
