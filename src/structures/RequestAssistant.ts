@@ -45,7 +45,6 @@ export default class RequestAssistant {
   public issue: string;
   private assistantRequestsChannelId: string | null = null;
   private assistantRequestMessageId: string | null = null;
-  private timeoutRequest: NodeJS.Timeout | null = null;
   public relatedArticleId: string | null = null;
 
   constructor(
@@ -118,52 +117,6 @@ export default class RequestAssistant {
     if (!guild)
       throw new Exception("Unable to get guild.", Severity.SUSPICIOUS);
     return guild;
-  }
-
-  public setRequestTimeout(
-    time: number = Constants.DEFAULT_INTERACTION_EXPIRES - 15000
-  ) {
-    if (this.timeoutRequest) clearTimeout(this.timeoutRequest);
-    this.timeoutRequest = setTimeout(async () => {
-      if (
-        this.getStatus(false) === RequestAssistantStatus.SEARCHING ||
-        this.getStatus(false) === RequestAssistantStatus.EXPIRED
-      ) {
-        const locale = app.locales.get(this.locale) || app.locales.get(null);
-        const cfx = new ContextFormats();
-        cfx.formats.set("request.uuid", this.id);
-        cfx.formats.set("user.id", this.userId);
-        this.webhook
-          .editMessage("@original", {
-            ...cfx.resolve(
-              locale.origin.plugins.requestHumanAssistant.requestCanceled
-                .expired.update
-            ),
-            components: [],
-          })
-          .catch((err) =>
-            Logger.error(
-              `Error Edit Interaction Message For Request Assistant Reason Of Edit: Request Expired. Message Error: ${err.message}`
-            )
-          );
-        this.webhook
-          .send({
-            ...cfx.resolve(
-              locale.origin.plugins.requestHumanAssistant.requestCanceled
-                .expired.followUp
-            ),
-            ephemeral: true,
-          })
-          .catch((err) =>
-            Logger.error(
-              `Error FollowUp Interaction Message For Request Assistant Reason Of FollowUp: Request Expired. Message Error: ${err.message}`
-            )
-          );
-        AuditLog.assistanceThreadClosed(this);
-        this.deleteAssistantControlMessage();
-        Logger.info(`[RHA: ${this.id} (${this.userId})] Request expired.`);
-      }
-    }, time);
   }
 
   public async getControlMessageForAssistant(): Promise<Message> {
@@ -426,7 +379,7 @@ export default class RequestAssistant {
     Logger.info(`[RHA: ${this.id} (${this.userId})] Canceled`);
   }
 
-  private deleteAssistantControlMessage(): void {
+  public deleteAssistantControlMessage(): void {
     if (this.assistantRequestsChannelId && this.assistantRequestMessageId)
       (
         this.guild.channels.cache.get(this.assistantRequestsChannelId) as

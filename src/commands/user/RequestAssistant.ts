@@ -32,6 +32,7 @@ import { AnyInteraction, Method } from "../CommandMethod";
 import Languages from "./Languages";
 import CommandRequirementsHandler from "../RequirementHandler";
 import moment from "moment";
+import RequestsAssistantManager from "../../managers/RequestsAssistantManager";
 
 export default class RequestAssistant extends BaseCommand {
   constructor() {
@@ -487,7 +488,7 @@ export default class RequestAssistant extends BaseCommand {
       dcm.d.webhook,
       locale
     );
-    request.setRequestTimeout();
+    app.requests.setTimeoutRequest(request.id);
     dcm.cf.formats.set("request.issue", request.issue);
     dcm.cf.formats.set("request.uuid", request.id);
     dcm.cf.formats.set(

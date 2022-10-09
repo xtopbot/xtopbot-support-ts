@@ -22,8 +22,11 @@ import Exception, { Severity } from "../utils/Exception";
 import ContextFormats from "../utils/ContextFormats";
 import Constants from "../utils/Constants";
 import RequestHumanAssistantPlugin from "../plugins/RequestHumanAssistant";
+import Logger from "../utils/Logger";
+import AuditLog from "../plugins/AuditLog";
 
 export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
+  public static readonly timeoutRequests = new Map<string, NodeJS.Timeout>();
   constructor() {
     super();
   }
@@ -53,7 +56,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
       assistantMessage.id
     );
     await db.query(
-      "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?)",
+      "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue, assistantRequestsChannelId, assistantRequestMessageId) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)",
       [
         req.id,
         user.id,
@@ -61,6 +64,8 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         interactionWebhook.token,
         locale.tag,
         req.issue,
+        assistantMessage.channel.id,
+        assistantMessage.id,
       ]
     );
     return this._add(req);
@@ -195,6 +200,58 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     return resolvedRequests;
   }
 
+  public setTimeoutRequest(
+    requestId: string,
+    time: number = Constants.DEFAULT_INTERACTION_EXPIRES - 15000
+  ) {
+    RequestsAssistantManager.timeoutRequests.set(
+      requestId,
+      setTimeout(async () => {
+        const request = await this.fetch(requestId, true);
+        if (
+          request?.getStatus(false) !== RequestAssistantStatus.SEARCHING &&
+          request?.getStatus(false) !== RequestAssistantStatus.EXPIRED
+        )
+          return;
+        const locale = app.locales.get(request.locale) || app.locales.get(null);
+        const cfx = new ContextFormats();
+        cfx.formats.set("request.uuid", request.id);
+        cfx.formats.set("user.id", request.userId);
+        request.webhook
+          .editMessage("@original", {
+            ...cfx.resolve(
+              locale.origin.plugins.requestHumanAssistant.requestCanceled
+                .expired.update
+            ),
+            components: [],
+          })
+          .catch((err) =>
+            Logger.error(
+              `Error Edit Interaction Message For Request Assistant Reason Of Edit: Request Expired. Message Error: ${err.message}`
+            )
+          );
+        request.webhook
+          .send({
+            ...cfx.resolve(
+              locale.origin.plugins.requestHumanAssistant.requestCanceled
+                .expired.followUp
+            ),
+            ephemeral: true,
+          })
+          .catch((err) =>
+            Logger.error(
+              `Error FollowUp Interaction Message For Request Assistant Reason Of FollowUp: Request Expired. Message Error: ${err.message}`
+            )
+          );
+        AuditLog.assistanceThreadClosed(request);
+        request.deleteAssistantControlMessage();
+        Logger.info(
+          `[RHA: ${request.id} (${request.userId})] Request expired.`
+        );
+      }, time)
+    );
+  }
+
   private resolve(raw: any): RequestAssistant {
     const assistanceThread = new RequestAssistant(
       raw.issue,
@@ -227,6 +284,10 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
             | RequestAssistantStatus.REQUESTER_INACTIVE
             | RequestAssistantStatus.CLOSED)
         : null;
+    assistanceThread.setControlMessageForAssistant(
+      raw?.assistantRequestsChannelId ?? null,
+      raw?.assistantRequestMessageId ?? null
+    );
     return assistanceThread;
   }
 }
