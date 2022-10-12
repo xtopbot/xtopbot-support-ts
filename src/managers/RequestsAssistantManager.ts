@@ -158,7 +158,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     }
     const [raw] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -182,7 +182,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     const userId = user instanceof User ? user.id : user;
     const raw: any[] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt from
+     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
