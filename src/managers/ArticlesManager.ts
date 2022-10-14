@@ -359,8 +359,7 @@ export default class ArticlesManager extends CacheManager<Article> {
         },
         customId: `requestAssistant:create`,
       };
-      if (rowOne.length > 4) rowOne.push(requestAssistanceButton);
-      else rowTwo.push(requestAssistanceButton);
+      rowTwo.push(requestAssistanceButton);
     }
 
     let components = [];
