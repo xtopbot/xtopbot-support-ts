@@ -130,7 +130,9 @@ export default class CustomBotsManager {
       {
         data: await customBot.fetchGuilds(),
         limit:
-          CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(tierId),
+          CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+            tierId
+          ),
       },
       null
     );
