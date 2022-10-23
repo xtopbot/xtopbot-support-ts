@@ -654,6 +654,7 @@
       "failedCancelRequest": "Cancel assistant request `{{request.uid}}` failed.",
       "noLongerExits": "Assistant request `{{request.uuid.short}}` no longer exists",
       "mustBeOnSearchingStatusToBeAccepted": "Assistant request `{{request.uuid.short}}` cannot be accepted for one of the following reasons:\n- Assistant request was accepted by you or another assistant\n- The requester canceled the request\n- Assistant request has expired",
+      "requestAcceptedButOnProcessingToChangeRequestStatus": "You're fast but {{assistant.id}} accepted the request before you. Believe it or not, he's faster than you! (try next time)",
       "cannotAcceptByRequester": "Assistant request `{{request.uuid.short}}` cannot be accepted by the requester.",
       "requesterNotExistOnServer": "Assistant request `{{request.uuid.short}}`cannot be accepted due requester is not on the support server.",
       "alreadyClosedWithReason": "Assistant request `{{request.uuid.short}}` has been closed with the reason already!",

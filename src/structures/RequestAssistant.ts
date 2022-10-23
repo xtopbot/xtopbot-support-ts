@@ -171,6 +171,7 @@ export default class RequestAssistant {
   }
 
   public async createThread(assistant: DiscordUser): Promise<ThreadChannel> {
+    const locale = app.locales.get(this.locale, true);
     if (this.threadId)
       throw new Exception("Thread already created!", Severity.SUSPICIOUS);
     if (this.getStatus(false) !== RequestAssistantStatus.SEARCHING)
@@ -178,30 +179,47 @@ export default class RequestAssistant {
         "Status of request is unprepared to create a thread",
         Severity.SUSPICIOUS
       );
+    if (this.assistantId)
+      throw new Exception(
+        Util.quickFormatContext(
+          locale.origin.plugins.requestHumanAssistant
+            .requestAcceptedButOnProcessingToChangeRequestStatus,
+          { "assistant.id": this.assistantId }
+        ),
+        Severity.COMMON
+      );
     this.assistantId = assistant.id;
     const guildAssistants = RequestHumanAssistant.getGuildAssistants(
       this.guild
     );
 
     const member = await this.guild.members.fetch(this.userId).catch((err) => {
+      this.assistantId = null;
       throw new Exception(
         "Member not found in support guild",
         Severity.SUSPICIOUS,
         err
       );
     });
-    const thread = await (
-      guildAssistants.channel as TextChannel
-    ).threads.create({
-      name: Util.textEllipsis(this.issue, 100),
-      autoArchiveDuration: 60,
-      reason: `Request Assistant Id: ${this.id}`,
-      type:
-        this.guild.premiumTier >= 2
-          ? ChannelType.GuildPrivateThread
-          : ChannelType.GuildPublicThread,
-      invitable: false,
-    });
+    const thread = await (guildAssistants.channel as TextChannel).threads
+      .create({
+        name: Util.textEllipsis(this.issue, 100),
+        autoArchiveDuration: 60,
+        reason: `Request Assistant Id: ${this.id}`,
+        type:
+          this.guild.premiumTier >= 2
+            ? ChannelType.GuildPrivateThread
+            : ChannelType.GuildPublicThread,
+        invitable: false,
+      })
+      .catch((err) => {
+        this.assistantId = null;
+        throw new Exception(
+          `Discord API Error: ${err?.message}`,
+          Severity.FAULT,
+          err
+        );
+      });
 
     await db
       .query(
@@ -223,7 +241,6 @@ export default class RequestAssistant {
     await thread.members.add(member.user.id);
     await thread.members.add(assistant.id);
 
-    const locale = app.locales.get(this.locale, true);
     const cfx = new ContextFormats();
     cfx.setObject("requester", member.user);
     cfx.formats.set("requester.tag", member.user.tag);

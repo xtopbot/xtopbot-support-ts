@@ -666,6 +666,7 @@
       "failedCancelRequest": "إلغاء طلب المساعد فشل `{{request.uid}}`.",
       "noLongerExits": "طلب المساعد `{{request.uuid.short}}` لم يعد موجودًا",
       "mustBeOnSearchingStatusToBeAccepted": "طلب المساعد لا يمكن قبوله `{{request.uuid.short}}` لأحد الأسباب التالية:\n- تم قبول طلب المساعد من قبلك أو من قبل مساعد آخر\n- ألغى المستدعي الطلب\n- انتهت صلاحية طلب المساعد",
+      "requestAcceptedButOnProcessingToChangeRequestStatus": "أنت سريع لكن <@{{assistant.id}}> قبل الطلب قبلك. صدق أو لا تصدق ، إنه أسرع منك! (حظ أوفر في المرة القادمة)",
       "cannotAcceptByRequester": "طلب المساعد `{{request.uuid.short}}` لا يمكن قبوله من قبل المستدعي.",
       "requesterNotExistOnServer": "لا يمكن قبول طلب المساعد \"{{request.uuid.short}}\" لأن المستدعي ليس موجودًا على سيرفر الدعم.",
       "alreadyClosedWithReason": "تم إغلاق طلب المساعد `{{request.uuid.short}}` بسبب مع السبب بالفعل!",
