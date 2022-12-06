@@ -934,7 +934,7 @@
               }
             }
           ],
-          "buttons": ["Subscription Details"],
+          "buttons": ["Subscriptions Details"],
           "selectMenu": [
             {
               "placeholder": "Close thread with reason..",

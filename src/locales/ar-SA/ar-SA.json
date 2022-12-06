@@ -710,6 +710,68 @@
           ]
         }
       ],
+      "detailsOfRequesterSubscription": {
+        "notSubscribedYet": "لم أر أي اشتراكات تم إجراؤها بواسطة <@{{user.id}}> حتى الآن",
+        "authorActive": "اشتراك نشط",
+        "authorExpired": "اشتراك منتهي الصلاحية",
+        "fieldNameExpired": "انتهت في",
+        "fieldNameExpires": "ينتهي في",
+        "subscription": {
+          "embed": {
+            "author": {
+              "name": "{{author.name}}"
+            },
+            "title": "تفاصيل الاشتراك",
+            "fields": [
+              {
+                "name": "أنشئت في",
+                "value": "<t:{{subscription.createdTimestamp}}:R>",
+                "inline": true
+              },
+              {
+                "name": "اسم الخطة",
+                "value": "{{tier.name}}",
+                "inline": true
+              },
+              {
+                "name": "{{field[2].name}}",
+                "value": "<t:{{subscription.expiresTimestamp}}:R>",
+                "inline": true
+              },
+              {
+                "name": "إجمالي المبلغ المدفوع (دولار)",
+                "value": "{{subscription.totalPaid}}$",
+                "inline": true
+              },
+              {
+                "name": "عدد المعاملات المدفوعة",
+                "value": "{{subscription.transactions.paid.total}}",
+                "inline": true
+              },
+              {
+                "name": "آخر معاملة مدفوعة (دولار)",
+                "value": "{{subscription.transactions.last.amount}}$ (<t:{{subscription.transactions.last.createdTimestamp}}:R>)",
+                "inline": true
+              }
+            ],
+            "footer": {
+              "text": "{{subscription.uuid}}"
+            }
+          },
+          "customBotField": {
+            "setup": {
+              "name": "Custom bot #{{custom.bot.uuid.short}}",
+              "value": "{{bot.username}}#{{bot.discriminator}} (السيرفرات: {{bot.current.servers}}/{{custom.bot.maximum.servers}}) [{{bot.status}}]",
+              "inline": true
+            },
+            "notSetupYet": {
+              "name": "Custom bot",
+              "value": "(لم يتم الإعداد بعد) (السيرفرات: 0/{{custom.bot.maximum.servers}})",
+              "inline": true
+            }
+          }
+        }
+      },
       "requestCreated": {
         "interaction": {
           "embeds": [
@@ -884,6 +946,7 @@
               }
             }
           ],
+          "buttons": ["تفاصيل الاشتراكات"],
           "selectMenu": [
             {
               "placeholder": "إغلاق الثريد مع السبب...",
