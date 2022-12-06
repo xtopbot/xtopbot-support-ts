@@ -698,6 +698,68 @@
           ]
         }
       ],
+      "detailsOfRequesterSubscription": {
+        "notSubscribedYet": "I haven't seen any subscriptions made by <@{{user.id}}> yet",
+        "authorActive": "Active Subscription",
+        "authorExpired": "Expired Subscription",
+        "fieldNameExpired": "Expired On",
+        "fieldNameExpires": "Expires In",
+        "subscription": {
+          "embed": {
+            "author": {
+              "name": "{{author.name}}"
+            },
+            "title": "Subscription Details",
+            "fields": [
+              {
+                "name": "Created At",
+                "value": "<t:{{subscription.createdTimestamp}}:R>",
+                "inline": true
+              },
+              {
+                "name": "Tier Name",
+                "value": "{{tier.name}}",
+                "inline": true
+              },
+              {
+                "name": "{{field[2].name}}",
+                "value": "<t:{{subscription.expiresTimestamp}}:R>",
+                "inline": true
+              },
+              {
+                "name": "Total Amount Paid (Dollar)",
+                "value": "{{subscription.totalPaid}}$",
+                "inline": true
+              },
+              {
+                "name": "Number Of Paid Transactions",
+                "value": "{{subscription.transactions.paid.total}}",
+                "inline": true
+              },
+              {
+                "name": "Last Paid Transaction (Dollar)",
+                "value": "{{subscription.transactions.last.amount}}$ (<t:{{subscription.transactions.last.createdTimestamp}}:R>)",
+                "inline": true
+              }
+            ],
+            "footer": {
+              "text": "{{subscription.uuid}}"
+            }
+          },
+          "customBotField": {
+            "setup": {
+              "name": "Custom bot #{{custom.bot.uuid.short}}",
+              "value": "{{bot.username}}#{{bot.discriminator}} (Servers: {{bot.current.servers}}/{{custom.bot.maximum.servers}}) [{{bot.status}}]",
+              "inline": true
+            },
+            "notSetupYet": {
+              "name": "Custom bot",
+              "value": "(Not setup yet) (Servers: 0/{{custom.bot.maximum.servers}})",
+              "inline": true
+            }
+          }
+        }
+      },
       "requestCreated": {
         "interaction": {
           "embeds": [
@@ -872,6 +934,7 @@
               }
             }
           ],
+          "buttons": ["Subscription Details"],
           "selectMenu": [
             {
               "placeholder": "Close thread with reason..",

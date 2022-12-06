@@ -24,6 +24,9 @@ import Constants from "../utils/Constants";
 import RequestHumanAssistantPlugin from "../plugins/RequestHumanAssistant";
 import Logger from "../utils/Logger";
 import AuditLog from "../plugins/AuditLog";
+import Subscription, { PatreonTierId } from "../structures/Subscription";
+import CustomBotsManager from "./CustomBotsManager";
+import { CustomBotStatus } from "../structures/CustomBot";
 
 export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
   public static readonly timeoutRequests = new Map<string, NodeJS.Timeout>();
@@ -117,6 +120,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
       String(Math.round(req.requestedAt.getTime() / 1000))
     );
     cfx.formats.set("locale.name", locale.origin.name);
+
     return (requestsChannel as TextChannel).send(
       cfx.resolve({
         ...Util.addFieldToEmbed(
@@ -145,6 +149,125 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         ],
       })
     );
+  }
+
+  public static async subscriptionDetailsEmbed(
+    subscription: Subscription,
+    locale: Locale,
+    fetchCustomBot = true
+  ) {
+    const cf = new ContextFormats();
+    cf.formats.set(
+      "subscription.createdTimestamp",
+      String(Math.round(subscription.getCreatedAt().getTime() / 1000))
+    );
+    cf.formats.set("tier.name", subscription.getTierName());
+    cf.formats.set(
+      "subscription.expiresTimestamp",
+      String(Math.round(subscription.getExpires().getTime() / 1000))
+    );
+    cf.formats.set(
+      "subscription.totalPaid",
+      String(subscription.getTotalPaidAmount(false))
+    );
+    cf.formats.set(
+      "subscription.transactions.paid.total",
+      String(
+        subscription.events.filter((event) => event.chargeStatus === "PAID")
+          .length
+      )
+    );
+    cf.formats.set(
+      "subscription.transactions.last.amount",
+      String((subscription.getLastEvent("PAID").amountCents / 100).toFixed(2))
+    );
+    cf.formats.set(
+      "subscription.transactions.last.createdTimestamp",
+      String(
+        Math.round(
+          subscription.getLastEvent("PAID").eventCreatedAt.getTime() / 1000
+        )
+      )
+    );
+    cf.formats.set(
+      "subscription.uuid",
+      subscription.getLastEvent("PAID")?.id ?? subscription.getLastEvent().id
+    );
+    cf.formats.set(
+      "field[2].name",
+      subscription.isActive()
+        ? locale.origin.plugins.requestHumanAssistant
+            .detailsOfRequesterSubscription.fieldNameExpires
+        : locale.origin.plugins.requestHumanAssistant
+            .detailsOfRequesterSubscription.fieldNameExpired
+    );
+    cf.formats.set(
+      "author.name",
+      subscription.isActive()
+        ? locale.origin.plugins.requestHumanAssistant
+            .detailsOfRequesterSubscription.authorActive
+        : locale.origin.plugins.requestHumanAssistant
+            .detailsOfRequesterSubscription.authorExpired
+    );
+    const embed = {
+      ...cf.resolve({
+        ...locale.origin.plugins.requestHumanAssistant
+          .detailsOfRequesterSubscription.subscription.embed,
+        color: subscription.isActive()
+          ? Constants.defaultColors.GREEN
+          : Constants.defaultColors.RED,
+      }),
+    };
+    if (fetchCustomBot) {
+      const customBots = await app.customBots.fetch(
+        subscription.discordUserId,
+        subscription.tierId
+      );
+      for (const bot of customBots.items) {
+        const guilds = await bot.fetchGuilds(null).catch(() => []);
+        embed.fields.push(
+          Util.quickFormatContext(
+            locale.origin.plugins.requestHumanAssistant
+              .detailsOfRequesterSubscription.subscription.customBotField.setup,
+            {
+              "custom.bot.uuid.short": Util.getUUIDLowTime(bot.id),
+              "bot.username": bot.username,
+              "bot.discriminator": bot.discriminator,
+              "bot.current.servers": guilds.length,
+              "bot.status": Util.capitalize(
+                Object.keys(CustomBotStatus)
+                  [
+                    Object.values(CustomBotStatus).indexOf(bot.getStatus())
+                  ].replace(/_/g, " ")
+                  .toLowerCase(),
+                true
+              ),
+              "custom.bot.maximum.servers":
+                CustomBotsManager.getCustomBotAccessServersSizeBySubscriptionTierId(
+                  subscription.tierId
+                ),
+            }
+          )
+        );
+      }
+
+      for (let i = 0; i < customBots.remaining; i++)
+        embed.fields.push(
+          Util.quickFormatContext(
+            locale.origin.plugins.requestHumanAssistant
+              .detailsOfRequesterSubscription.subscription.customBotField
+              .notSetupYet,
+            {
+              "custom.bot.maximum.servers":
+                CustomBotsManager.getCustomBotQuantityBySubscriptionTierId(
+                  subscription.tierId
+                ),
+            }
+          )
+        );
+    }
+
+    return embed;
   }
 
   public async fetch(

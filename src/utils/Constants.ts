@@ -19,6 +19,7 @@ export default class Constants {
     GRAY: 3355443,
     BLUE: 1340892,
     EMBED_GRAY: 3092790,
+    PLEDGOR: 16289587,
   };
   public static readonly DEFAULT_INTERACTION_EXPIRES: number =
     1000 /*MiliSecond*/ * 60 /*Minute*/ * 15; //ms

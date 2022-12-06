@@ -360,6 +360,19 @@ export default class RequestAssistant {
                   },
                 ],
               },
+              {
+                type: ComponentType.ActionRow,
+                components: [
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Secondary,
+                    customId: `requestAssistant:${this.id}:userSub`,
+                    label:
+                      locale.origin.plugins.requestHumanAssistant
+                        .assistantAcceptsRequest.update.buttons[0],
+                  },
+                ],
+              },
             ],
           })
         )

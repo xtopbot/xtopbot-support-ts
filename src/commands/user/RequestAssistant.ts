@@ -30,7 +30,6 @@ import Util, { Diff } from "../../utils/Util";
 import { BaseCommand } from "../BaseCommand";
 import { AnyInteraction, Method } from "../CommandMethod";
 import Languages from "./Languages";
-import CommandRequirementsHandler from "../RequirementHandler";
 import moment from "moment";
 import RequestsAssistantManager from "../../managers/RequestsAssistantManager";
 
@@ -210,6 +209,53 @@ export default class RequestAssistant extends BaseCommand {
             ],
           },
         ],
+        ephemeral: true,
+      });
+    } else if (dcm.getKey("userSub")) {
+      const requestId = dcm.getValue("requestAssistant", true);
+
+      await dcm.d.deferReply({ ephemeral: true });
+
+      if ((dcm.user.flags & Constants.StaffBitwise) === 0)
+        throw new Exception(
+          dcm.locale.origin.requirement.insufficientPermission,
+          Severity.COMMON
+        );
+
+      const request = await app.requests.fetch(requestId, false);
+      const requestStatus = await request?.getStatus(true);
+
+      if (
+        !request ||
+        !(
+          requestStatus === RequestAssistantStatus.ACTIVE ||
+          requestStatus === RequestAssistantStatus.SEARCHING
+        )
+      )
+        throw new Exception(
+          "This interaction no longer valid",
+          Severity.SUSPICIOUS
+        );
+
+      const userSubscriptions = await app.subscriptions.fetch(request.userId);
+      if (!userSubscriptions)
+        throw new Exception(
+          dcm.locale.origin.plugins.requestHumanAssistant.detailsOfRequesterSubscription.notSubscribedYet,
+          Severity.COMMON
+        );
+
+      const embeds = [];
+      for (const sub of userSubscriptions) {
+        embeds.push(
+          await RequestsAssistantManager.subscriptionDetailsEmbed(
+            sub,
+            dcm.locale
+          )
+        );
+      }
+
+      return new Response(ResponseCodes.SUCCESS, {
+        embeds: embeds,
         ephemeral: true,
       });
     }
