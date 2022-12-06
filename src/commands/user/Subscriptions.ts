@@ -89,7 +89,8 @@ export default class Subscriptions extends BaseCommand {
       const customBot = await app.customBots.create(
         dcm.user,
         dcm.d.fields.getTextInputValue("token"),
-        checker.subscription.tierId
+        checker.subscription.tierId,
+        dcm.locale.tag
       );
       dcm.cf.formats.set(
         "bot.tag",
@@ -947,8 +948,6 @@ export default class Subscriptions extends BaseCommand {
           .options[
           cb.getStatus() === CustomBotStatus.RUNNING
             ? 1
-            : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
-            ? 2
             : cb.getStatus() === CustomBotStatus.TOKEN_INVALID
             ? 2
             : 3

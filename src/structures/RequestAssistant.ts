@@ -206,10 +206,7 @@ export default class RequestAssistant {
         name: Util.textEllipsis(this.issue, 100),
         autoArchiveDuration: 60,
         reason: `Request Assistant Id: ${this.id}`,
-        type:
-          this.guild.premiumTier >= 2
-            ? ChannelType.GuildPrivateThread
-            : ChannelType.GuildPublicThread,
+        type: ChannelType.GuildPrivateThread,
         invitable: false,
       })
       .catch((err) => {

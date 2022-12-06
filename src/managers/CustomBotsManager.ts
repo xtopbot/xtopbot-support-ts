@@ -11,6 +11,7 @@ import Logger from "../utils/Logger";
 import { ButtonStyle, Collection, ComponentType } from "discord.js";
 import schedule from "node-schedule";
 import Constants from "../utils/Constants";
+import { LocaleTag } from "./LocaleManager";
 
 export default class CustomBotsManager {
   public readonly processes = new Collection<
@@ -101,6 +102,7 @@ export default class CustomBotsManager {
     user: User,
     token: string,
     tierId: PatreonTierId,
+    localeTag: LocaleTag | null,
     checkLimit?: boolean
   ): Promise<CustomBot<"GET">> {
     const id = uuidv4();
@@ -119,7 +121,11 @@ export default class CustomBotsManager {
       null
     );
     const botData = await customBot.fetchUser();
-    await customBot.validation(ValidationType.BOT, { data: botData }, null);
+    await customBot.validation(
+      ValidationType.BOT,
+      { data: botData },
+      localeTag
+    );
     await customBot.validation(
       ValidationType.APPLICATION,
       { data: await customBot.fetchApplication(), userId: user.id },
