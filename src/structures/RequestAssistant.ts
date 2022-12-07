@@ -371,6 +371,14 @@ export default class RequestAssistant {
                       locale.origin.plugins.requestHumanAssistant
                         .assistantAcceptsRequest.update.buttons[0],
                   },
+                  {
+                    type: ComponentType.Button,
+                    style: ButtonStyle.Link,
+                    url: thread.url,
+                    label:
+                      locale.origin.plugins.requestHumanAssistant
+                        .assistantAcceptsRequest.update.buttons[1],
+                  },
                 ],
               },
             ],

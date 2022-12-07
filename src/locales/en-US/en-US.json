@@ -699,7 +699,7 @@
         }
       ],
       "detailsOfRequesterSubscription": {
-        "notSubscribedYet": "I haven't seen any subscriptions made by <@{{user.id}}> yet",
+        "notSubscribedYet": "I haven't seen any subscriptions made by <@{{request.user.id}}> yet",
         "authorActive": "Active Subscription",
         "authorExpired": "Expired Subscription",
         "fieldNameExpired": "Expired On",
@@ -934,7 +934,7 @@
               }
             }
           ],
-          "buttons": ["Subscriptions Details"],
+          "buttons": ["Subscriptions Details", "Go to thread"],
           "selectMenu": [
             {
               "placeholder": "Close thread with reason..",

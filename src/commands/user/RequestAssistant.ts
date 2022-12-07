@@ -237,6 +237,8 @@ export default class RequestAssistant extends BaseCommand {
           Severity.SUSPICIOUS
         );
 
+      dcm.cf.formats.set("request.user.id", request.userId);
+
       const userSubscriptions = await app.subscriptions.fetch(request.userId);
       if (!userSubscriptions)
         throw new Exception(
