@@ -346,7 +346,7 @@ export default class RequestAssistant extends BaseCommand {
           moment(request.threadCreatedAt).locale(dcm.locale.tag).fromNow(true)
         )
       );
-      dcm.cf.formats.set("request.user.id", request.userId);
+      dcm.cf.formats.set("request.userId", request.userId);
       return new Response(ResponseCodes.SUCCESS, {
         ...Util.addFieldToEmbed(
           dcm.locale.origin.plugins.requestHumanAssistant.threadClosed.admin,
