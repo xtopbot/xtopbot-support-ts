@@ -403,7 +403,8 @@ export default class CustomBotsManager {
                   customBot.id
                 )}]) Failed to auto start process for custom bot: ${
                   err?.message ?? err?.reason
-                }`
+                }`,
+                err
               )
             )
             .finally(() => {
