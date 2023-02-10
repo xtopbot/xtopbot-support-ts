@@ -229,24 +229,24 @@ export default class ArticlesManager extends CacheManager<Article> {
         ignoreLocation: true,
         keys: [
           {
-            weight: 6,
+            weight: 0.9,
             name: "title",
           },
           {
             name: "localizationTags",
-            weight: 4,
+            weight: 0.6,
             getFn: (localization: ArticleLocalization) =>
               localization.tags.map((tag) => tag.name),
           },
-          {
+          /*{
             name: "localizationDescription",
-            weight: 1,
+            weight: 0.1,
             getFn: (localization: ArticleLocalization) =>
               localization.messageId
                 ? app.messages.cache.get(localization.messageId)?.embeds[0]
                     ?.description ?? ""
                 : "",
-          },
+          },*/
         ],
       }
     );
