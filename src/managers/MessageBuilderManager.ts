@@ -91,6 +91,7 @@ export default class MessageBuilderManager extends CacheManager<MessageBuilder> 
           ?.filter(
             (embed, index) =>
               Util.isUUID(embed.embedId) &&
+              embed.id === message.id &&
               raws.map((raw) => raw.embedId).indexOf(embed.embedId) === index
           )
           .map((embed) => ({

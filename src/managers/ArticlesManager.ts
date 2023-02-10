@@ -225,21 +225,22 @@ export default class ArticlesManager extends CacheManager<Article> {
         .flat()
         .filter((localization) => localization.published),
       {
-        threshold: 0.3,
+        threshold: 0.6,
+        ignoreLocation: true,
         keys: [
           {
-            weight: 0.9,
+            weight: 6,
             name: "title",
           },
           {
             name: "localizationTags",
-            weight: 0.8,
+            weight: 4,
             getFn: (localization: ArticleLocalization) =>
               localization.tags.map((tag) => tag.name),
           },
           {
             name: "localizationDescription",
-            weight: 0.4,
+            weight: 1,
             getFn: (localization: ArticleLocalization) =>
               localization.messageId
                 ? app.messages.cache.get(localization.messageId)?.embeds[0]
@@ -408,6 +409,7 @@ export default class ArticlesManager extends CacheManager<Article> {
           ?.filter(
             (raw, index) =>
               Util.isUUID(raw.localizationId) &&
+              raw.id === article.id &&
               raws
                 .map((raw) => raw.localizationId)
                 .indexOf(raw.localizationId) === index

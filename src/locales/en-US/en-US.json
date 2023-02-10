@@ -661,6 +661,18 @@
       "mustBeWhoAcceptTheAssistantRequestDoThisAction": "You cannot do this action to assistant `{{request.uuid.short}}`. This action is for <@{{request.assistant.id}}>.",
       "exceededLimitation": "You've created too many requests that haven't been accepted or you've exceeded your assistant request limit on this day!",
       "unableToFindAssistantsForSpecificLanguage": "We apologize, but the language you want to receive assistance in is not available depending on the assistants currently on board",
+      "suggestedArticle": {
+        "embeds": [
+          {
+            "title": "This article may be the solution to your issue!",
+            "author": {
+              "name": "{{request.issue}}"
+            },
+            "description": "{{article.description}}"
+          }
+        ],
+        "buttons": ["Not helpful, I need assistant."]
+      },
       "publicThread": {
         "notBelongToHim": {
           "warning": {
@@ -810,6 +822,11 @@
                   "name": "Expires In",
                   "value": "<t:{{request.expires.timestamp}}:R>",
                   "inline": true
+                },
+                {
+                  "name": "Article Suggested",
+                  "value": "{{article.suggested.title}}",
+                  "inline": true
                 }
               ],
               "footer": {
@@ -926,6 +943,11 @@
                 {
                   "name": "Accepted At",
                   "value": "<t:{{thread.timestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "Article Suggested",
+                  "value": "{{article.suggested.title}}",
                   "inline": true
                 }
               ],

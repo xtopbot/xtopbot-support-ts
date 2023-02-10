@@ -1,7 +1,9 @@
 import {
   AttachmentBuilder,
   AuditLogEvent,
+  ButtonStyle,
   ChannelType,
+  ComponentType,
   escapeMarkdown,
   Guild,
   GuildMember,
@@ -510,6 +512,7 @@ export default class AuditLog {
       limit: 1000,
       where: `unix_timestamp(rha.createdAt) between unix_timestamp("${startOfThisMonth.toISOString()}") and unix_timestamp("${endOfThisMonth.toISOString()}")`,
     });
+    let thread = await requestAssistant.getThread(false).catch(() => null);
 
     const message: MessageOptions = {
       embeds: [
@@ -565,6 +568,21 @@ export default class AuditLog {
           },
         },
       ],
+      components: thread
+        ? [
+            {
+              type: ComponentType.ActionRow,
+              components: [
+                {
+                  type: ComponentType.Button,
+                  style: ButtonStyle.Link,
+                  url: thread.url,
+                  label: "Go to thread",
+                },
+              ],
+            },
+          ]
+        : [],
     };
     if (requestAssistant.getStatus(false) === RequestAssistantStatus.CANCELED) {
       // @ts-ignore
@@ -594,6 +612,12 @@ export default class AuditLog {
         }
       );
     }
+    // @ts-ignore
+    message.embeds[0].fields.push({
+      name: "Article Suggested",
+      value: (await requestAssistant.getArticleSuggested())?.title ?? "N/A",
+      inline: true,
+    });
     this.getAuditLogChannels(AuditLogChannelsName.RHA, guild)?.send(message);
   }
 

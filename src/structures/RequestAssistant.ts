@@ -24,6 +24,7 @@ import Util from "../utils/Util";
 import { v4 as uuidv4 } from "uuid";
 import Logger from "../utils/Logger";
 import AuditLog from "../plugins/AuditLog";
+import ArticleLocalization from "./ArticleLocalization";
 
 export default class RequestAssistant {
   public readonly id: string = uuidv4();
@@ -31,6 +32,7 @@ export default class RequestAssistant {
   public readonly webhook: InteractionWebhook;
   public readonly locale: LocaleTag;
   public readonly guildId: string;
+  public readonly articleSuggestedId: string | null;
   public threadId: string | null = null;
   public readonly requestedAt: Date = new Date();
   public threadCreatedAt: Date | null = null;
@@ -53,6 +55,7 @@ export default class RequestAssistant {
     guildId: string,
     webhook: InteractionWebhook,
     locale: LocaleTag,
+    articleSuggestedId: string | null,
     uuid?: string,
     requestedAt?: number
   ) {
@@ -61,10 +64,17 @@ export default class RequestAssistant {
     this.webhook = webhook;
     this.guildId = guildId;
     this.locale = locale;
+    this.articleSuggestedId = articleSuggestedId;
     this.requestedAt = requestedAt
       ? new Date(Math.round(requestedAt * 1000))
       : this.requestedAt;
     this.id = uuid ?? this.id;
+  }
+
+  public getArticleSuggested(): Promise<ArticleLocalization | null> | null {
+    return this.articleSuggestedId
+      ? app.articles.fetchLocalization(this.articleSuggestedId)
+      : null;
   }
 
   public getStatus(fetchThread: false): RequestAssistantStatus;
@@ -255,6 +265,10 @@ export default class RequestAssistant {
     cfx.formats.set(
       "thread.timestamp",
       String(Math.round(this.threadCreatedAt.getTime() / 1000))
+    );
+    cfx.formats.set(
+      "article.suggested.title",
+      (await this.getArticleSuggested())?.title ?? "N/A"
     );
     this.webhook.editMessage("@original", {
       ...cfx.resolve(

@@ -27,6 +27,7 @@ import AuditLog from "../plugins/AuditLog";
 import Subscription, { PatreonTierId } from "../structures/Subscription";
 import CustomBotsManager from "./CustomBotsManager";
 import { CustomBotStatus } from "../structures/CustomBot";
+import ArticleLocalization from "../structures/ArticleLocalization";
 
 export default class RequestsAssistantManager extends CacheManager<RequestAssistant> {
   public static readonly timeoutRequests = new Map<string, NodeJS.Timeout>();
@@ -39,27 +40,30 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     user: DiscordUser,
     guild: Guild,
     interactionWebhook: InteractionWebhook,
-    locale: Locale
+    locale: Locale,
+    articleSuggested: ArticleLocalization | null
   ): Promise<RequestAssistant> {
     const req = new RequestAssistant(
       Util.textEllipsis(issue, 100),
       user.id,
       guild.id,
       interactionWebhook,
-      locale.tag
+      locale.tag,
+      articleSuggested?.id ?? null
     );
     const assistantMessage = await this.sendMessageIntoRequestsChannel(
       req,
       guild,
       user,
-      locale
+      locale,
+      articleSuggested
     );
     req.setControlMessageForAssistant(
       assistantMessage.channel.id,
       assistantMessage.id
     );
     await db.query(
-      "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue, assistantRequestsChannelId, assistantRequestMessageId) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO `Request.Human.Assistant` (uuid, userId, guildId, interactionToken, locale, issue, assistantRequestsChannelId, assistantRequestMessageId, articleSuggestedId) values (UUID_TO_BIN(?), ?, ?, ?, ?, ?, ?, ?, UUID_TO_BIN(?))",
       [
         req.id,
         user.id,
@@ -69,6 +73,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         req.issue,
         assistantMessage.channel.id,
         assistantMessage.id,
+        articleSuggested?.id ?? null,
       ]
     );
     return this._add(req);
@@ -78,7 +83,8 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     req: RequestAssistant,
     guild: Guild,
     user: DiscordUser,
-    locale: Locale
+    locale: Locale,
+    articleSuggested: ArticleLocalization | null
   ): Promise<Message> {
     const guildAssistants =
       RequestHumanAssistantPlugin.getGuildAssistants(guild);
@@ -102,6 +108,10 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     );
     cfx.formats.set("user.tag", user.tag);
     cfx.formats.set("request.uuid", req.id);
+    cfx.formats.set(
+      "article.suggested.title",
+      articleSuggested?.title ?? "N/A"
+    );
     cfx.formats.set(
       "request.expires.in.minutes",
       String(Constants.DEFAULT_INTERACTION_EXPIRES / 1000 / 60)
@@ -281,7 +291,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     }
     const [raw] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
+     select BIN_TO_UUID(rha.uuid) as uuid, BIN_TO_UUID(rha.articleSuggestedId) as articleSuggestedId, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -305,7 +315,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
     const userId = user instanceof User ? user.id : user;
     const raw: any[] = await db.query(
       `
-     select BIN_TO_UUID(rha.uuid) as uuid, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
+     select BIN_TO_UUID(rha.uuid) as uuid, BIN_TO_UUID(rha.articleSuggestedId) as articleSuggestedId, rha.userId, rha.guildId, rha.interactionToken, rha.locale, rha.issue, unix_timestamp(rha.createdAt) as requestedAt, unix_timestamp(rha.cancelledAt) as cancelledAt, t.threadId, t.assistantId, unix_timestamp(t.createdAt) as threadCreatedAt, ts.relatedArticleId, (ts.status + 0) as status, unix_timestamp(ts.closedAt) as closedAt, rha.assistantRequestsChannelId, rha.assistantRequestMessageId from
       \`Request.Human.Assistant\` rha
       left join \`Request.Human.Assistant.Thread\` t
         on t.uuid = rha.uuid
@@ -386,6 +396,7 @@ export default class RequestsAssistantManager extends CacheManager<RequestAssist
         raw.interactionToken
       ),
       raw.locale,
+      raw.articleSuggestedId,
       raw.uuid,
       raw.requestedAt
     );
