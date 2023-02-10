@@ -113,7 +113,7 @@ export default class HelpDesk extends BaseCommand {
 
       if (dcm.getKey("feedback")) {
         if (dcm.getKey("solved")) {
-          await articleLocalization.addFeedback(dcm.user.id, true);
+          await articleLocalization.addUserFeedback(dcm.user.id, true);
           return new Response(
             ResponseCodes.SUCCESS,
             await HelpDesk.getArticleMessage(
@@ -124,7 +124,7 @@ export default class HelpDesk extends BaseCommand {
             Action.UPDATE
           );
         } else if (dcm.getKey("unsolved")) {
-          await articleLocalization.addFeedback(dcm.user.id, false);
+          await articleLocalization.addUserFeedback(dcm.user.id, false);
           return new Response(
             ResponseCodes.SUCCESS,
             await HelpDesk.getArticleMessage(
@@ -158,7 +158,7 @@ export default class HelpDesk extends BaseCommand {
       : null;
     const description = message?.embeds[0]?.description; //3159092
     const userFeedback = userId
-      ? await articleLocalization.getFeedback(articleLocalization.id, userId)
+      ? await articleLocalization.getUserFeedback(userId)
       : null;
     const rowTwo = [
       {

@@ -673,6 +673,18 @@
       "mustBeWhoAcceptTheAssistantRequestDoThisAction": "لا يمكنك القيام بهذا الإجراء للمساعد `{{request.uuid.short}}`. هذا الإجراء يخص <@{{request.assistant.id}}>.",
       "exceededLimitation": "لقد أنشأت عددًا كبيرًا جدًا من الطلبات التي لم يتم قبولها أو تجاوزت حد طلبات المساعد في هذا اليوم!",
       "unableToFindAssistantsForSpecificLanguage": "نعتذر ، لكن اللغة التي تريد تلقي المساعدة بها غير متوفرة اعتمادًا على المساعدين الموجودين حاليًا",
+      "suggestedArticle": {
+        "embeds": [
+          {
+            "title": "قد يكون هذا المقال هو حل لمشكلتك!",
+            "author": {
+              "name": "{{request.issue}}"
+            },
+            "description": "{{article.description}}"
+          }
+        ],
+        "buttons": ["لم يفيد, احتاج مساعد."]
+      },
       "publicThread": {
         "notBelongToHim": {
           "warning": {
@@ -822,6 +834,11 @@
                   "name": "ينتهي في",
                   "value": "<t:{{request.expires.timestamp}}:R>",
                   "inline": true
+                },
+                {
+                  "name": "مقال مقترح",
+                  "value": "{{article.suggested.title}}",
+                  "inline": true
                 }
               ],
               "footer": {
@@ -938,6 +955,11 @@
                 {
                   "name": "قبلت في",
                   "value": "<t:{{thread.timestamp}}:f>",
+                  "inline": true
+                },
+                {
+                  "name": "مقال مقترح",
+                  "value": "{{article.suggested.title}}",
                   "inline": true
                 }
               ],

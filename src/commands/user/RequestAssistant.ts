@@ -32,6 +32,7 @@ import { AnyInteraction, Method } from "../CommandMethod";
 import Languages from "./Languages";
 import moment from "moment";
 import RequestsAssistantManager from "../../managers/RequestsAssistantManager";
+import ArticleLocalization from "../../structures/ArticleLocalization";
 
 export default class RequestAssistant extends BaseCommand {
   constructor() {
@@ -61,13 +62,24 @@ export default class RequestAssistant extends BaseCommand {
   }
 
   protected async buttonInteraction(dcm: Method<ButtonInteraction>) {
-    if (dcm.getValue("requestAssistant", false) === "create")
+    if (dcm.getValue("requestAssistant", false) === "create") {
+      let articleSuggestedId = dcm.getValue("articleSuggested", false);
+      let issue = articleSuggestedId
+        ? dcm.d.message.embeds?.at(0)?.author?.name ?? null
+        : null;
+
+      let articleSuggested = articleSuggestedId
+        ? await app.articles.fetchLocalization(articleSuggestedId)
+        : null;
       return this.request(
-        null,
+        issue,
         dcm,
         (dcm.d.guild ??
-          app.client.guilds.cache.get(Constants.supportServerId)) as Guild
+          app.client.guilds.cache.get(Constants.supportServerId)) as Guild,
+        articleSuggested
       );
+    }
+
     if (dcm.getValue("requestAssistant", false) === "cancel") {
       const requestId = dcm.getValue("cancel", true);
       dcm.cf.formats.set("request.uuid", requestId);
@@ -275,7 +287,8 @@ export default class RequestAssistant extends BaseCommand {
           null,
           dcm,
           (dcm.d.guild ??
-            app.client.guilds.cache.get(Constants.supportServerId)) as Guild
+            app.client.guilds.cache.get(Constants.supportServerId)) as Guild,
+          null
         );
       }
     } else if (dcm.getValue("close", false)) {
@@ -365,25 +378,29 @@ export default class RequestAssistant extends BaseCommand {
         dcm.d.fields.getTextInputValue("issue"),
         dcm,
         (dcm.d.guild ??
-          app.client.guilds.cache.get(Constants.supportServerId)) as Guild
+          app.client.guilds.cache.get(Constants.supportServerId)) as Guild,
+        null
       );
     }
   }
-
-  private async request(
-    issue: null,
-    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
-  ): Promise<Response<MessageResponse | ModalResponse>>;
   private async request(
     issue: string,
     dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
+    guild: Guild,
+    articleSuggested: ArticleLocalization | null
   ): Promise<Response<MessageResponse>>;
   private async request(
     issue: string | null,
     dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
-    guild: Guild
+    guild: Guild,
+    articleSuggested: ArticleLocalization | null
+  ): Promise<Response<MessageResponse | ModalResponse>>;
+
+  private async request(
+    issue: string | null,
+    dcm: Method<Diff<AnyInteraction, AutocompleteInteraction>>,
+    guild: Guild,
+    articleSuggested: ArticleLocalization | null
   ): Promise<Response<MessageResponse | ModalResponse>> {
     const guildAssistants = RequestHumanAssistantPlugin.getGuildAssistants(
       guild ?? app.client.guilds.cache.get(Constants.supportServerId)
@@ -491,6 +508,54 @@ export default class RequestAssistant extends BaseCommand {
       );
     }
 
+    /**
+     * Use articles for less assistant request
+     */
+    if (articleSuggested) articleSuggested.addUserFeedback(dcm.user.id, false);
+    if (issue != null && !articleSuggested) {
+      const articleSuggest = (await app.articles.search(issue)).at(0);
+      if (articleSuggest) {
+        const userFeedback = await articleSuggest.getUserFeedback(dcm.user.id);
+        if (!userFeedback || userFeedback.helpful) {
+          let articleMessage = await articleSuggest.fetchMessage();
+          dcm.cf.formats.set("request.issue", issue);
+          dcm.cf.formats.set(
+            "article.description",
+            articleMessage?.embeds?.at(0)?.description ?? ""
+          );
+
+          return new Response(
+            ResponseCodes.SUCCESS,
+            {
+              ...Util.addFieldToEmbed(
+                locale.origin.plugins.requestHumanAssistant.suggestedArticle,
+                0,
+                "color",
+                Constants.defaultColors.BLUE
+              ),
+              components: [
+                {
+                  type: ComponentType.ActionRow,
+                  components: [
+                    {
+                      type: ComponentType.Button,
+                      customId: `requestAssistant:create:articleSuggested:${articleSuggest.id}`,
+                      style: ButtonStyle.Danger,
+                      label:
+                        locale.origin.plugins.requestHumanAssistant
+                          .suggestedArticle.buttons[0],
+                    },
+                  ],
+                },
+              ],
+              ephemeral: true,
+            },
+            Action.REPLY
+          );
+        }
+      }
+    }
+
     const startDay = new Date().setUTCHours(0, 0, 0, 0);
 
     if (userRequests.length) {
@@ -526,7 +591,7 @@ export default class RequestAssistant extends BaseCommand {
         Severity.COMMON
       );
 
-    if (issue === null) return this.openModal(dcm);
+    if (issue === null) return this.openModal(dcm, articleSuggested);
     await dcm.d.deferReply({ ephemeral: true });
 
     const request = await app.requests.createRequest(
@@ -534,7 +599,8 @@ export default class RequestAssistant extends BaseCommand {
       dcm.d.user,
       guild ?? app.client.guilds.cache.get(Constants.supportServerId),
       dcm.d.webhook,
-      locale
+      locale,
+      articleSuggested
     );
     app.requests.setTimeoutRequest(request.id);
     dcm.cf.formats.set("request.issue", request.issue);
@@ -588,11 +654,16 @@ export default class RequestAssistant extends BaseCommand {
     );
   }
 
-  private openModal(dcm: Method<AnyInteraction>): Response<ModalResponse> {
+  private openModal(
+    dcm: Method<AnyInteraction>,
+    articleSuggested: ArticleLocalization | null
+  ): Response<ModalResponse> {
     return new Response<ModalResponse>(
       ResponseCodes.PLUGIN_SUCCESS,
       {
-        customId: "requestAssistant:create",
+        customId: `requestAssistant:create${
+          articleSuggested ? `:articleSuggested:${articleSuggested.id}` : ""
+        }`,
         title: dcm.locale.origin.plugins.requestHumanAssistant.modals[0].title,
         components: [
           {
