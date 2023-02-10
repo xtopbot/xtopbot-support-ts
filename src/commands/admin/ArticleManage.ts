@@ -348,7 +348,7 @@ export default class ArticleManage extends BaseCommand {
                     ...dcm.locale.origin.commands.article.manage.localization
                       .modal[0].textInput[1],
                     value: message?.embeds?.at(0)?.description ?? "",
-                    minLength: 1,
+                    minLength: 0,
                     maxLength: 4000,
                   },
                 ],
