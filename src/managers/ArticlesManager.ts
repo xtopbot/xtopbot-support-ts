@@ -348,7 +348,7 @@ export default class ArticlesManager extends CacheManager<Article> {
       type: ComponentType.Button,
       style: ButtonStyle.Secondary,
       customId: `helpdesk:article:${article.id}:asUser`,
-      label: `${index + 5}`,
+      label: `${index + 6}`,
     }));
     if (withRequestAssistantInteraction) {
       const requestAssistanceButton = {
