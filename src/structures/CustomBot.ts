@@ -25,6 +25,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     activity: {
       type: ActivityType | null;
       name: string | null;
+      url: string | null;
     };
   };
   public tokenValidation: T extends "GET" ? boolean : boolean | null;
@@ -41,6 +42,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     botStatus: T extends "GET" ? BotStatus | null : null,
     activityType: T extends "GET" ? ActivityType | null : null,
     activityName: T extends "GET" ? string | null : null,
+    activityURL: T extends "GET" ? string | null : null,
     tokenValidation: T extends "GET" ? boolean : boolean | null,
     createdAt: Date = new Date()
   ) {
@@ -58,6 +60,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
       activity: {
         type: activityType,
         name: activityName,
+        url: activityURL,
       },
     };
     this.createdAt = createdAt;
@@ -366,20 +369,30 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     Logger.info(
       `[CustomBot<Process>] ${this.botId} Validation completed successfully. Starting<Process>`
     );
+    let args = [
+      "--status",
+      this.presence.status ?? "online",
+      "--activityType",
+      this.presence.activity.type && this.presence.activity.name
+        ? this.presence.activity.type
+        : "LISTENING",
+    ];
+    if (
+      this.presence.activity.type == "STREAMING" &&
+      this.presence.activity.url &&
+      this.presence.activity.name
+    ) {
+      args.push("--activityURL", this.presence.activity.url);
+    }
+    args.push(
+      "--activityName",
+      this.presence.activity.type && this.presence.activity.name
+        ? Util.textEllipsis(this.presence.activity.name, 125)
+        : "/play"
+    );
     app.customBots
       .PM2Start(this.id, this.token as string, {
-        args: [
-          "--status",
-          this.presence.status ?? "online",
-          "--activityType",
-          this.presence.activity.type && this.presence.activity.name
-            ? this.presence.activity.type
-            : "LISTENING",
-          "--activityName",
-          this.presence.activity.type && this.presence.activity.name
-            ? Util.textEllipsis(this.presence.activity.name, 125)
-            : "/play",
-        ],
+        args,
       })
       .catch((onrejected) => {
         Logger.error(
@@ -423,6 +436,7 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
     activity: {
       type: ActivityType | null;
       name: string | null;
+      url: string | null;
     } | null
   ) {
     if (this.getStatus() === CustomBotStatus.TOKEN_INVALID)
@@ -433,13 +447,20 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
         Severity.SUSPICIOUS
       );
     await db.query(
-      "update `Custom.Bot` set botStatus = ?, activityType = ?, activityName = ? where BIN_TO_UUID(id) = ?",
-      [status, activity?.type ?? null, activity?.name ?? null, this.id]
+      "update `Custom.Bot` set botStatus = ?, activityType = ?, activityName = ?, activityURL = ? where BIN_TO_UUID(id) = ?",
+      [
+        status,
+        activity?.type ?? null,
+        activity?.name ?? null,
+        activity?.url ?? null,
+        this.id,
+      ]
     );
     this.presence.status = status;
     this.presence.activity = {
       type: activity?.type ?? null,
       name: activity?.name ?? null,
+      url: activity?.url ?? null,
     };
     if (this.getStatus() === CustomBotStatus.RUNNING)
       await this.sendDataToProcess();
@@ -461,6 +482,12 @@ export default class CustomBot<T extends "CREATION" | "GET"> {
             this.presence.activity.type && this.presence.activity.name
               ? Util.textEllipsis(this.presence.activity.name, 125)
               : "/play",
+          url:
+            this.presence.activity.type == "STREAMING" &&
+            this.presence.activity.url &&
+            this.presence.activity.name
+              ? this.presence.activity.url
+              : null,
         },
       },
     });

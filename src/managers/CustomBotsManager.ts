@@ -30,7 +30,7 @@ export default class CustomBotsManager {
     )
       return this.result([], tierId);
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, activityURL, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
               from \`Custom.Bot\`
               where ownerId in (?) and tierId = ? OR botId in (?) and tierId = ? OR BIN_TO_UUID(id) in (?) and tierId = ?`,
       [id, tierId, id, tierId, id, tierId]
@@ -51,6 +51,7 @@ export default class CustomBotsManager {
             raw.botStatus ?? null,
             raw.activityType ?? null,
             raw.activityName ?? null,
+            raw.activityURL ?? null,
             raw.tokenValidation === 1,
             new Date(Math.round(raw.createdTimestampAt * 1000))
           )
@@ -68,7 +69,7 @@ export default class CustomBotsManager {
       ? "MULTIPLE"
       : "SINGLE";
     let raws: any[] = await db.query(
-      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
+      `select BIN_TO_UUID(id) as id, token, username, discriminator, avatar, botId, ownerId, tierId, tokenValidation, activityType, activityName, activityURL, botStatus, unix_timestamp(createdAt) as createdTimestampAt 
               from \`Custom.Bot\`
               where botId in (?) OR ownerId in (?) OR BIN_TO_UUID(id) in (?)`,
       [id, id, id]
@@ -90,6 +91,7 @@ export default class CustomBotsManager {
           r.botStatus ?? null,
           r.activityType ?? null,
           r.activityName ?? null,
+          r.activityURL ?? null,
           r.tokenValidation === 1,
           new Date(Math.round(r.createdTimestampAt * 1000))
         )
@@ -115,6 +117,7 @@ export default class CustomBotsManager {
       null,
       null,
       tierId,
+      null,
       null,
       null,
       null,
@@ -190,6 +193,7 @@ export default class CustomBotsManager {
       botData.avatar,
       user.id,
       tierId,
+      null,
       null,
       null,
       null,
