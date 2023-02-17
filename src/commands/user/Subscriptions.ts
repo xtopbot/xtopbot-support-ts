@@ -7,6 +7,7 @@ import {
   ComponentType,
   escapeMarkdown,
   InteractionType,
+  ModalComponentData,
   ModalSubmitInteraction,
   SelectMenuInteraction,
   TextInputStyle,
@@ -132,12 +133,38 @@ export default class Subscriptions extends BaseCommand {
       );
     } else if (checker?.path === "UPDATE_ACTIVITY_CUSTOM_BOT") {
       const activityType = dcm.getValue("activity", true);
-      if (!["PLAYING", "LISTENING", "WATCHING"].includes(activityType))
+      if (
+        !["PLAYING", "LISTENING", "WATCHING", "STREAMING"].includes(
+          activityType
+        )
+      )
         throw new Exception("Invalid Value.", Severity.SUSPICIOUS);
+      let url;
+      if (activityType == "STREAMING") {
+        let matcher = dcm.d.fields
+          .getTextInputValue("url")
+          .match(
+            /https?:\/\/(?:www\.)?(youtube\.com\/watch?v=(?<youtubeVideoId>[\w-]{11})|twitch\.tv\/(?<twitchUsername>\w{4,25}))/
+          );
+        if (
+          !matcher?.groups?.youtubeVideoId &&
+          !matcher?.groups?.twitchUsername
+        )
+          throw new Exception(
+            "URL value must be Youtube video or Twitch channel.",
+            Severity.COMMON
+          );
+        url =
+          "https://" +
+          (matcher?.groups?.youtubeVideoId
+            ? "youtube.com/watch?v=" + matcher?.groups?.youtubeVideoId
+            : "twitch.tv/" + matcher?.groups?.twitchUsername);
+      }
 
       await checker.target.updatePresence(checker.target.presence.status, {
         type: activityType,
         name: dcm.d.fields.getTextInputValue("name"),
+        url: url,
       });
       return this.manageCustomBot(dcm, checker.subscription, checker.target);
     } else if (checker?.path === "SUBSCRIPTION_MANAGE")
@@ -359,39 +386,59 @@ export default class Subscriptions extends BaseCommand {
       return this.manageCustomBot(dcm, checker.subscription, checker.target);
     } else if (checker?.path === "UPDATE_ACTIVITY_CUSTOM_BOT") {
       const value = dcm.d.values[0];
-      if (!["PLAYING", "LISTENING", "WATCHING"].includes(value))
+      if (!["PLAYING", "LISTENING", "WATCHING", "STREAMING"].includes(value))
         throw new Exception("Invalid Value.", Severity.SUSPICIOUS);
 
-      return new Response(
-        ResponseCodes.SUCCESS,
-        {
-          title:
-            dcm.locale.origin.commands.subscriptions.manage.one.bot.modals[1]
-              .title,
-          customId: `subscription:tier:${checker.subscription.tierId}:bots:${checker.target.id}:activity:${value}`,
+      const modalData: ModalComponentData = {
+        title:
+          dcm.locale.origin.commands.subscriptions.manage.one.bot.modals[1]
+            .title,
+        customId: `subscription:tier:${checker.subscription.tierId}:bots:${checker.target.id}:activity:${value}`,
+        components: [
+          {
+            type: ComponentType.ActionRow,
+            components: [
+              {
+                type: ComponentType.TextInput,
+                style: TextInputStyle.Short,
+                customId: "name",
+                label:
+                  dcm.locale.origin.commands.subscriptions.manage.one.bot
+                    .modals[1].textInput[0].label,
+                placeholder:
+                  dcm.locale.origin.commands.subscriptions.manage.one.bot
+                    .modals[1].textInput[0].placeholder,
+                minLength: 1,
+                maxLength: 125,
+                value: checker.target?.presence?.activity?.name ?? undefined,
+              },
+            ],
+          },
+        ],
+      };
+
+      if (value === "STREAMING")
+        modalData.components.push({
+          type: ComponentType.ActionRow,
           components: [
             {
-              type: ComponentType.ActionRow,
-              components: [
-                {
-                  type: ComponentType.TextInput,
-                  style: TextInputStyle.Short,
-                  customId: "name",
-                  label:
-                    dcm.locale.origin.commands.subscriptions.manage.one.bot
-                      .modals[1].textInput[0].label,
-                  placeholder:
-                    dcm.locale.origin.commands.subscriptions.manage.one.bot
-                      .modals[1].textInput[0].placeholder,
-                  minLength: 1,
-                  maxLength: 125,
-                },
-              ],
+              type: ComponentType.TextInput,
+              style: TextInputStyle.Short,
+              customId: "url",
+              label:
+                dcm.locale.origin.commands.subscriptions.manage.one.bot
+                  .modals[1].textInput[1].label,
+              placeholder:
+                dcm.locale.origin.commands.subscriptions.manage.one.bot
+                  .modals[1].textInput[1].placeholder,
+              minLength: 1,
+              maxLength: 200,
+              value: checker.target?.presence?.activity?.url ?? undefined,
             },
           ],
-        },
-        Action.MODAL
-      );
+        });
+
+      return new Response(ResponseCodes.SUCCESS, modalData, Action.MODAL);
     } else if (checker?.path === "SUBSCRIPTION_MANAGE")
       return this.manageSubscription(dcm, checker.subscription);
   }
@@ -868,6 +915,18 @@ export default class Subscriptions extends BaseCommand {
                     default:
                       typeof customBot.presence.activity.name === "string" &&
                       customBot.presence.activity.type === "WATCHING",
+                  },
+                  {
+                    label:
+                      dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .selectMenu[2].options[3].label, // Streaming
+                    description:
+                      dcm.locale.origin.commands.subscriptions.manage.one.bot
+                        .selectMenu[2].options[3].description,
+                    value: "STREAMING",
+                    default:
+                      typeof customBot.presence.activity.name === "string" &&
+                      customBot.presence.activity.type === "STREAMING",
                   },
                 ],
                 disabled:
